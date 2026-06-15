@@ -74,3 +74,7 @@ jacoco/
 # ===== SonarQube =====
 .sonar/
 .scannerwork/
+
+# 数据库备份/演练目录
+rto-drill/
+backup_drill_*/
