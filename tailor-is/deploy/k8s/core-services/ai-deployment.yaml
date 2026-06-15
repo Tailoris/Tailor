@@ -1,0 +1,146 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai
+  namespace: tailor-is-prod
+  labels:
+    app: ai
+    app.kubernetes.io/name: tailor-is-ai
+    app.kubernetes.io/component: service
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai
+  template:
+    metadata:
+      labels:
+        app: ai
+        app.kubernetes.io/name: tailor-is-ai
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "8106"
+    spec:
+      containers:
+        - name: ai
+          image: ${REGISTRY}/tailor-is-ai:${IMAGE_TAG:-latest}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8106
+              name: http
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: tailor-is-config
+          env:
+            - name: NACOS_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: NACOS_ADDR
+            - name: MYSQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: MYSQL_HOST
+            - name: MYSQL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: MYSQL_PORT
+            - name: MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: mysql-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: mysql-password
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: REDIS_HOST
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: redis-password
+            - name: RABBITMQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: RABBITMQ_HOST
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: rabbitmq-username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: rabbitmq-password
+            - name: ROCKETMQ_NAME_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: ROCKETMQ_NAME_SERVER
+            - name: SENTINEL_DASHBOARD_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: SENTINEL_DASHBOARD_ADDR
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "1Gi"
+            limits:
+              cpu: "4000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8106
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8106
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8106
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 10"]
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - ai
+                topologyKey: kubernetes.io/hostname

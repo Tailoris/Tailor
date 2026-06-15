@@ -1,0 +1,103 @@
+# ============================================================
+# ShardingSphere-JDBC Configuration for Order Service
+# ============================================================
+# 按 merchant_id 进行分片，分为 4 个分片 (t_order_0 ~ t_order_3)
+# ============================================================
+
+spring:
+  shardingsphere:
+    # 启用 ShardingSphere 数据源
+    enabled: true
+
+    datasource:
+      names: ds0
+      ds0:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+        username: ${MYSQL_USERNAME:root}
+        password: ${MYSQL_PASSWORD:}
+        # Druid 连接池配置
+        initial-size: 5
+        min-idle: 5
+        max-active: 20
+        max-wait: 60000
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 300000
+        validation-query: SELECT 1
+
+    # 规则配置
+    rules:
+      sharding:
+        # 分片表配置
+        tables:
+          order_info:
+            actual-data-nodes: ds0.t_order_${0..3}
+            table-strategy:
+              standard:
+                sharding-column: merchant_id
+                sharding-algorithm-name: order-inline
+            key-generate-strategy:
+              column: id
+              key-generator-name: snowflake
+
+          order_item:
+            actual-data-nodes: ds0.t_order_item_${0..3}
+            table-strategy:
+              standard:
+                sharding-column: merchant_id
+                sharding-algorithm-name: order-item-inline
+            key-generate-strategy:
+              column: id
+              key-generator-name: snowflake
+
+          shopping_cart:
+            actual-data-nodes: ds0.t_shopping_cart_${0..3}
+            table-strategy:
+              standard:
+                sharding-column: merchant_id
+                sharding-algorithm-name: cart-inline
+            key-generate-strategy:
+              column: id
+              key-generator-name: snowflake
+
+          after_sale_ticket:
+            actual-data-nodes: ds0.t_after_sale_ticket_${0..3}
+            table-strategy:
+              standard:
+                sharding-column: merchant_id
+                sharding-algorithm-name: after-sale-inline
+            key-generate-strategy:
+              column: id
+              key-generator-name: snowflake
+
+        # 分片算法配置 (Inline 表达式: merchant_id % 4)
+        sharding-algorithms:
+          order-inline:
+            type: INLINE
+            props:
+              algorithm-expression: t_order_${Math.abs(merchant_id.hashCode()) % 4}
+          order-item-inline:
+            type: INLINE
+            props:
+              algorithm-expression: t_order_item_${Math.abs(merchant_id.hashCode()) % 4}
+          cart-inline:
+            type: INLINE
+            props:
+              algorithm-expression: t_shopping_cart_${Math.abs(merchant_id.hashCode()) % 4}
+          after-sale-inline:
+            type: INLINE
+            props:
+              algorithm-expression: t_after_sale_ticket_${Math.abs(merchant_id.hashCode()) % 4}
+
+        # 分布式序列算法配置
+        key-generators:
+          snowflake:
+            type: SNOWFLAKE
+            props:
+              worker-id: ${SHARDING_WORKER_ID:0}
+
+    # 属性配置
+    props:
+      sql-show: true
+      check-table-metadata-enabled: true

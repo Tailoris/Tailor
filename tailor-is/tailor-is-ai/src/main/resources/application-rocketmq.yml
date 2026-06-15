@@ -1,0 +1,28 @@
+# RocketMQ 专属配置文件
+# 该文件可通过 Spring Profile 激活：--spring.profiles.active=rocketmq
+#
+# 使用方式：
+#   java -jar tailor-is-ai.jar --spring.profiles.active=rocketmq
+#   或在 application.yml 中设置 spring.profiles.active=rocketmq
+
+rocketmq:
+  # NameServer 地址（支持集群，多个地址用分号分隔）
+  # 环境变量 ROCKETMQ_NAME_SERVER 优先，默认本地开发地址
+  name-server: ${ROCKETMQ_NAME_SERVER:localhost:9876}
+
+  # Producer 配置
+  producer:
+    # 生产者组名 - 用于标识 AI 纸样生成服务
+    group: ai-pattern-producer
+    # 发送超时时间（毫秒），纸样生成任务可能需要较长时间
+    send-message-timeout: 10000
+    # 异步发送失败重试次数
+    retry-times-when-send-async-failed: 3
+    # 同步发送失败重试次数
+    retry-times-when-send-failed: 2
+    # 消息体压缩阈值（字节），超过此值自动压缩
+    compress-message-body-threshold: 4096
+    # 最大消息大小（4MB）
+    max-message-size: 4194304
+    # 发送消息失败是否尝试发送到其他 Broker
+    retry-next-server: true

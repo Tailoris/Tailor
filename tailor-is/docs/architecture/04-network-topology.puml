@@ -1,0 +1,139 @@
+@startuml tailoris-network-topology
+
+!define RECTANGLE class
+skinparam backgroundColor #FAFAFA
+skinparam dpi 150
+skinparam defaultFontSize 11
+skinparam ArrowColor #2C3E50
+
+title Tailor IS 网络拓扑与安全分区 (Network Topology)\nPhase 1 - H-03
+
+' 定义颜色
+!define ZONE_PUBLIC #FFCDD2
+!define ZONE_DMZ #FFE0B2
+!define ZONE_APP #C8E6C9
+!define ZONE_DATA #D1C4E9
+!define ZONE_MGMT #CFD8DC
+
+' ============== 外部 ==============
+cloud "互联网\n(用户/商户/平台)" as internet #FFE0B2
+
+' ============== 公有区 (Public) ==============
+rectangle "公有云 / CDN 边缘" as publicZone ZONE_PUBLIC {
+    [CDN 节点\naliyun/aws] as cdn
+    [WAF\nDDoS 防护] as waf
+    [DNS\n智能解析] as dns
+}
+
+' ============== DMZ ==============
+rectangle "DMZ 隔离区 (10.10.0.0/24)" as dmzZone ZONE_DMZ {
+    [OpenResty\n10.10.0.10:80/443] as openresty
+    [HAProxy LB\n10.10.0.20:80] as haproxy
+    [堡垒机\n10.10.0.30:22] as bastion
+}
+
+' ============== 应用区 ==============
+rectangle "应用服务区 (10.20.0.0/16)" as appZone ZONE_APP {
+    package "K8s Node 1" as node1 {
+        [Core-Gateway ×3\n10.20.1.10-12] as coreGw
+        [Lite-Gateway ×3\n10.20.1.20-22] as liteGw
+    }
+    package "K8s Node 2" as node2 {
+        [User ×2\n10.20.2.10-11] as userP
+        [Merchant ×2\n10.20.2.20-21] as merchP
+        [Product ×2\n10.20.2.30-31] as prodP
+        [Order ×3\n10.20.2.40-42] as orderP
+        [Payment ×2\n10.20.2.50-51] as payP
+        [Marketing ×2\n10.20.2.60-61] as mktP
+    }
+    package "K8s Node 3 (Lite)" as node3 {
+        [Community ×2] as comP
+        [Message ×1] as msgP
+        [Pattern ×1] as patP
+        [Copyright ×1] as cpP
+    }
+    [Nacos Cluster\n10.20.100.10-12:8848] as nacos
+    [Sentinel Dashboard\n10.20.100.20:8719] as sentinel
+}
+
+' ============== 数据区 ==============
+rectangle "数据存储区 (10.30.0.0/16)" as dataZone ZONE_DATA {
+    database "MySQL Primary\n10.30.1.10:3306" as mysqlMaster
+    database "MySQL Replica\n10.30.1.11-12:3306" as mysqlSlave
+    database "Redis Cluster\n10.30.2.10-15:6379" as redis
+    storage "MinIO\n10.30.3.10-13:9000" as minio
+    storage "Elasticsearch\n10.30.4.10-12:9200" as es
+    [RocketMQ\n10.30.5.10-12:9876" as rocket
+    [RabbitMQ\n10.30.5.20-22:5672" as rabbit
+}
+
+' ============== 监控区 ==============
+rectangle "运维监控区 (10.40.0.0/24)" as mgmtZone ZONE_MGMT {
+    [Prometheus\n10.40.0.10:9090] as prom
+    [Grafana\n10.40.0.11:3001] as graf
+    [Loki\n10.40.0.12:3100] as loki
+    [Alertmanager\n10.40.0.13:9093] as am
+    [SonarQube\n10.40.0.20:9000] as sonar
+    [GitLab CI\n10.40.0.30" as ci
+}
+
+' ============== 安全规则 ==============
+note as secRules
+**安全策略:**
+- 互联网 → DMZ: 仅开放 80/443
+- DMZ → 应用区: 仅 9001/9002 网关端口
+- 应用区 → 数据区: MySQL 3306, Redis 6379, RabbitMQ 5672, MinIO 9000
+- 数据区 → 公网: 禁止 (单向访问)
+- 监控区 → 全网: 9090/3001/9093 (Pull 模式)
+- 堡垒机 → 全网: 22 (运维专用)
+- VPC 对等连接 + 安全组白名单
+end note
+
+' ============== 流量关系 ==============
+internet ==> dns : DNS 解析
+internet ==> cdn : 静态资源
+internet ==> waf : API 流量
+waf ==> openresty : 转发
+openresty ==> haproxy : 负载均衡
+haproxy ==> coreGw : 路由
+haproxy ==> liteGw : 路由
+
+coreGw ==> userP
+coreGw ==> merchP
+coreGw ==> prodP
+coreGw ==> orderP
+coreGw ==> payP
+coreGw ==> mktP
+coreGw ==> cpP
+
+liteGw ==> comP
+liteGw ==> msgP
+liteGw ==> patP
+
+orderP ==> mysqlMaster : 主写
+orderP ==> mysqlSlave : 从读
+orderP ==> redis : 缓存/锁
+orderP ==> rabbit : 异步
+
+userP ==> mysqlMaster
+userP ==> redis
+
+aiUser_endpoint ..> rocket : (AI 批量任务)
+
+prodP ==> minio : 文件
+prodP ==> es : 搜索
+
+' 监控拉取
+prom ..> coreGw : /actuator/prometheus
+prom ..> userP
+prom ..> mysqlMaster
+prom ..> redis
+am ==> prom
+am --> internet : 告警 (Webhook/Email)
+
+' 运维
+bastion ..> appZone : SSH 22
+bastion ..> dataZone : SSH 22
+bastion ..> mgmtZone : SSH 22
+
+@enduml

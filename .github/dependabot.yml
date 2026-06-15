@@ -1,0 +1,110 @@
+# Dependabot 配置
+# 自动扫描依赖更新, 每周一汇总 PR
+version: 2
+updates:
+  # ----------------- 后端 Maven 依赖 -----------------
+  - package-ecosystem: "maven"
+    directory: "/tailor-is"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "backend-lead"
+    labels:
+      - "dependencies"
+      - "backend"
+    # 仅更新补丁和小版本
+    groups:
+      spring:
+        patterns:
+          - "org.springframework:*"
+          - "org.springframework.boot:*"
+          - "org.springframework.cloud:*"
+      alibaba:
+        patterns:
+          - "com.alibaba.cloud:*"
+          - "com.alibaba:*"
+      database:
+        patterns:
+          - "com.baomidou:*"
+          - "mysql:*"
+          - "org.apache.shardingsphere:*"
+      hutool:
+        patterns:
+          - "cn.hutool:*"
+    ignore:
+      # 锁定主版本
+      - dependency-name: "org.springframework.boot:spring-boot-dependencies"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.springframework.cloud:spring-cloud-dependencies"
+        update-types: ["version-update:semver-major"]
+
+  # ----------------- 前端 npm 依赖 -----------------
+  - package-ecosystem: "npm"
+    directory: "/tailor-is-frontend/pc-mall"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+    groups:
+      vue:
+        patterns:
+          - "vue*"
+          - "@vue/*"
+      element:
+        patterns:
+          - "element-plus"
+          - "@element-plus/*"
+    ignore:
+      - dependency-name: "vue"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "npm"
+    directory: "/tailor-is-frontend/merchant-admin"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+    ignore:
+      - dependency-name: "vue"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "npm"
+    directory: "/tailor-is-frontend/platform-admin"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "frontend"
+
+  - package-ecosystem: "npm"
+    directory: "/tailor-is-frontend/mobile-app"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "mobile"
+
+  # ----------------- GitHub Actions -----------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci"

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tailor-is-prod
+  labels:
+    name: tailor-is-prod
+    environment: production
+    managed-by: kubectl

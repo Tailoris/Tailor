@@ -1,0 +1,102 @@
+# ==============================================================================
+# Tailor IS 扩展告警规则
+# 级别分类: critical(P0/P1), warning(P2), info(P3)
+# ==============================================================================
+groups:
+  # --------------------------------------------------------------------------
+  # 数据库高级告警 (P0/P1级别)
+  # --------------------------------------------------------------------------
+  - name: database-critical
+    rules:
+      - alert: DatabaseDown (P0)
+        expr: mysql_up == 0
+        for: 1m
+        labels: { severity: critical, category: database, priority: P0 }
+        annotations:
+          summary: "MySQL数据库不可用"
+          description: "MySQL实例宕机, 立即检查数据库服务状态"
+          action: "执行: systemctl status mysql; 查看错误日志"
+
+      - alert: HighConnectionErrorRate (P1)
+        expr: rate(mysql_global_status_connection_errors_total[5m]) > 10
+        for: 5m
+        labels: { severity: critical, category: database, priority: P1 }
+        annotations:
+          summary: "MySQL连接错误率过高"
+          description: "过去5分钟平均每分钟连接错误超过10次"
+
+  # --------------------------------------------------------------------------
+  # 缓存高级告警 (P0/P1级别)
+  # --------------------------------------------------------------------------
+  - name: cache-critical
+    rules:
+      - alert: RedisDown (P0)
+        expr: redis_up == 0
+        for: 1m
+        labels: { severity: critical, category: cache, priority: P0 }
+        annotations:
+          summary: "Redis缓存不可用"
+          description: "Redis实例宕机, 数据库压力将剧增"
+
+  # --------------------------------------------------------------------------
+  # 网络与流量异常告警 (P1级别)
+  # --------------------------------------------------------------------------
+  - name: network-abnormal
+    rules:
+      - alert: TrafficSpike (P2)
+        expr: rate(node_network_receive_bytes_total[5m]) > 100 * 1024 * 1024
+        for: 5m
+        labels: { severity: warning, category: network, priority: P2 }
+        annotations:
+          summary: "入站流量激增 (>100MB/s)"
+          description: "可能遭受DDoS攻击或突发流量"
+
+      - alert: TrafficDrop (P2)
+        expr: rate(node_network_receive_bytes_total[5m]) < 1024
+        for: 10m
+        labels: { severity: warning, category: network, priority: P2 }
+        annotations:
+          summary: "入站流量骤降"
+          description: "可能网络故障或用户流量异常"
+
+  # --------------------------------------------------------------------------
+  # SSL证书告警 (P2/P3级别)
+  # --------------------------------------------------------------------------
+  - name: ssl-certificate
+    rules:
+      - alert: SSLCertExpiringSoon (P2)
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 30
+        for: 1h
+        labels: { severity: warning, category: security, priority: P2 }
+        annotations:
+          summary: "SSL证书30天内到期"
+          description: "立即启动证书更新流程"
+
+      - alert: SSLCertExpiring (P3)
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 90
+        for: 6h
+        labels: { severity: info, category: security, priority: P3 }
+        annotations:
+          summary: "SSL证书90天内到期"
+          description: "规划证书更新计划"
+
+  # --------------------------------------------------------------------------
+  # 安全告警
+  # --------------------------------------------------------------------------
+  - name: security-alerts
+    rules:
+      - alert: FailedLoginSpike (P2)
+        expr: increase(failed_login_attempts[10m]) > 100
+        for: 5m
+        labels: { severity: warning, category: security, priority: P2 }
+        annotations:
+          summary: "登录失败次数激增"
+          description: "可能存在暴力破解攻击"
+
+      - alert: UnusualAdminActivity (P1)
+        expr: increase(admin_login_count[1h]) > 10
+        for: 1m
+        labels: { severity: critical, category: security, priority: P1 }
+        annotations:
+          summary: "异常管理员登录活动"
+          description: "1小时内管理员登录超过10次, 检查是否为正常操作"

@@ -1,0 +1,151 @@
+@startuml tailoris-logical-architecture
+
+!define RECTANGLE class
+skinparam backgroundColor #FAFAFA
+skinparam dpi 150
+skinparam defaultFontSize 12
+skinparam ArrowColor #2C3E50
+skinparam RectangleBorderColor #2C3E50
+
+title Tailor IS 逻辑架构图 (Logical Architecture)\nPhase 1 - H-03
+
+' ============== 表现层 ==============
+package "客户端 (Client Layer)" {
+    [PC 商城 Web] as pcMall #E3F2FD
+    [商户后台 Web] as merchantAdmin #E3F2FD
+    [平台管理 Web] as platformAdmin #E3F2FD
+    [移动端 H5] as mobileH5 #E3F2FD
+    [微信小程序] as miniProgram #E3F2FD
+}
+
+' ============== 接入层 ==============
+package "接入层 (Access Layer)" {
+    [OpenResty/Nginx\n(HTTPS/静态资源)] as nginx #FFF3E0
+}
+
+' ============== API 网关层 ==============
+package "API 网关 (Gateway Layer)" {
+    [Core Gateway\n(核心业务路由)] as coreGw #FFE0B2
+    [Lite Gateway\n(轻量服务路由)] as liteGw #FFE0B2
+}
+
+' ============== 业务服务层 ==============
+package "核心服务 (Core Services)" {
+    [用户/认证服务] as userSvc #C8E6C9
+    [商户服务] as merchantSvc #C8E6C9
+    [商品服务] as productSvc #C8E6C9
+    [订单服务] as orderSvc #C8E6C9
+    [支付服务] as paymentSvc #C8E6C9
+    [营销服务] as marketingSvc #C8E6C9
+    [AI 制版服务] as aiSvc #C8E6C9
+    [版权服务] as copyrightSvc #C8E6C9
+    [平台管理] as adminSvc #C8E6C9
+}
+
+package "轻量服务 (Lite Services)" {
+    [社区服务] as communitySvc #B2DFDB
+    [学堂服务] as academySvc #B2DFDB
+    [供应链服务] as supplySvc #B2DFDB
+    [消息服务] as messageSvc #B2DFDB
+    [消息 IM] as messageImSvc #B2DFDB
+    [图案服务] as patternSvc #B2DFDB
+    [分析服务] as analyticsSvc #B2DFDB
+}
+
+' ============== 共享能力层 ==============
+package "共享能力 (Common Capabilities)" {
+    [Common\n(工具/安全/缓存/异常)] as common #FFCDD2
+    [Common-Web\n(拦截器/过滤器)] as commonWeb #FFCDD2
+    [API DTO\n(接口契约)] as api #FFCDD2
+}
+
+' ============== 基础设施层 ==============
+package "基础设施 (Infrastructure)" {
+    database "MySQL 8.4\n(主库)" as mysql #D1C4E9
+    database "Redis 8.8\n(缓存/会话)" as redis #D1C4E9
+    queue "RabbitMQ 4.2\n(订单/支付)" as rabbit #D1C4E9
+    queue "RocketMQ 2.3\n(AI 批量任务)" as rocket #D1C4E9
+    [Nacos 3.2\n(注册/配置)] as nacos #D1C4E9
+    [Sentinel\n(限流/熔断)] as sentinel #D1C4E9
+    [MinIO/OSS\n(对象存储)] as oss #D1C4E9
+    [Elasticsearch\n(搜索/日志)] as es #D1C4E9
+}
+
+' ============== 可观测层 ==============
+package "可观测性 (Observability)" {
+    [Prometheus] as prom #CFD8DC
+    [Grafana] as grafana #CFD8DC
+    [Loki/ELK] as loki #CFD8DC
+    [Alertmanager] as alertmgr #CFD8DC
+}
+
+' ============== 调用关系 ==============
+pcMall --> nginx
+merchantAdmin --> nginx
+platformAdmin --> nginx
+mobileH5 --> nginx
+miniProgram --> nginx
+
+nginx --> coreGw : /api/core/**
+nginx --> liteGw : /api/lite/**
+
+coreGw --> userSvc
+coreGw --> merchantSvc
+coreGw --> productSvc
+coreGw --> orderSvc
+coreGw --> paymentSvc
+coreGw --> marketingSvc
+coreGw --> aiSvc
+coreGw --> copyrightSvc
+coreGw --> adminSvc
+
+liteGw --> communitySvc
+liteGw --> academySvc
+liteGw --> supplySvc
+liteGw --> messageSvc
+liteGw --> messageImSvc
+liteGw --> patternSvc
+liteGw --> analyticsSvc
+
+' 服务共享 common
+userSvc ..> common
+merchantSvc ..> common
+orderSvc ..> common
+
+' 服务注册到 Nacos
+userSvc <..> nacos : 注册/发现
+merchantSvc <..> nacos
+orderSvc <..> nacos
+
+' 服务使用 Sentinel
+coreGw <..> sentinel : 流控
+userSvc <..> sentinel
+orderSvc <..> sentinel
+
+' 数据访问
+userSvc --> mysql
+orderSvc --> mysql
+paymentSvc --> mysql
+merchantSvc --> mysql
+
+orderSvc --> redis : 热点缓存
+userSvc --> redis : 会话
+paymentSvc --> redis : 分布式锁
+
+orderSvc --> rabbit : 异步消息
+paymentSvc --> rabbit : 回调
+aiSvc --> rocket : 批量任务
+
+productSvc --> oss : 图片/文件
+communitySvc --> oss : 内容存储
+
+productSvc --> es : 商品搜索
+loki ..> es
+
+' 可观测
+coreGw --> prom : 指标
+userSvc --> prom
+prom --> grafana
+prom --> alertmgr
+
+@enduml

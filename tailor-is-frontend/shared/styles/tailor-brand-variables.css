@@ -1,0 +1,100 @@
+:root {
+  --tailor-primary: #1A73E8;
+  --tailor-primary-hover: #1557B0;
+  --tailor-primary-light: #E8F0FE;
+  --tailor-primary-dark: #0D47A1;
+
+  --tailor-secondary: #FF6B35;
+  --tailor-secondary-hover: #E55A2B;
+  --tailor-secondary-light: #FFF3EE;
+
+  --tailor-success: #34A853;
+  --tailor-success-light: #E6F4EA;
+  --tailor-warning: #FBBC04;
+  --tailor-warning-light: #FEF7E0;
+  --tailor-danger: #EA4335;
+  --tailor-danger-light: #FCE8E6;
+
+  --tailor-text-primary: #202124;
+  --tailor-text-secondary: #5F6368;
+  --tailor-text-tertiary: #9AA0A6;
+  --tailor-text-disabled: #C4C7C8;
+
+  --tailor-bg-primary: #FFFFFF;
+  --tailor-bg-secondary: #F8F9FA;
+  --tailor-bg-tertiary: #F1F3F4;
+
+  --tailor-border: #DADCE0;
+  --tailor-border-light: #E8EAED;
+  --tailor-border-dark: #BDC1C6;
+
+  --tailor-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --tailor-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.10);
+  --tailor-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  --tailor-radius-sm: 4px;
+  --tailor-radius-md: 8px;
+  --tailor-radius-lg: 12px;
+  --tailor-radius-xl: 16px;
+  --tailor-radius-round: 50%;
+
+  --tailor-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  --tailor-font-size-xs: 12px;
+  --tailor-font-size-sm: 13px;
+  --tailor-font-size-base: 14px;
+  --tailor-font-size-md: 16px;
+  --tailor-font-size-lg: 18px;
+  --tailor-font-size-xl: 20px;
+  --tailor-font-size-xxl: 24px;
+
+  --tailor-transition-fast: 0.15s ease;
+  --tailor-transition-base: 0.25s ease;
+  --tailor-transition-slow: 0.35s ease;
+
+  --tailor-animation-fade-in: fadeIn 0.3s ease;
+  --tailor-animation-slide-up: slideUp 0.3s ease;
+  --tailor-animation-scale-in: scaleIn 0.2s ease;
+}
+
+[data-theme='dark'] {
+  --tailor-primary: #8AB4F8;
+  --tailor-primary-hover: #AECBFA;
+  --tailor-primary-light: #1A237E;
+  --tailor-primary-dark: #5C6BC0;
+
+  --tailor-secondary: #FF8A65;
+  --tailor-secondary-hover: #FFAB91;
+  --tailor-secondary-light: #BF360C;
+
+  --tailor-text-primary: #E8EAED;
+  --tailor-text-secondary: #9AA0A6;
+  --tailor-text-tertiary: #5F6368;
+
+  --tailor-bg-primary: #202124;
+  --tailor-bg-secondary: #303134;
+  --tailor-bg-tertiary: #3C4043;
+
+  --tailor-border: #5F6368;
+  --tailor-border-light: #3C4043;
+  --tailor-border-dark: #9AA0A6;
+
+  --tailor-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --tailor-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --tailor-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}

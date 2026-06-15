@@ -1,0 +1,127 @@
+【任务：集成 Resend 邮件服务，使用 @tailorbot.top 域名发信】
+
+我们的平台将使用 Resend 作为邮件发送服务。请严格按照以下步骤完成集成，确保发件邮箱为 @tailorbot.top。
+
+第一步：配置环境变量
+请在项目根目录的 .env.local 文件中，添加或更新以下变量。务必使用从 Resend 控制台获取的真实值。
+
+# Resend 邮件服务配置
+RESEND_API_KEY=你的_Resend_API_Key_在此
+EMAIL_FROM=noreply@tailorbot.top # 或 support@tailorbot.top，此域名必须在Resend控制台已验证通过
+PLATFORM_NAME=服装纸样平台 # 用于邮件落款
+
+第二步：创建 Resend 邮件服务层
+请创建文件：lib/services/email/resend.service.ts
+此文件将封装所有通过 Resend API 发送邮件的逻辑。代码如下：
+
+import { Resend } from 'resend';
+
+// 初始化 Resend 客户端
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// 定义邮件发送选项接口
+interface SendEmailOptions {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  from?: string;
+}
+
+// 核心邮件发送函数
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+  from = process.env.EMAIL_FROM || 'noreply@tailorbot.top',
+}: SendEmailOptions): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await resend.emails.send({
+      from,
+      to,
+      subject,
+      html,
+      text: text || html.replace(/<[^>]*>/g, ''), // 自动生成纯文本版本
+    });
+
+    if (error) {
+      console.error('Resend API 错误:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log(`邮件发送成功，ID: ${data?.id}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('发送邮件时出现异常:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// 示例：发送用户注册欢迎邮件
+export async function sendWelcomeEmail(userEmail: string, userName: string) {
+  const subject = `欢迎加入${process.env.PLATFORM_NAME || '我们'}！`;
+  const html = `
+    <div>
+      <h2>欢迎，${userName}！</h2>
+      <p>感谢您注册我们的服装纸样平台。</p>
+      <p>您可以立即开始浏览海量纸样，或与版师开启定制合作。</p>
+      <br>
+      <p><strong>${process.env.PLATFORM_NAME || '平台团队'}</strong></p>
+      <p>发件邮箱：<a href="mailto:${process.env.EMAIL_FROM}">${process.env.EMAIL_FROM}</a></p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: userEmail,
+    subject,
+    html,
+  });
+}
+
+// 你可以在此文件继续添加其他邮件模板函数，如：发送订单确认、密码重置等。
+
+第三步：更新邮件测试脚本
+请更新或创建测试脚本 scripts/test-email.js，用于验证 Resend 集成是否成功。
+
+const { sendEmail } = require('../lib/services/email/resend.service');
+
+async function main() {
+  console.log('正在测试 Resend 邮件发送...');
+  
+  const result = await sendEmail({
+    to: '你的测试收件邮箱@gmail.com', // 请替换为你的真实邮箱
+    subject: '【测试】来自Tailor IS（裁智云）的邮件',
+    html: `
+      <h1>这是一封测试邮件</h1>
+      <p>如果你的平台配置正确，这封邮件应该来自 <strong>noreply@tailorbot.top</strong>。</p>
+      <p>发送时间：${new Date().toLocaleString()}</p>
+    `,
+  });
+
+  if (result.success) {
+    console.log('✅ 测试邮件发送成功！请检查你的收件箱（包括垃圾邮件）。');
+  } else {
+    console.error('❌ 测试邮件发送失败:', result.error);
+  }
+}
+
+// 执行测试
+if (require.main === module) {
+  main().catch(console.error);
+}
+
+module.exports = { main };
+
+第四步：集成到平台业务中
+1. 在用户注册成功后，调用 sendWelcomeEmail 函数。
+2. 在版师入驻审核通过、订单状态变更等需要通知用户的节点，参照示例编写并调用相应的邮件发送函数。
+
+请完成以上所有步骤，并告知我：
+1. Resend 域名验证是否成功（控制台显示 Verified）。
+2. 运行测试脚本后是否收到来自 @tailorbot.top 的邮件。
+3. 集成到业务代码时遇到的具体问题。
+
+
+resend.   API Key
+re_B2hPwaVx_JoC3P7wVVdK8yiKxnW22Y3TS

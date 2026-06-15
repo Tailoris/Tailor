@@ -1,0 +1,14 @@
+{
+  "port": 29194,
+  "hostname": "127.0.0.1",
+  "autoStart": true,
+  "opencodePath": "opencode",
+  "projectDirectory": "",
+  "startupTimeout": 45000,
+  "defaultViewLocation": "sidebar",
+  "injectWorkspaceContext": false,
+  "maxNotesInContext": 20,
+  "maxSelectionLength": 2000,
+  "customCommand": "",
+  "useCustomCommand": true
+}

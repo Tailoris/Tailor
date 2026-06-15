@@ -1,0 +1,50 @@
+version: "3.8"
+
+# =====================================================================
+# Sentinel Dashboard 部署
+# 对应: Phase 1 / P1-5 / H-06
+# 访问: http://<host>:8719
+# 登录: sentinel / sentinel (默认)
+# =====================================================================
+
+networks:
+  tailoris-monitor:
+    name: tailoris-monitor
+    external: true
+
+services:
+  sentinel-dashboard:
+    image: bladex/sentinel-dashboard:1.8.6
+    container_name: tailor-is-sentinel
+    hostname: sentinel
+    restart: unless-stopped
+    ports:
+      - "8719:8719"
+    environment:
+      # 用户名/密码
+      - AUTH_USERNAME=sentinel
+      - AUTH_PASSWORD=sentinel
+      # 关闭简单登录模式, 使用完整鉴权
+      - AUTH_FILTER_ENABLE=true
+      # 启用 Nacos 推送规则
+      - NACOS_SERVER=host.docker.internal:8848
+      - NACOS_NAMESPACE=tailor-is
+      - NACOS_GROUP_ID=SENTINEL_GROUP
+      - NACOS_DATA_ID=sentinel-flow-rules
+      - NACOS_RULE_TYPE=flow
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - tailoris-monitor
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:8719/api/bind"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"

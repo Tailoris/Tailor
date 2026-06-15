@@ -1,0 +1,155 @@
+@startuml tailoris-physical-deployment
+
+!define RECTANGLE class
+skinparam backgroundColor #FAFAFA
+skinparam dpi 150
+skinparam defaultFontSize 11
+skinparam ArrowColor #2C3E50
+
+title Tailor IS 物理部署架构 (Physical Deployment)\nPhase 1 - H-03
+
+' ============== 边缘层 ==============
+cloud "互联网用户" as users #FFE0B2
+
+' ============== CDN / WAF ==============
+node "CDN / WAF" as cdn #FFE082 {
+    [静态资源缓存]
+    [DDoS 防护]
+    [HTTPS 终止]
+}
+
+' ============== DMZ 区 ==============
+node "DMZ - 1Panel 公开服务" as dmz #B3E5FC {
+    [OpenResty :80/443] as or
+    [HAProxy LB] as ha
+}
+
+' ============== 主机层 1: 应用网关 ==============
+node "网关集群 (K8s Node)" as gwNode #C8E6C9 {
+    [Core Gateway ×3\n:9001] as cg1
+    [Core Gateway ×3\n:9001] as cg2
+    [Lite Gateway ×3\n:9002] as lg1
+}
+
+' ============== 主机层 2: 核心业务 ==============
+node "核心业务集群 (K8s Node ×2)" as coreCluster #C8E6C9 {
+    [User ×2\n:8001] as user_pod
+    [Merchant ×2\n:8002] as merch_pod
+    [Product ×2\n:8003] as prod_pod
+    [Order ×3\n:8004] as order_pod
+    [Payment ×2\n:8005] as pay_pod
+    [Marketing ×2\n:8006] as mkt_pod
+    [AI ×2\n:8007] as ai_pod
+    [Copyright ×1\n:8008] as cp_pod
+    [Admin ×1\n:8009] as admin_pod
+}
+
+' ============== 主机层 3: 轻量服务 ==============
+node "轻量服务集群 (K8s Node)" as liteCluster #B2DFDB {
+    [Community ×2\n:8010] as com_pod
+    [Academy ×1\n:8011] as acad_pod
+    [Supply ×1\n:8012] as sup_pod
+    [Message ×1\n:8013] as msg_pod
+    [MessageIM ×1\n:8014] as mim_pod
+    [Pattern ×1\n:8015] as pat_pod
+    [Analytics ×1\n:8016] as ana_pod
+}
+
+' ============== 数据层 ==============
+node "数据存储集群" as dataCluster #D1C4E9 {
+    database "MySQL 8.4 M/S\n:3306 (主)\n:3306 (从)" as mysqldb
+    database "Redis 8.8 Cluster\n3主3从\n:6379" as redisdb
+    storage "MinIO\n分布式对象存储\n:9000" as minio
+    storage "Elasticsearch 8\n×3 :9200" as esdb
+}
+
+' ============== 中间件层 ==============
+node "中间件集群" as mwCluster #FFE0B2 {
+    [Nacos 3.2 Cluster\n×3 :8848/9848" as nacosdb
+    [RabbitMQ 4.2 Cluster\n×3 :5672" as rabbitdb
+    [RocketMQ 5.x\nNameSrv×2 Broker×3" as rocketdb
+    [Sentinel Dashboard\n:8719" as sentineldb
+}
+
+' ============== 可观测层 ==============
+node "可观测集群" as obsCluster #CFD8DC {
+    [Prometheus\n:9090] as prom
+    [Grafana\n:3001] as graf
+    [Loki\n:3100] as loki
+    [Alertmanager\n:9093] as am
+    [Jaeger\n:16686] as jaeger
+}
+
+' ============== 关系 ==============
+users ==> cdn
+cdn ==> or
+or ==> ha
+ha ==> cg1
+ha ==> cg2
+ha ==> lg1
+
+cg1 ==> user_pod
+cg1 ==> merch_pod
+cg1 ==> prod_pod
+cg1 ==> order_pod
+cg1 ==> pay_pod
+cg1 ==> mkt_pod
+cg1 ==> ai_pod
+cg1 ==> cp_pod
+cg1 ==> admin_pod
+
+cg2 ==> user_pod : 负载均衡
+cg2 ==> merch_pod
+
+lg1 ==> com_pod
+lg1 ==> acad_pod
+lg1 ==> sup_pod
+lg1 ==> msg_pod
+lg1 ==> mim_pod
+lg1 ==> pat_pod
+lg1 ==> ana_pod
+
+order_pod ==> mysqldb : 主写
+order_pod ==> redisdb : 缓存
+order_pod ==> rabbitdb : 异步
+
+user_pod ==> mysqldb
+user_pod ==> redisdb
+user_pod ==> nacosdb : 注册
+
+ai_pod ==> rocketdb : 批量任务
+ai_pod ==> minio : 模型/数据
+
+prod_pod ==> esdb : 搜索
+com_pod ==> minio : 媒体
+
+gwNode ..> sentineldb : 流控上报
+coreCluster ..> sentineldb
+liteCluster ..> sentineldb
+
+coreCluster ==> prom : 指标
+gwNode ==> prom
+mwCluster ==> prom
+dataCluster ==> prom
+prom ==> graf
+prom ==> am
+coreCluster ==> loki : 日志
+gwNode ==> loki
+
+note right of coreCluster
+  资源要求(单节点):
+  - CPU: 16核
+  - 内存: 32GB
+  - 网络: 10Gbps
+  - 节点数: 2~3 (HA)
+end note
+
+note right of dataCluster
+  高可用策略:
+  - MySQL: M/S + Binlog
+  - Redis: Cluster + 哨兵
+  - MinIO: 纠删码 4+2
+  - ES: 3节点 + 副本
+end note
+
+@enduml

@@ -1,0 +1,40 @@
+{
+  "name": "tailor-is-pc-mall",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:client": "vite build --outDir dist/client",
+    "build:server": "vite build --outDir dist/server --ssr src/server/entry-server.ts",
+    "build:ssr": "npm run build:client && npm run build:server",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "ssr:dev": "tsx src/server/server.ts",
+    "ssr:start": "NODE_ENV=production tsx src/server/server.ts",
+    "docker:ssr:build": "docker build -f Dockerfile.ssr -t tailor-is-ssr .",
+    "docker:ssr:run": "docker run -p 3000:3000 --env-file .env tailor-is-ssr"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "axios": "^1.6.0",
+    "dompurify": "^3.0.6",
+    "element-plus": "^2.5.0",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.0",
+    "vue-i18n": "^9.9.0",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "@vitejs/plugin-vue": "^5.2.0",
+    "express": "^4.18.2",
+    "sass-embedded": "^1.100.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0",
+    "vite": "^6.0.0",
+    "vue-tsc": "^1.8.0"
+  }
+}

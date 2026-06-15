@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<modelVersion>4.0.0</modelVersion>
+
+<parent>
+<groupId>com.tailoris</groupId>
+<artifactId>tailor-is</artifactId>
+<version>1.0.0</version>
+</parent>
+
+<artifactId>tailor-is-lite-gateway</artifactId>
+<packaging>jar</packaging>
+<name>TailorIS Lite Gateway</name>
+<description>Lite API Gateway - Routes lightweight services (community, academy, supply, message, message-im, analytics)</description>
+
+<dependencies>
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-gateway</artifactId>
+</dependency>
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+</dependency>
+
+<!-- Redis for rate limiting -->
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+</dependency>
+
+<!-- Nacos service discovery -->
+<dependency>
+<groupId>com.alibaba.cloud</groupId>
+<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+</dependency>
+
+<!-- Actuator for monitoring -->
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+
+<!-- Prometheus metrics -->
+<dependency>
+<groupId>io.micrometer</groupId>
+<artifactId>micrometer-registry-prometheus</artifactId>
+</dependency>
+
+<!-- SA-Token for authentication -->
+<dependency>
+<groupId>cn.dev33</groupId>
+<artifactId>sa-token-reactor-spring-boot3-starter</artifactId>
+</dependency>
+<dependency>
+<groupId>cn.dev33</groupId>
+<artifactId>sa-token-redis-jackson</artifactId>
+</dependency>
+
+<dependency>
+<groupId>org.projectlombok</groupId>
+<artifactId>lombok</artifactId>
+</dependency>
+
+<!-- Sentinel rate limiting and circuit breaking -->
+<dependency>
+<groupId>com.alibaba.cloud</groupId>
+<artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+</dependency>
+
+<!-- Sentinel Gateway adapter -->
+<dependency>
+<groupId>com.alibaba.cloud</groupId>
+<artifactId>spring-cloud-alibaba-sentinel-gateway</artifactId>
+</dependency>
+</dependencies>
+
+<build>
+<plugins>
+<plugin>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-maven-plugin</artifactId>
+<version>${spring-boot.version}</version>
+<executions>
+<execution>
+<goals>
+<goal>repackage</goal>
+</goals>
+</execution>
+</executions>
+</plugin>
+</plugins>
+</build>
+
+</project>

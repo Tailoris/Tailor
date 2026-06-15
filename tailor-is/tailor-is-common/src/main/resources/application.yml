@@ -1,0 +1,70 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoint:
+    health:
+      show-details: always
+
+# 🔒 B-L12修复: Swagger 配置开关
+# 生产环境应设置为 false，避免接口文档泄露
+tailoris:
+  swagger:
+    enabled: false
+  # 数据同步分层配置
+  data-sync:
+    # 近实时同步调度器
+    near-real-time:
+      enabled: true
+      # 调度间隔（毫秒），默认 5 分钟
+      fixed-rate-ms: 300000
+    # 一致性校验
+    validation:
+      enabled: true
+      # 校验周期 cron 表达式，默认每小时整点
+      cron: "0 0 * * * ?"
+      # 单次校验最大采样数
+      max-sample-size: 1000
+    # 重试配置
+    retry:
+      # 最大重试次数
+      max-attempts: 3
+      # 初始退避间隔（毫秒）
+      initial-backoff-ms: 1000
+      # 最大退避间隔（毫秒）
+      max-backoff-ms: 30000
+      # 退避倍数
+      multiplier: 2
+
+spring:
+  datasource:
+    hikari:
+      pool-name: TailorIsPool
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 30000
+      leak-detection-threshold: 60000
+
+ratelimit:
+  enabled: true
+  global:
+    permits-per-second: 1000
+  ip-level:
+    permits-per-second: 20
+    capacity-seconds: 60
+  user-level:
+    permits-per-second: 50
+    capacity-seconds: 60
+  endpoint-level:
+    permits-per-second: 30
+    capacity-seconds: 60
+  default-permits-per-second: 10
+  redis-expire-seconds: 60
+  message: "请求过于频繁，请稍后再试"

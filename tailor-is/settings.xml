@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
+
+  <!-- 本地仓库目录 -->
+  <localRepository>/opt/maven/repository</localRepository>
+
+  <mirrors>
+    <!-- 阿里云公共仓库 主镜像（拦截 central） -->
+    <mirror>
+      <id>aliyun-public</id>
+      <name>Aliyun Public Maven</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+
+    <!-- Spring 专属仓库（适配 SpringBoot / SpringCloud） -->
+    <mirror>
+      <id>aliyun-spring</id>
+      <name>Aliyun Spring Maven</name>
+      <url>https://maven.aliyun.com/repository/spring</url>
+      <mirrorOf>spring</mirrorOf>
+    </mirror>
+
+    <!-- 华为云 备用镜像（拦截其他外部仓库） -->
+    <mirror>
+      <id>huawei-maven</id>
+      <name>Huawei Cloud Maven</name>
+      <url>https://mirrors.huaweicloud.com/repository/maven/</url>
+      <mirrorOf>external:*,!central,!spring,!central-backup,!central-plugins-backup</mirrorOf>
+    </mirror>
+  </mirrors>
+
+  <profiles>
+    <profile>
+      <id>default</id>
+      <repositories>
+        <!-- 阿里云优先（速度快） -->
+        <repository>
+          <id>aliyun-public</id>
+          <url>https://maven.aliyun.com/repository/public</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+        <!-- Maven Central 备用（阿里云缺少的依赖从这里下载，如 ShardingSphere） -->
+        <repository>
+          <id>central-backup</id>
+          <url>https://repo.maven.apache.org/maven2</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>aliyun-public-plugins</id>
+          <url>https://maven.aliyun.com/repository/public</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </pluginRepository>
+        <pluginRepository>
+          <id>central-plugins-backup</id>
+          <url>https://repo.maven.apache.org/maven2</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>default</activeProfile>
+  </activeProfiles>
+
+</settings>

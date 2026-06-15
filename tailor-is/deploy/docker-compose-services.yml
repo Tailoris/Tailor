@@ -1,0 +1,52 @@
+# ==============================================================================
+# Tailor IS - Docker Compose 服务编排文件
+# ==============================================================================
+# 重要通知: Docker Compose 到 Kubernetes 迁移路径
+# ==============================================================================
+#
+# Tailor IS 现已支持 Kubernetes 弹性伸缩部署。本 Docker Compose 文件仍可用于
+# 本地开发和测试环境, 但生产环境推荐使用 Kubernetes 部署方案。
+#
+# 迁移指南:
+#   1. K8s 部署模板位于: deploy/k8s/
+#   2. 完整部署文档: docs/K8S-DEPLOYMENT-GUIDE.md
+#   3. K8s 新增能力:
+#      - HPA 自动水平伸缩 (CPU 驱动的弹性扩缩容)
+#      - 闲时缩容 CronJob (夜间自动缩减非核心服务副本)
+#      - 服务间 DNS 自动发现
+#      - 滚动更新与零停机部署
+#      - 健康检查 (liveness/readiness/startup probes)
+#      - Prometheus 自动服务发现 + 预置告警规则
+#
+# 迁移步骤概览:
+#   Docker Compose              →     Kubernetes
+#   ──────────────────────────────────────────────────────
+#   docker-compose.yml          →     deploy/k8s/*.yaml
+#   environment variables       →     ConfigMap / Secret
+#   ports mapping               →     Service (ClusterIP)
+#   depends_on                  →     readinessProbe + startupProbe
+#   restart: always             →     restartPolicy: Always
+#   docker networks             →     Namespace + Service DNS
+#
+# 当前状态:
+#   - ✅ K8s namespace 配置
+#   - ✅ 核心服务 Deployment (core-gateway, order, payment, ai, copyright)
+#   - ✅ 核心服务 Service (ClusterIP)
+#   - ✅ HPA 弹性伸缩 (gateway/order/ai)
+#   - ✅ 闲时缩容 CronJob
+#   - ✅ ConfigMap + Secret 模板
+#   - ✅ 轻量级服务模板 (community, academy - Serverless 备选)
+#   - ✅ Ingress 路由配置
+#   - ✅ 完整部署文档
+#
+# 注意事项:
+#   1. K8s 部署需要独立的 metrics-server 支持 HPA
+#   2. 生产环境需配置 Ingress Controller (如 nginx-ingress)
+#   3. 基础设施 (Nacos/Redis/MySQL/RabbitMQ) 需提前部署到 K8s
+#   4. Secret 中的占位密码必须在部署前替换为真实值
+# ==============================================================================
+
+version: '3.8'
+
+# Docker Compose 仅用于本地开发/测试
+# 生产部署请使用 Kubernetes: kubectl apply -f deploy/k8s/

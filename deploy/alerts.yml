@@ -1,0 +1,133 @@
+groups:
+  - name: tailor_is_alerts
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up{job="tailor-is-microservices"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: '服务 {{ $labels.service }} 已下线'
+          description: '服务 {{ $labels.service }} 在端口 {{ $labels.port }} 不可达超过 1 分钟'
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) by (service)
+          /
+          sum(rate(http_server_requests_seconds_count[5m])) by (service)
+          > 0.10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: '{{ $labels.service }} 错误率超过 10%'
+
+      - alert: SlowResponse
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket[5m])) by (service, le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ $labels.service }} P95 响应时间超过 1s'
+
+      - alert: HighJVMMemory
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ $labels.service }} JVM 堆内存使用率 > 85%'
+
+      - alert: DBPoolExhausted
+        expr: hikaricp_connections_active / hikaricp_connections_max > 0.9
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ $labels.service }} 数据库连接池使用率 > 90%'
+
+      # ============================================================
+      #  业务安全类告警（依赖 BusinessMetrics.java 暴露的指标）
+      # ============================================================
+
+      - alert: FailedLoginSpike
+        expr: rate(failed_login_attempts[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: '{{ $labels.service }} 登录失败次数激增'
+          description: '近 5 分钟内登录失败速率 > 10 次/秒，可能存在暴力破解或账号异常'
+
+      - alert: HighFailedLoginRate
+        expr: |
+          (sum(rate(failed_login_attempts[5m])) by (service))
+          /
+          (sum(rate(admin_login_count[5m])) by (service) + sum(rate(failed_login_attempts[5m])) by (service))
+          > 0.20
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: '{{ $labels.service }} 登录失败率 > 20%'
+          description: '近 5 分钟内失败登录占总登录的比例超过 20%，请核查账号系统或防刷机制'
+
+      - alert: AdminLoginActivity
+        expr: increase(admin_login_count[1m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+          category: audit
+        annotations:
+          summary: '{{ $labels.service }} 管理员频繁登录'
+          description: '近 1 分钟内管理员登录次数超过 5 次，请确认是否为合理操作'
+
+      - alert: AbnormalLoginRateCritical
+        expr: abnormal_login_rate > 50
+        for: 3m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: '{{ $labels.service }} 异常登录比例 > 50%'
+          description: '近 5 分钟失败登录比例超过 50%，疑似账号字典攻击/撞库，请立即处理'
+
+      - alert: PasswordResetSurge
+        expr: rate(password_reset_requests[10m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: '{{ $labels.service }} 密码重置请求激增'
+          description: '近 10 分钟内密码重置请求速率异常升高（>2 次/秒），可能为钓鱼或批量劫持'
+
+      # ============================================================
+      #  业务容量类告警
+      # ============================================================
+
+      - alert: ActiveUsersDropped
+        expr: business_active_users < (business_active_users offset 1h) * 0.5
+        for: 5m
+        labels:
+          severity: critical
+          category: business
+        annotations:
+          summary: '{{ $labels.service }} 活跃用户数骤降 50%'
+          description: '当前活跃用户数相比 1 小时前下降超过 50%，可能存在登录/会话/通知链路故障'
+
+      - alert: NoLoginActivity
+        expr: increase(admin_login_count[1h]) == 0 and increase(failed_login_attempts[1h]) == 0
+        for: 1m
+        labels:
+          severity: info
+          category: business
+        annotations:
+          summary: '{{ $labels.service }} 近 1 小时无任何登录活动'
+          description: '超过 1 小时无登录与失败登录，请确认前端/登录入口是否仍在服务'

@@ -1,0 +1,103 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: tailor-is-lite-gateway
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        register-enabled: true
+        watch:
+          enabled: false
+        fail-fast: false
+        auth:
+          username: ${NACOS_USERNAME:nacos}
+          password: ${NACOS_PASSWORD:nacos}
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        enabled: false
+    sentinel:
+      enabled: true
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD_ADDR:localhost:8080}
+        port: 8720
+      eager: true
+      filter:
+        enabled: true
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,https://www.tailoris.com}
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+      # 路由权威定义位于: com.tailoris.litegateway.config.LiteGatewayRouteConfig
+
+  data:
+    redis:
+      # 凭证从环境变量读取 (source deploy/load-credentials.sh)
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 1
+      timeout: 3000ms
+      connect-timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 1
+          max-wait: 2000ms
+
+# ============================================================
+# Lite Gateway: 轻量级服务路由 (community, academy, supply, message, message-im, analytics)
+# ============================================================
+tailoris:
+  gateway:
+    auth:
+      excluded-paths: /api/auth/login,/api/auth/register,/api/auth/sms-code,/api/auth/refresh,/api/auth/reset-password
+    ratelimit:
+      enabled: true
+      default-permits-per-second: 50    # 轻量网关: 50 req/s per IP (低于 core)
+      login-permits-per-minute: 10      # 登录接口 10 req/min per IP
+      api-paths:
+        - /api/auth/login
+        - /api/auth/register
+
+knife4j:
+  gateway:
+    enabled: false
+
+# 暴露 actuator 端点用于监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: tailor-is-lite-gateway
+
+# 日志级别由 logback-spring.xml 统一管理
+
+---
+spring.config.activate.on-profile: prod
+knife4j:
+  gateway:
+    enabled: false

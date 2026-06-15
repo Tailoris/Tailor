@@ -1,0 +1,195 @@
+type Query {
+  # 商品详情
+  product(id: ID!): Product
+
+  # 商品列表
+  products(
+    categoryId: Int
+    keyword: String
+    sort: String
+    minPrice: Float
+    maxPrice: Float
+    current: Int = 1
+    size: Int = 20
+  ): ProductConnection
+
+  # 订单详情
+  order(id: ID!): Order
+
+  # 订单列表
+  orders(
+    status: Int
+    current: Int = 1
+    size: Int = 20
+  ): OrderConnection
+
+  # 热门商品
+  hotProducts(limit: Int = 10): [Product]
+
+  # 新品
+  newProducts(limit: Int = 10): [Product]
+
+  # 秒杀商品
+  seckillProducts(limit: Int = 10): [Product]
+
+  # 商品分类
+  categories: [ProductCategory]
+}
+
+type Mutation {
+  # 加入购物车
+  addToCart(input: AddToCartInput!): CartItem
+
+  # 更新购物车数量
+  updateCartItem(input: UpdateCartItemInput!): CartItem
+
+  # 删除购物车项
+  deleteCartItem(id: ID!): Boolean
+
+  # 清空购物车
+  clearCart: Boolean
+
+  # 提交订单
+  submitOrder(input: SubmitOrderInput!): Order
+}
+
+# ========== Product Types ==========
+
+type Product {
+  id: ID!
+  merchantId: Int!
+  shopId: Int!
+  categoryId: Int!
+  productType: Int!
+  name: String!
+  subTitle: String
+  mainImage: String
+  images: [String]
+  description: String
+  price: Float!
+  status: Int!
+  auditStatus: Int!
+  copyrightFlag: Int!
+  saleCount: Int!
+  viewCount: Int!
+  skus: [ProductSku]
+  category: ProductCategory
+  createdAt: String!
+}
+
+type ProductSku {
+  id: ID!
+  productId: Int!
+  skuCode: String!
+  attributes: [SkuAttribute]
+  price: Float!
+  stock: Int!
+  status: Int!
+}
+
+type SkuAttribute {
+  key: String!
+  value: String!
+}
+
+type ProductCategory {
+  id: ID!
+  name: String!
+  parentId: Int!
+  level: Int!
+  sort: Int!
+  icon: String
+  status: Int!
+  children: [ProductCategory]
+}
+
+type ProductConnection {
+  records: [Product]!
+  total: Int!
+  pages: Int!
+  current: Int!
+  size: Int!
+}
+
+# ========== Order Types ==========
+
+type Order {
+  id: ID!
+  orderNo: String!
+  userId: Int!
+  shopId: Int!
+  merchantId: Int!
+  productType: Int!
+  status: Int!
+  totalAmount: Float!
+  discountAmount: Float!
+  payAmount: Float!
+  payType: Int!
+  payStatus: Int!
+  addressSnapshot: String
+  remark: String
+  createdAt: String!
+  paidAt: String
+  items: [OrderItem]
+}
+
+type OrderItem {
+  id: ID!
+  orderId: Int!
+  productId: Int!
+  skuId: Int!
+  productName: String!
+  productImage: String
+  skuAttributes: [SkuAttribute]
+  quantity: Int!
+  price: Float!
+  subtotal: Float!
+}
+
+type OrderConnection {
+  records: [Order]!
+  total: Int!
+  pages: Int!
+  current: Int!
+  size: Int!
+}
+
+# ========== Cart Types ==========
+
+type CartItem {
+  id: ID!
+  userId: Int!
+  productId: Int!
+  productName: String!
+  productImage: String
+  skuId: Int!
+  skuAttributes: [SkuAttribute]
+  quantity: Int!
+  price: Float!
+  checked: Boolean!
+}
+
+# ========== Input Types ==========
+
+input AddToCartInput {
+  productId: Int!
+  skuId: Int!
+  quantity: Int!
+}
+
+input UpdateCartItemInput {
+  id: ID!
+  quantity: Int!
+}
+
+input SubmitOrderInput {
+  addressId: Int!
+  remark: String
+  items: [OrderItemInput!]!
+}
+
+input OrderItemInput {
+  productId: Int!
+  skuId: Int!
+  quantity: Int!
+}

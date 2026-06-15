@@ -1,0 +1,112 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: tailor-is-core-gateway
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        register-enabled: true
+        watch:
+          enabled: false
+        fail-fast: false
+        auth:
+          username: ${NACOS_USERNAME:nacos}
+          password: ${NACOS_PASSWORD:nacos}
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        enabled: false
+    sentinel:
+      enabled: true
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD_ADDR:localhost:8080}
+        port: 8719
+      eager: true
+      filter:
+        enabled: true
+      datasource:
+        # 使用 Nacos 作为 Sentinel 规则数据源, 支持动态规则推送
+        # flow:
+        #   nacos:
+        #     server-addr: ${NACOS_ADDR:localhost:8848}
+        #     data-id: ${spring.application.name}-flow-rules
+        #     group-id: SENTINEL_GROUP
+        #     rule-type: flow
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,https://www.tailoris.com}
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+      # 路由权威定义位于: com.tailoris.coregateway.config.CoreGatewayRouteConfig
+
+  data:
+    redis:
+      # 凭证从环境变量读取 (source deploy/load-credentials.sh)
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 3000ms
+      connect-timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 2
+          max-wait: 2000ms
+
+# ============================================================
+# Core Gateway: 核心业务服务路由 (user, merchant, product, order, payment, marketing, ai, copyright, admin, pattern)
+# ============================================================
+tailoris:
+  gateway:
+    auth:
+      excluded-paths: /api/auth/login,/api/auth/register,/api/auth/sms-code,/api/auth/refresh,/api/auth/reset-password
+    ratelimit:
+      enabled: true
+      default-permits-per-second: 200   # 核心网关: 200 req/s per IP (高于 lite)
+      login-permits-per-minute: 10      # 登录接口 10 req/min per IP
+      api-paths:
+        - /api/auth/login
+        - /api/auth/register
+        - /api/payment/**
+
+knife4j:
+  gateway:
+    enabled: false
+
+# 暴露 actuator 端点用于监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: tailor-is-core-gateway
+
+# 日志级别由 logback-spring.xml 统一管理
+
+---
+spring.config.activate.on-profile: prod
+knife4j:
+  gateway:
+    enabled: false

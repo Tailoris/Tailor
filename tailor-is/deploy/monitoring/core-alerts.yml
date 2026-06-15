@@ -1,0 +1,379 @@
+groups:
+  # ==================== 核心服务告警 ====================
+  - name: core-service-alerts
+    interval: 30s
+    rules:
+      # 服务宕机告警
+      - alert: CoreServiceDown
+        expr: up{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "核心服务 {{ $labels.job }} 已宕机"
+          description: "服务 {{ $labels.job }} (实例: {{ $labels.instance }}) 已停止响应超过1分钟"
+          runbook_url: "https://wiki.tailoris.com/runbooks/core-service-down"
+
+      # 响应时间过高告警 - P99
+      - alert: CoreServiceHighResponseTimeP99
+        expr: >
+          histogram_quantile(0.99,
+            sum(rate(http_server_requests_seconds_bucket{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"}[5m]))
+            by (le, job)
+          ) > 1.0
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "核心服务 {{ $labels.job }} P99响应时间过高"
+          description: "P99响应时间: {{ $value | humanize }}s (阈值: 1.0s)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/high-response-time"
+
+      # 响应时间过高告警 - P95
+      - alert: CoreServiceHighResponseTimeP95
+        expr: >
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"}[5m]))
+            by (le, job)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "核心服务 {{ $labels.job }} P95响应时间过高"
+          description: "P95响应时间: {{ $value | humanize }}s (阈值: 0.5s)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/high-response-time"
+
+      # 错误率过高告警
+      - alert: CoreServiceHighErrorRate
+        expr: >
+          sum by (job) (rate(http_server_requests_seconds_count{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product",status=~"5.."}[5m]))
+          /
+          sum by (job) (rate(http_server_requests_seconds_count{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"}[5m]))
+          > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          category: reliability
+        annotations:
+          summary: "核心服务 {{ $labels.job }} 错误率过高"
+          description: "5xx错误率: {{ $value | humanizePercentage }} (阈值: 5%)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/high-error-rate"
+
+      # 错误率警告阈值
+      - alert: CoreServiceElevatedErrorRate
+        expr: >
+          sum by (job) (rate(http_server_requests_seconds_count{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product",status=~"5.."}[5m]))
+          /
+          sum by (job) (rate(http_server_requests_seconds_count{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"}[5m]))
+          > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "核心服务 {{ $labels.job }} 错误率升高"
+          description: "5xx错误率: {{ $value | humanizePercentage }} (阈值: 1%)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/high-error-rate"
+
+      # ==================== JVM 告警 ====================
+      # JVM堆内存使用率过高
+      - alert: CoreServiceHighHeapUsage
+        expr: >
+          sum by (job) (jvm_memory_used_bytes{area="heap",job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"})
+          /
+          sum by (job) (jvm_memory_max_bytes{area="heap",job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"})
+          > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "核心服务 {{ $labels.job }} JVM堆内存使用率过高"
+          description: "堆内存使用率: {{ $value | humanizePercentage }} (阈值: 85%)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/high-heap-usage"
+
+      # JVM堆内存使用率严重
+      - alert: CoreServiceCriticalHeapUsage
+        expr: >
+          sum by (job) (jvm_memory_used_bytes{area="heap",job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"})
+          /
+          sum by (job) (jvm_memory_max_bytes{area="heap",job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"})
+          > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          category: resource
+        annotations:
+          summary: "核心服务 {{ $labels.job }} JVM堆内存即将耗尽"
+          description: "堆内存使用率: {{ $value | humanizePercentage }} (阈值: 95%)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/critical-heap-usage"
+
+      # GC时间过长
+      - alert: CoreServiceHighGCTime
+        expr: >
+          sum by (job) (rate(jvm_gc_pause_seconds_sum{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"}[5m]))
+          > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "核心服务 {{ $labels.job }} GC时间过长"
+          description: "GC占用CPU: {{ $value | humanizePercentage }} (阈值: 10%)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/high-gc-time"
+
+      # ==================== 数据库连接池告警 ====================
+      # DB连接池使用率过高
+      - alert: CoreServiceHighDBConnectionUsage
+        expr: >
+          sum by (job) (hikaricp_connections_active{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"})
+          /
+          sum by (job) (hikaricp_connections_max{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"})
+          > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "核心服务 {{ $labels.job }} DB连接池使用率过高"
+          description: "连接池使用率: {{ $value | humanizePercentage }} (阈值: 80%)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/high-db-connection-usage"
+
+      # DB连接超时
+      - alert: CoreServiceDBConnectionTimeout
+        expr: >
+          increase(hikaricp_connections_timeout_total{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"}[5m])
+          > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: reliability
+        annotations:
+          summary: "核心服务 {{ $labels.job }} 出现DB连接超时"
+          description: "5分钟内连接超时次数: {{ $value }}"
+          runbook_url: "https://wiki.tailoris.com/runbooks/db-connection-timeout"
+
+      # ==================== Redis 告警 ====================
+      # Redis延迟过高
+      - alert: CoreServiceHighRedisLatency
+        expr: >
+          histogram_quantile(0.95,
+            sum(rate(redis_command_duration_seconds_bucket{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"}[5m]))
+            by (le, job)
+          ) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "核心服务 {{ $labels.job }} Redis延迟过高"
+          description: "Redis P95延迟: {{ $value | humanizeDuration }} (阈值: 50ms)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/high-redis-latency"
+
+      # ==================== 业务告警 ====================
+      # 支付成功率过低
+      - alert: PaymentSuccessRateLow
+        expr: >
+          sum(rate(business_payment_success_total{job="tailor-is-payment"}[5m]))
+          /
+          sum(rate(business_payment_attempt_total{job="tailor-is-payment"}[5m]))
+          < 0.95
+        for: 5m
+        labels:
+          severity: critical
+          category: business
+        annotations:
+          summary: "支付成功率过低"
+          description: "当前支付成功率: {{ $value | humanizePercentage }} (阈值: 95%)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/payment-success-rate-low"
+
+      # AI图样生成耗时过长
+      - alert: AIPatternGenerationSlow
+        expr: >
+          rate(business_ai_pattern_generation_seconds_sum{job="tailor-is-ai"}[5m])
+          /
+          rate(business_ai_pattern_generation_seconds_count{job="tailor-is-ai"}[5m])
+          > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "AI图样生成耗时过长"
+          description: "平均生成耗时: {{ $value | humanizeDuration }} (阈值: 10s)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/ai-pattern-slow"
+
+      # 订单量异常下降
+      - alert: OrderVolumeDrop
+        expr: >
+          sum(rate(business_order_created_total{job="tailor-is-order"}[5m]))
+          <
+          avg_over_time(sum(rate(business_order_created_total{job="tailor-is-order"}[5m]))[1h:5m]) * 0.5
+        for: 10m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "订单量异常下降"
+          description: "当前订单量低于过去1小时均值的50%"
+          runbook_url: "https://wiki.tailoris.com/runbooks/order-volume-drop"
+
+      # ==================== 自动扩容触发告警 ====================
+      # CPU使用率触发扩容
+      - alert: AutoScaleTriggerCPU
+        expr: >
+          sum(rate(container_cpu_usage_seconds_total{namespace="tailor-is",pod=~"tailor-is-(order|payment|ai|copyright|merchant|product).*"}[5m]))
+          by (deployment)
+          /
+          sum(container_spec_cpu_quota{namespace="tailor-is",pod=~"tailor-is-(order|payment|ai|copyright|merchant|product).*"} / container_spec_cpu_period{namespace="tailor-is",pod=~"tailor-is-(order|payment|ai|copyright|merchant|product).*"})
+          by (deployment)
+          > 0.75
+        for: 5m
+        labels:
+          severity: warning
+          category: autoscaling
+        annotations:
+          summary: "触发自动扩容 - CPU ({{ $labels.deployment }})"
+          description: "CPU使用率: {{ $value | humanizePercentage }} (阈值: 75%)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/autoscale-cpu"
+
+      # QPS触发扩容
+      - alert: AutoScaleTriggerQPS
+        expr: >
+          sum(rate(http_server_requests_seconds_count{job=~"tailor-is-order|tailor-is-payment|tailor-is-ai|tailor-is-copyright|tailor-is-merchant|tailor-is-product"}[5m]))
+          by (job)
+          > 500
+        for: 3m
+        labels:
+          severity: warning
+          category: autoscaling
+        annotations:
+          summary: "触发自动扩容 - QPS ({{ $labels.job }})"
+          description: "当前QPS: {{ $value }} (阈值: 500)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/autoscale-qps"
+
+      # MQ积压触发扩容
+      - alert: AutoScaleTriggerMQBacklog
+        expr: >
+          sum(rabbitmq_queue_messages_ready{queue=~"order.*|payment.*|notification.*"})
+          by (queue)
+          > 5000
+        for: 5m
+        labels:
+          severity: warning
+          category: autoscaling
+        annotations:
+          summary: "触发自动扩容 - MQ积压 ({{ $labels.queue }})"
+          description: "队列积压消息数: {{ $value }} (阈值: 5000)"
+          runbook_url: "https://wiki.tailoris.com/runbooks/autoscale-mq-backlog"
+
+  # ==================== 轻量级服务告警 ====================
+  - name: lite-service-alerts
+    interval: 60s
+    rules:
+      # 服务宕机
+      - alert: LiteServiceDown
+        expr: up{job=~"tailor-is-community|tailor-is-academy|tailor-is-supply"} == 0
+        for: 3m
+        labels:
+          severity: warning
+          category: availability
+        annotations:
+          summary: "轻量级服务 {{ $labels.job }} 已宕机"
+          description: "服务 {{ $labels.job }} (实例: {{ $labels.instance }}) 已停止响应超过3分钟"
+
+      # 错误率过高
+      - alert: LiteServiceHighErrorRate
+        expr: >
+          sum by (job) (rate(http_server_requests_seconds_count{job=~"tailor-is-community|tailor-is-academy|tailor-is-supply",status=~"5.."}[10m]))
+          /
+          sum by (job) (rate(http_server_requests_seconds_count{job=~"tailor-is-community|tailor-is-academy|tailor-is-supply"}[10m]))
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "轻量级服务 {{ $labels.job }} 错误率过高"
+          description: "5xx错误率: {{ $value | humanizePercentage }} (阈值: 5%)"
+
+      # 内存使用过高
+      - alert: LiteServiceHighMemoryUsage
+        expr: >
+          jvm_memory_used_bytes{area="heap",job=~"tailor-is-community|tailor-is-academy|tailor-is-supply"}
+          /
+          jvm_memory_max_bytes{area="heap",job=~"tailor-is-community|tailor-is-academy|tailor-is-supply"}
+          > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "轻量级服务 {{ $labels.job }} 内存使用率过高"
+          description: "堆内存使用率: {{ $value | humanizePercentage }} (阈值: 90%)"
+
+  # ==================== 资源利用告警 ====================
+  - name: resource-utilization-alerts
+    interval: 60s
+    rules:
+      # 集群CPU使用率过高
+      - alert: ClusterCPUHigh
+        expr: >
+          sum(rate(container_cpu_usage_seconds_total{namespace="tailor-is"}[5m]))
+          /
+          sum(machine_cpu_cores{namespace="tailor-is"})
+          > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "集群CPU使用率过高"
+          description: "当前集群CPU使用率: {{ $value | humanizePercentage }} (阈值: 85%)"
+
+      # 集群内存使用率过高
+      - alert: ClusterMemoryHigh
+        expr: >
+          sum(container_memory_working_set_bytes{namespace="tailor-is"})
+          /
+          sum(machine_memory_bytes{namespace="tailor-is"})
+          > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "集群内存使用率过高"
+          description: "当前集群内存使用率: {{ $value | humanizePercentage }} (阈值: 90%)"
+
+      # Redis内存使用过高
+      - alert: RedisMemoryHigh
+        expr: >
+          sum(redis_memory_used_bytes)
+          >
+          8589934592
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Redis内存使用过高"
+          description: "Redis已使用内存: {{ $value | humanize }} (阈值: 8GB)"
+
+      # MQ消费者不足
+      - alert: MQConsumerLag
+        expr: >
+          sum(rabbitmq_queue_messages_ready{queue=~".*"})
+          by (queue)
+          > 10000
+        for: 10m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "MQ队列严重积压 ({{ $labels.queue }})"
+          description: "队列积压消息数: {{ $value }} (阈值: 10000)"

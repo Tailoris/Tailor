@@ -1,0 +1,79 @@
+# Sentinel 流控配置 (Sentinel Dashboard / Nacos Config)
+# 对应: Phase 1 / P1-5 / H-06
+# 服务: tailor-is-user, tailor-is-order, tailor-is-payment 等
+# 注意: 1.8.6+ 客户端版本对应 dashboard 1.8.6+
+
+spring:
+  cloud:
+    sentinel:
+      # Dashboard 地址
+      transport:
+        dashboard: localhost:8719
+        port: 8719
+        client-ip: ${spring.cloud.client.ip-address:127.0.0.1}
+      # Eureka/Nacos 服务发现
+      enabled: true
+      # 启用 @SentinelResource 注解 AOP
+      filter:
+        enabled: true
+      # Web 拦截
+      web-context-unify: true
+      # Sentinel 1.8+ 启用链路流控模式
+      scg:
+        enabled: true  # Spring Cloud Gateway 支持
+      # 数据源: Nacos 动态规则
+      datasource:
+        # 流控规则
+        flow:
+          nacos:
+            server-addr: ${NACOS_SERVER:host.docker.internal:8848}
+            namespace: ${NACOS_NAMESPACE:tailor-is}
+            data-id: ${spring.application.name}-flow-rules
+            group-id: SENTINEL_GROUP
+            rule-type: flow
+            data-type: json
+        # 熔断降级规则
+        degrade:
+          nacos:
+            server-addr: ${NACOS_SERVER:host.docker.internal:8848}
+            namespace: ${NACOS_NAMESPACE:tailor-is}
+            data-id: ${spring.application.name}-degrade-rules
+            group-id: SENTINEL_GROUP
+            rule-type: degrade
+            data-type: json
+        # 系统保护规则
+        system:
+          nacos:
+            server-addr: ${NACOS_SERVER:host.docker.internal:8848}
+            namespace: ${NACOS_NAMESPACE:tailor-is}
+            data-id: ${spring.application.name}-system-rules
+            group-id: SENTINEL_GROUP
+            rule-type: system
+            data-type: json
+        # 授权规则
+        authority:
+          nacos:
+            server-addr: ${NACOS_SERVER:host.docker.internal:8848}
+            namespace: ${NACOS_NAMESPACE:tailor-is}
+            data-id: ${spring.application.name}-auth-rules
+            group-id: SENTINEL_GROUP
+            rule-type: authority
+            data-type: json
+
+# Sentinel 日志目录
+logging:
+  level:
+    com.alibaba.csp.sentinel: INFO
+  file:
+    name: ${LOG_PATH:/var/log/tailor-is}/${spring.application.name}-sentinel.log
+
+# ================== 各服务特定阈值 (可由 application-{profile}.yml 覆盖) ==================
+tailoris:
+  sentinel:
+    # 默认流控规则阈值
+    default-qps: 1000
+    # 核心接口阈值
+    critical-apis:
+      - /api/order/create
+      - /api/pay/pay
+      - /api/auth/login

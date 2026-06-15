@@ -1,0 +1,118 @@
+@startuml tailoris-module-interaction
+
+!define RECTANGLE class
+skinparam backgroundColor #FAFAFA
+skinparam dpi 150
+skinparam defaultFontSize 11
+skinparam ArrowColor #2C3E50
+
+title Tailor IS 核心业务流程模块交互图\nPhase 1 - H-03
+
+' 角色
+actor "用户" as user #FFE0B2
+actor "商户" as merchant #FFE0B2
+actor "AI 用户" as aiUser #FFE0B2
+
+' 前端
+[PC/H5 前端] as fe #E3F2FD
+
+' 网关
+[Core Gateway] as gw #FFE082
+
+' 服务
+package "业务服务" {
+    [User Service] as userSvc #C8E6C9
+    [Merchant Service] as merchantSvc #C8E6C9
+    [Product Service] as productSvc #C8E6C9
+    [Order Service] as orderSvc #C8E6C9
+    [Payment Service] as paymentSvc #C8E6C9
+    [Marketing Service] as mktSvc #C8E6C9
+    [AI Service] as aiSvc #C8E6C9
+    [Copyright Service] as cpSvc #C8E6C9
+}
+
+package "基础设施" {
+    database "MySQL" as db
+    database "Redis" as cache
+    queue "RabbitMQ" as mq
+}
+
+' ============ 场景 1: 用户登录 ============
+group "场景1: 用户登录认证" {
+    user -> fe : 1. 输入账号密码
+    fe -> gw : 2. POST /api/auth/login
+    gw -> userSvc : 3. 验证账号
+    userSvc -> db : 4. 查询用户
+    userSvc -> cache : 5. 生成 Token, 存 Redis
+    userSvc --> gw : 6. 返回 Token + 用户信息
+    gw --> fe : 7. 透传
+    fe --> user : 8. 登录成功
+}
+
+' ============ 场景 2: 下单支付 ============
+group "场景2: 下单 → 支付 → 回调" {
+    user -> fe : 1. 提交订单
+    fe -> gw : 2. POST /api/order/create
+    gw -> orderSvc : 3. 创建订单
+    orderSvc -> db : 4. INSERT order
+    orderSvc -> mktSvc : 5. 优惠核销
+    mktSvc -> db : 6. 扣减优惠券
+    orderSvc -> cache : 7. 库存预占 (Redis)
+    orderSvc --> gw : 8. 订单号
+    gw --> fe : 9. 进入支付
+    fe -> gw : 10. POST /api/pay/pay
+    gw -> paymentSvc : 11. 创建支付单
+    paymentSvc -> db : 12. INSERT payment
+    paymentSvc --> gw : 13. 支付二维码/跳转
+    gw --> fe : 14. 支付页
+    fe --> user : 15. 展示二维码
+    note right of paymentSvc
+        异步回调:
+        微信/支付宝 -> paymentSvc
+        paymentSvc -> mq : 发送支付成功事件
+        mq -> orderSvc : 消费, 改订单状态
+    end note
+}
+
+' ============ 场景 3: AI 制版 ============
+group "场景3: AI 制版 (RocketMQ 异步)" {
+    aiUser -> fe : 1. 上传尺寸/图片
+    fe -> gw : 2. POST /api/ai/pattern/generate
+    gw -> aiSvc : 3. 提交制版任务
+    aiSvc -> mq : 4. 发送到 RocketMQ
+    aiSvc --> gw : 5. 返回任务ID
+    gw --> fe : 6. 排队中
+    fe --> aiUser : 7. 提示等待
+    note right of aiSvc
+        异步消费:
+        mq -> aiSvc : 消费任务
+        aiSvc -> aiSvc : 调用模型 (本地/云端)
+        aiSvc -> cpSvc : 8. 版权相似度检测
+        cpSvc -> db : 9. 查询黑名单 + 哈希
+        cpSvc --> aiSvc : 10. 检测结果
+        aiSvc -> db : 11. 保存 PatternRecord
+        aiSvc -> mq : 12. 通知完成
+        mq -> fe : 13. WebSocket 推送
+    end note
+}
+
+' ============ 场景 4: 商户入驻 ============
+group "场景4: 商户入驻 → 审核 → 开店" {
+    merchant -> fe : 1. 提交入驻申请
+    fe -> gw : 2. POST /api/merchant/apply
+    gw -> merchantSvc : 3. 创建申请
+    merchantSvc -> db : 4. INSERT apply
+    merchantSvc --> gw : 5. 待审核
+    gw --> fe : 6. 申请已提交
+    note right of merchantSvc
+        异步审核:
+        平台管理员 -> Admin Web
+        Admin Web -> gw -> merchantSvc
+        merchantSvc -> db : 7. UPDATE 状态为通过
+        merchantSvc -> userSvc : 8. 开通商家账号 + 角色
+        userSvc -> db : 9. INSERT user_role
+        merchantSvc -> mq : 10. 发送入驻成功事件
+    end note
+}
+
+@enduml

@@ -1,0 +1,8 @@
+defaults
+last 2 versions
+> 0.5%
+not dead
+Android >= 11
+iOS >= 15
+Chrome >= 90
+Safari >= 14

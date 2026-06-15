@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tailor-is-config
+  namespace: tailor-is-prod
+  labels:
+    app.kubernetes.io/name: tailor-is-config
+    app.kubernetes.io/part-of: tailor-is
+data:
+  # ============================================================
+  # Nacos 配置中心
+  # ============================================================
+  NACOS_ADDR: "nacos.tailor-is-infra.svc.cluster.local:8848"
+  NACOS_NAMESPACE: "prod"
+
+  # ============================================================
+  # Sentinel 限流熔断
+  # ============================================================
+  SENTINEL_DASHBOARD_ADDR: "sentinel.tailor-is-infra.svc.cluster.local:8080"
+
+  # ============================================================
+  # Redis 配置
+  # ============================================================
+  REDIS_HOST: "redis-master.tailor-is-infra.svc.cluster.local"
+  REDIS_PORT: "6379"
+  REDIS_MODE: "standalone"
+  REDIS_CLUSTER_NODES: "redis-cluster-node-0:6379,redis-cluster-node-1:6379,redis-cluster-node-2:6379"
+
+  # ============================================================
+  # MySQL 数据库
+  # ============================================================
+  MYSQL_HOST: "mysql.tailor-is-infra.svc.cluster.local"
+  MYSQL_PORT: "3306"
+
+  # ============================================================
+  # RabbitMQ 消息队列
+  # ============================================================
+  RABBITMQ_HOST: "rabbitmq.tailor-is-infra.svc.cluster.local"
+  RABBITMQ_PORT: "5672"
+
+  # ============================================================
+  # RocketMQ 消息队列 (AI 服务)
+  # ============================================================
+  ROCKETMQ_NAME_SERVER: "rocketmq-namesrv.tailor-is-infra.svc.cluster.local:9876"
+
+  # ============================================================
+  # JVM 启动参数
+  # ============================================================
+  JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"

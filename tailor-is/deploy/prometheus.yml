@@ -1,0 +1,337 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+# Alertmanager 配置
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"
+
+# 告警规则文件
+rule_files:
+  - "/etc/prometheus/rules/core-alerts.yml"
+  - "/etc/prometheus/rules/lite-alerts.yml"
+
+# 核心服务 Scrape 配置 (高频采集, 更多指标)
+scrape_configs:
+  # ==================== 核心服务 ====================
+  # 订单服务
+  - job_name: "tailor-is-order"
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - tailor-is
+        selectors:
+          - role: pod
+            label: "app.kubernetes.io/name=tailor-is-order"
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_.*|jvm_.*|hikaricp_.*|process_.*|redis_.*|business_.*"
+        action: keep
+
+  # 支付服务
+  - job_name: "tailor-is-payment"
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - tailor-is
+        selectors:
+          - role: pod
+            label: "app.kubernetes.io/name=tailor-is-payment"
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_.*|jvm_.*|hikaricp_.*|process_.*|redis_.*|business_.*"
+        action: keep
+
+  # AI服务
+  - job_name: "tailor-is-ai"
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - tailor-is
+        selectors:
+          - role: pod
+            label: "app.kubernetes.io/name=tailor-is-ai"
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_.*|jvm_.*|hikaricp_.*|process_.*|redis_.*|business_.*"
+        action: keep
+
+  # 版权服务
+  - job_name: "tailor-is-copyright"
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - tailor-is
+        selectors:
+          - role: pod
+            label: "app.kubernetes.io/name=tailor-is-copyright"
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_.*|jvm_.*|hikaricp_.*|process_.*|redis_.*|business_.*"
+        action: keep
+
+  # 商户服务
+  - job_name: "tailor-is-merchant"
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - tailor-is
+        selectors:
+          - role: pod
+            label: "app.kubernetes.io/name=tailor-is-merchant"
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_.*|jvm_.*|hikaricp_.*|process_.*|redis_.*|business_.*"
+        action: keep
+
+  # 商品服务
+  - job_name: "tailor-is-product"
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - tailor-is
+        selectors:
+          - role: pod
+            label: "app.kubernetes.io/name=tailor-is-product"
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_.*|jvm_.*|hikaricp_.*|process_.*|redis_.*|business_.*"
+        action: keep
+
+  # ==================== 轻量级服务 ====================
+  # 社区服务 (低频采集, 基础指标)
+  - job_name: "tailor-is-community"
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - tailor-is
+        selectors:
+          - role: pod
+            label: "app.kubernetes.io/name=tailor-is-community"
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_count|http_server_requests_seconds_sum|process_cpu_usage|process_uptime_seconds|jvm_memory_used_bytes|up"
+        action: keep
+
+  # 学院服务 (低频采集, 基础指标)
+  - job_name: "tailor-is-academy"
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - tailor-is
+        selectors:
+          - role: pod
+            label: "app.kubernetes.io/name=tailor-is-academy"
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_count|http_server_requests_seconds_sum|process_cpu_usage|process_uptime_seconds|jvm_memory_used_bytes|up"
+        action: keep
+
+  # 供应链服务 (低频采集, 基础指标)
+  - job_name: "tailor-is-supply"
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - tailor-is
+        selectors:
+          - role: pod
+            label: "app.kubernetes.io/name=tailor-is-supply"
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_count|http_server_requests_seconds_sum|process_cpu_usage|process_uptime_seconds|jvm_memory_used_bytes|up"
+        action: keep
+
+  # ==================== 基础设施 ====================
+  # Redis 监控
+  - job_name: "redis"
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - "redis-master:6379"
+          - "redis-slave:6379"
+        labels:
+          redis_mode: "standalone"
+    metrics_path: "/metrics"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # Redis 集群监控
+  - job_name: "redis-cluster"
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - "redis-cluster-node-0:6379"
+          - "redis-cluster-node-1:6379"
+          - "redis-cluster-node-2:6379"
+        labels:
+          redis_mode: "cluster"
+    metrics_path: "/metrics"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # RabbitMQ 监控
+  - job_name: "rabbitmq"
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - "rabbitmq:15692"
+    metrics_path: "/metrics"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # MySQL 监控
+  - job_name: "mysql"
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - "mysql-exporter:9104"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # 节点 Exporter
+  - job_name: "node-exporter"
+    scrape_interval: 30s
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: "node-exporter:9100"
+
+  # 网关服务
+  - job_name: "tailor-is-gateway"
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - tailor-is
+        selectors:
+          - role: pod
+            label: "app.kubernetes.io/name=tailor-is-gateway"
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: instance
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+
+  # Prometheus 自身
+  - job_name: "prometheus"
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - "localhost:9090"

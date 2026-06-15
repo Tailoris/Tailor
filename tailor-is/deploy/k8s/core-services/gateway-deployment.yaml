@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: core-gateway
+  namespace: tailor-is-prod
+  labels:
+    app: core-gateway
+    app.kubernetes.io/name: tailor-is-core-gateway
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: core-gateway
+  template:
+    metadata:
+      labels:
+        app: core-gateway
+        app.kubernetes.io/name: tailor-is-core-gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+        - name: core-gateway
+          image: ${REGISTRY}/tailor-is-core-gateway:${IMAGE_TAG:-latest}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: tailor-is-config
+          env:
+            - name: NACOS_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: NACOS_ADDR
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: REDIS_HOST
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: redis-password
+            - name: SENTINEL_DASHBOARD_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: SENTINEL_DASHBOARD_ADDR
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 10"]
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - core-gateway
+                topologyKey: kubernetes.io/hostname

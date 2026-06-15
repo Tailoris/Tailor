@@ -1,0 +1,20 @@
+[
+  {
+    "resource": "core-gateway:/api/admin/**",
+    "limitApp": "platform-admin,127.0.0.1",
+    "strategy": 1,
+    "enable": true
+  },
+  {
+    "resource": "core-gateway:/api/internal/**",
+    "limitApp": "core-gateway,lite-gateway",
+    "strategy": 1,
+    "enable": true
+  },
+  {
+    "resource": "core-gateway:/api/merchant/audit/**",
+    "limitApp": "platform-admin,merchant-admin",
+    "strategy": 1,
+    "enable": true
+  }
+]

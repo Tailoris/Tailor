@@ -1,0 +1,47 @@
+# =============================================================================
+# Tailor IS 前端静态资源服务
+# 对应: Phase 1 / P1-6 / H-04
+# 用法:
+#   1. 构建前端: ./build-frontend.sh
+#   2. 启动服务: docker compose -f docker-compose.frontend.yml up -d
+#   3. 访问: http://localhost:8080/
+# =============================================================================
+version: "3.8"
+
+networks:
+  tailoris-frontend:
+    name: tailoris-frontend
+    driver: bridge
+
+services:
+  nginx-frontend:
+    image: nginx:1.27-alpine
+    container_name: tailor-is-frontend
+    hostname: frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      # - "8443:443"  # 启用 HTTPS 时打开
+    volumes:
+      # 前端构建产物
+      - ../tailor-is-frontend/pc-mall/dist:/usr/share/nginx/html/pc-mall:ro
+      - ../tailor-is-frontend/merchant-admin/dist:/usr/share/nginx/html/merchant-admin:ro
+      - ../tailor-is-frontend/platform-admin/dist:/usr/share/nginx/html/platform-admin:ro
+      - ./nginx/frontend.conf:/etc/nginx/conf.d/default.conf:ro
+      # SSL 证书 (可选)
+      # - ./nginx/ssl/server.crt:/etc/nginx/ssl/server.crt:ro
+      # - ./nginx/ssl/server.key:/etc/nginx/ssl/server.key:ro
+    networks:
+      - tailoris-frontend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"

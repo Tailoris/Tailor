@@ -1,0 +1,93 @@
+package com.tailoris.common.interceptor;
+
+import com.tailoris.common.config.RateLimitConfig;
+import com.tailoris.common.result.Result;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+import java.util.concurrent.TimeUnit;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class RateLimitInterceptor implements HandlerInterceptor {
+
+    private static final String RATE_LIMIT_GLOBAL_KEY = "ratelimit:global";
+    private static final String RATE_LIMIT_IP_PREFIX = "ratelimit:ip:";
+    private static final String RATE_LIMIT_USER_PREFIX = "ratelimit:user:";
+    private static final String RATE_LIMIT_ENDPOINT_PREFIX = "ratelimit:endpoint:";
+
+    private final RateLimitConfig rateLimitConfig;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final ObjectMapper objectMapper;
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        if (!rateLimitConfig.isEnabled()) {
+            return true;
+        }
+
+        String path = request.getRequestURI();
+        String clientIp = getClientIp(request);
+
+        if (!checkGlobalLimit(response)) return false;
+        if (!checkIpLimit(clientIp, response)) return false;
+        if (!checkEndpointLimit(path, response)) return false;
+
+        return true;
+    }
+
+    private boolean checkGlobalLimit(HttpServletResponse response) throws Exception {
+        int permits = rateLimitConfig.getGlobal().getPermitsPerSecond();
+        return checkAndRespond(RATE_LIMIT_GLOBAL_KEY, permits, rateLimitConfig.getRedisExpireSeconds(), response);
+    }
+
+    private boolean checkIpLimit(String clientIp, HttpServletResponse response) throws Exception {
+        int permits = rateLimitConfig.getIpLevel().getPermitsPerSecond();
+        String key = RATE_LIMIT_IP_PREFIX + clientIp;
+        return checkAndRespond(key, permits, rateLimitConfig.getRedisExpireSeconds(), response);
+    }
+
+    private boolean checkEndpointLimit(String path, HttpServletResponse response) throws Exception {
+        int permits = rateLimitConfig.getEndpointLevel().getPermitsPerSecond();
+        String key = RATE_LIMIT_ENDPOINT_PREFIX + path;
+        return checkAndRespond(key, permits, rateLimitConfig.getRedisExpireSeconds(), response);
+    }
+
+    private boolean checkAndRespond(String key, int permits, int expireSeconds, HttpServletResponse response) throws Exception {
+        Long count = stringRedisTemplate.opsForValue().increment(key);
+        if (count != null && count == 1) {
+            stringRedisTemplate.expire(key, expireSeconds, TimeUnit.SECONDS);
+        }
+
+        if (count != null && count > permits) {
+            response.setStatus(429);
+            response.setContentType("application/json;charset=UTF-8");
+            Result<Void> result = Result.fail(rateLimitConfig.getMessage());
+            response.getWriter().write(objectMapper.writeValueAsString(result));
+            return false;
+        }
+
+        return true;
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
+    }
+}

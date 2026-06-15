@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<modelVersion>4.0.0</modelVersion>
+
+<parent>
+<groupId>com.tailoris</groupId>
+<artifactId>tailor-is</artifactId>
+<version>1.0.0</version>
+</parent>
+
+<artifactId>tailor-is-core-gateway</artifactId>
+<packaging>jar</packaging>
+<name>TailorIS Core Gateway</name>
+<description>Core API Gateway - Routes core business services (user, merchant, product, order, payment, marketing, ai, copyright, admin, pattern).
+注意：核心网关无需 RocketMQ 依赖，消息队列职责由各业务服务自行管理。</description>
+
+<dependencies>
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-gateway</artifactId>
+</dependency>
+
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+</dependency>
+
+<!-- Redis for rate limiting and session -->
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+</dependency>
+
+<!-- Nacos service discovery -->
+<dependency>
+<groupId>com.alibaba.cloud</groupId>
+<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+</dependency>
+
+<!-- Actuator for monitoring -->
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+
+<!-- Prometheus metrics -->
+<dependency>
+<groupId>io.micrometer</groupId>
+<artifactId>micrometer-registry-prometheus</artifactId>
+</dependency>
+
+<!-- Sentinel rate limiting and circuit breaking -->
+<dependency>
+<groupId>com.alibaba.cloud</groupId>
+<artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+</dependency>
+
+<!-- Sentinel Gateway adapter -->
+<dependency>
+<groupId>com.alibaba.cloud</groupId>
+<artifactId>spring-cloud-alibaba-sentinel-gateway</artifactId>
+</dependency>
+
+<!-- SA-Token for authentication -->
+<dependency>
+<groupId>cn.dev33</groupId>
+<artifactId>sa-token-reactor-spring-boot3-starter</artifactId>
+</dependency>
+<dependency>
+<groupId>cn.dev33</groupId>
+<artifactId>sa-token-redis-jackson</artifactId>
+</dependency>
+
+<dependency>
+<groupId>org.projectlombok</groupId>
+<artifactId>lombok</artifactId>
+</dependency>
+
+<!-- JUnit 5 + Mockito 测试依赖 (Phase 1 / P1-2) -->
+<dependency>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-test</artifactId>
+<scope>test</scope>
+</dependency>
+<dependency>
+<groupId>io.projectreactor</groupId>
+<artifactId>reactor-test</artifactId>
+<scope>test</scope>
+</dependency>
+</dependencies>
+
+<build>
+<plugins>
+<plugin>
+<groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-maven-plugin</artifactId>
+<version>${spring-boot.version}</version>
+<executions>
+<execution>
+<goals>
+<goal>repackage</goal>
+</goals>
+</execution>
+</executions>
+</plugin>
+</plugins>
+</build>
+
+</project>

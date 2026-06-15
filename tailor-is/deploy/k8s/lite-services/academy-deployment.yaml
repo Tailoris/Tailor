@@ -1,0 +1,157 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: academy
+  namespace: tailor-is-prod
+  labels:
+    app: academy
+    app.kubernetes.io/name: tailor-is-academy
+    app.kubernetes.io/component: lite-service
+    app.kubernetes.io/part-of: tailor-is
+  annotations:
+    tailoris.io/serverless-candidate: "true"
+    tailoris.io.note: "此服务也可迁移至 Serverless, K8s 部署为降级方案"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: academy
+  template:
+    metadata:
+      labels:
+        app: academy
+        app.kubernetes.io/name: tailor-is-academy
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "8112"
+    spec:
+      containers:
+        - name: academy
+          image: ${REGISTRY}/tailor-is-academy:${IMAGE_TAG:-latest}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8112
+              name: http
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: tailor-is-config
+          env:
+            - name: NACOS_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: NACOS_ADDR
+            - name: MYSQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: MYSQL_HOST
+            - name: MYSQL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: MYSQL_PORT
+            - name: MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: mysql-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: mysql-password
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: REDIS_HOST
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: redis-password
+            - name: RABBITMQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: RABBITMQ_HOST
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: rabbitmq-username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: rabbitmq-password
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8112
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8112
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8112
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+      terminationGracePeriodSeconds: 30
+      restartPolicy: Always
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - academy
+                topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: academy
+  namespace: tailor-is-prod
+  labels:
+    app: academy
+    app.kubernetes.io/name: tailor-is-academy
+spec:
+  type: ClusterIP
+  selector:
+    app: academy
+  ports:
+    - name: http
+      port: 8112
+      targetPort: 8112
+      protocol: TCP

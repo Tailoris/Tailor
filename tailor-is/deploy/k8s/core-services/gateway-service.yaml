@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: core-gateway
+  namespace: tailor-is-prod
+  labels:
+    app: core-gateway
+    app.kubernetes.io/name: tailor-is-core-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: core-gateway
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP

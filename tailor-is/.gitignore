@@ -1,0 +1,139 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+logs/
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Node.js
+node_modules/
+dist/
+.npm
+.eslintcache
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# 🔒 B-L16修复: 排除 IDEA 工作区文件（包含本地窗口布局、运行配置等）
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/shelf
+.idea/dataSources/
+.idea/dataSources.local.xml
+.idea/sql-dialects.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+.idea/modules.xml
+.idea/*.iml
+.idea/misc.xml
+.idea/vcs.xml
+.idea/uiDesigner.xml
+.idea/encodings.xml
+.idea/.gitignore
+.idea/runConfigurations/
+.idea/sonarlint/
+.idea/.name
+.idea/caches/
+
+# Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.project
+.classpath
+.externalToolBuilders/
+*.launch
+.buildpath
+.target
+.tern-project
+.texlipse
+.springBeans
+.recommenders/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# Spring Boot
+spring-boot-devtools.properties
+
+# Application config
+application-local.yml
+application-dev.yml
+application-prod.yml
+*.env
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker
+docker-compose.override.yml
+
+# Test coverage
+coverage/
+jacoco/
+
+# SonarQube
+.sonar/
+
+# Husky
+.husky/_
+
+# Secrets
+.env.production
+**/.env.production
+**/.env.local
+*.pem
+*.key
+*-secret.yaml

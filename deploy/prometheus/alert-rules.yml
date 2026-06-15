@@ -1,0 +1,157 @@
+# ==============================================================================
+# Tailor IS Prometheus 告警规则
+# ==============================================================================
+# 说明: 关键指标告警规则，分为三个严重级别
+#   critical: 需要立即处理 (P0/P1)
+#   warning:  需要关注, 但不紧急 (P2)
+#   info:     通知性信息
+# ==============================================================================
+
+groups:
+  # ============================================================================
+  # 1. 实例存活监控
+  # ============================================================================
+  - name: instance-health
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels: { severity: critical, category: availability }
+        annotations:
+          summary: "服务实例下线 - {{ $labels.instance }}"
+          description: "Prometheus 无法采集 {{ $labels.instance }} 指标已超过1分钟"
+          action: "检查容器状态: docker compose ps; 查看日志: docker compose logs {{ $labels.job }}"
+
+  # ============================================================================
+  # 2. CPU / 内存 / 磁盘资源监控
+  # ============================================================================
+  - name: resource-usage
+    rules:
+      - alert: HighCpuUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels: { severity: warning, category: resource }
+        annotations:
+          summary: "{{ $labels.instance }} CPU使用率 > 85%"
+          description: "过去10分钟平均CPU使用率: {{ $value | printf \"%.2f\" }}%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 10m
+        labels: { severity: warning, category: resource }
+        annotations:
+          summary: "{{ $labels.instance }} 内存使用率 > 90%"
+          description: "当前内存使用率: {{ $value | printf \"%.2f\" }}%"
+
+      - alert: DiskSpaceRunningOut
+        expr: (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|fuse.*"} / node_filesystem_size_bytes) * 100 > 85
+        for: 10m
+        labels: { severity: critical, category: resource }
+        annotations:
+          summary: "{{ $labels.instance }} 磁盘告警"
+          description: "磁盘使用率达 {{ $value | printf \"%.2f\" }}%，超过85%阈值"
+
+  # ============================================================================
+  # 3. 数据库监控
+  # ============================================================================
+  - name: database-health
+    rules:
+      - alert: MysqlSlaveSqlThreadNotRunning
+        expr: mysql_slave_status_slave_sql_running == 0
+        for: 1m
+        labels: { severity: critical, category: database }
+        annotations: { summary: "MySQL 从库SQL线程停止" }
+
+      - alert: MysqlTooManyConnections
+        expr: mysql_global_status_threads_connected / mysql_global_variables_max_connections * 100 > 80
+        for: 5m
+        labels: { severity: warning, category: database }
+        annotations:
+          summary: "MySQL 连接数告警"
+          description: "当前连接数占比: {{ $value | printf \"%.2f\" }}%"
+
+  # ============================================================================
+  # 4. Redis 缓存监控
+  # ============================================================================
+  - name: redis-health
+    rules:
+      - alert: RedisMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 5m
+        labels: { severity: warning, category: cache }
+        annotations:
+          summary: "Redis 内存使用率 > 90%"
+          description: "当前使用: {{ $value | printf \"%.2f\" }}%，考虑清理或扩容"
+
+      - alert: RedisRejectedConnections
+        expr: increase(redis_connected_clients[5m]) > 100
+        for: 1m
+        labels: { severity: warning, category: cache }
+        annotations: { summary: "Redis 连接数激增" }
+
+  # ============================================================================
+  # 5. 应用层监控 (Spring Boot Actuator)
+  # ============================================================================
+  - name: application-health
+    rules:
+      - alert: HttpHighErrorRate
+        expr: rate(http_server_requests_seconds_count{status=~"5.*"}[5m]) / rate(http_server_requests_seconds_count[5m]) * 100 > 5
+        for: 5m
+        labels: { severity: warning, category: application }
+        annotations:
+          summary: "{{ $labels.uri }} HTTP 5xx错误率 > 5%"
+          description: "当前错误率: {{ $value | printf \"%.2f\" }}%"
+
+      - alert: HttpRequestLatencyHigh
+        expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{status="200"}[5m])) > 1
+        for: 5m
+        labels: { severity: warning, category: application }
+        annotations:
+          summary: "{{ $labels.uri }} P95 响应时间 > 1s"
+          description: "当前P95: {{ $value | printf \"%.3f\" }}s，需优化接口性能"
+
+      - alert: JvmHeapMemoryHigh
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} * 100 > 85
+        for: 10m
+        labels: { severity: warning, category: application }
+        annotations:
+          summary: "{{ $labels.instance }} JVM堆内存使用率 > 85%"
+          description: "当前使用率: {{ $value | printf \"%.2f\" }}%"
+
+      - alert: JvmGcTimeExcessive
+        expr: rate(jvm_gc_pause_seconds_sum[5m]) > 5
+        for: 5m
+        labels: { severity: warning, category: application }
+        annotations: { summary: "JVM GC 停顿时间过长" }
+
+  # ============================================================================
+  # 6. 消息队列监控
+  # ============================================================================
+  - name: message-queue
+    rules:
+      - alert: RabbitmqQueueMessageBacklog
+        expr: rabbitmq_queue_messages > 1000
+        for: 10m
+        labels: { severity: warning, category: message }
+        annotations:
+          summary: "RabbitMQ 队列消息堆积"
+          description: "{{ $labels.queue }} 队列消息数: {{ $value }}"
+
+  # ============================================================================
+  # 7. 前端/Web 监控 (HTTP 黑盒)
+  # ============================================================================
+  - name: web-availability
+    rules:
+      - alert: WebsiteDown
+        expr: probe_success == 0
+        for: 2m
+        labels: { severity: critical, category: availability }
+        annotations:
+          summary: "网站不可用: {{ $labels.instance }}"
+          action: "curl -v {{ $labels.instance }} 检查响应"
+
+      - alert: WebsiteSlowResponse
+        expr: probe_duration_seconds{job="blackbox-http"} > 3
+        for: 10m
+        labels: { severity: warning, category: performance }
+        annotations: { summary: "{{ $labels.instance }} 响应变慢 (>3s)" }

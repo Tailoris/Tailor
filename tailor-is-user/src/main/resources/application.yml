@@ -1,0 +1,52 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: tailor-is-user
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+
+# Actuator + Micrometer Prometheus
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+        step: 1m
+
+# 简单的示例用户（仅用于开发/测试环境，生产环境请替换为真实数据库
+app:
+  demo-users:
+    - username: admin
+      password: admin123
+      role: admin
+    - username: demo-user
+      password: user123
+      role: user
+    - username: test-merchant
+      password: merchant123
+      role: merchant
+  # 活跃用户追踪:
+  #   token-ttl-seconds: 600   # 10 分钟无活动视为不活跃
+  #   定时刷新频率: 60s 刷新一次 abnormal_login_rate, 300s 刷新一次 business_active_users
+  schedule:
+    active-users-seconds: 600
+    refresh-active-users-cron: "*/60 * * * * ?"
+    refresh-abnormal-rate-cron: "0 */5 * * * ?"
+
+logging:
+  level:
+    com.tailoris: INFO

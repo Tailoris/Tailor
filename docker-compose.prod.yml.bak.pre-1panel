@@ -1,0 +1,571 @@
+# ==============================================================================
+# Tailor IS 生产环境 Docker Compose 配置
+# ==============================================================================
+# 版本: v1.0
+# 用途: 1Panel 服务器生产环境部署
+# 启动: docker compose -f docker-compose.prod.yml up -d
+# 停止: docker compose -f docker-compose.prod.yml down
+# 状态: docker compose -f docker-compose.prod.yml ps
+# 日志: docker compose -f docker-compose.prod.yml logs -f
+# ==============================================================================
+
+networks:
+  tailor-is-network:
+    name: tailor-is-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/24
+  monitor-network:
+    name: monitor-network
+    driver: bridge
+
+volumes:
+  # ============ 数据卷: 持久化存储 ============
+  mysql-data: { name: tailor-is-mysql-data }
+  mysql-backup: { name: tailor-is-mysql-backup }
+  redis-data: { name: tailor-is-redis-data }
+  rabbitmq-data: { name: tailor-is-rabbitmq-data }
+  nacos-data: { name: tailor-is-nacos-data }
+  nacos-logs: { name: tailor-is-nacos-logs }
+  prometheus-data: { name: tailor-is-prometheus-data }
+  grafana-data: { name: tailor-is-grafana-data }
+  nginx-logs: { name: tailor-is-nginx-logs }
+  ssl-certs: { name: tailor-is-ssl-certs }
+
+x-restart-policy: &restart-policy
+  restart: unless-stopped
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "5"
+    tag: "{{.Name}}"
+
+x-resources: &default-resources
+  limits:
+    cpus: '1.0'
+    memory: 1024M
+  reservations:
+    cpus: '0.2'
+    memory: 256M
+
+# ==============================================================================
+# 基础设施层 (Infrastructure)
+# ==============================================================================
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: tailor-is-mysql
+    hostname: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在.env中配置MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: tailor_is
+      MYSQL_USER: tailor_is_app
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?请在.env中配置MYSQL_PASSWORD}
+      TZ: Asia/Shanghai
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - mysql-backup:/backup
+      - ./deploy/sql:/docker-entrypoint-initdb.d:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=caching_sha2_password
+      --max-connections=500
+      --innodb-buffer-pool-size=512M
+      --innodb-log-file-size=128M
+      --slow-query-log=1
+      --long-query-time=2
+      --log-slow-admin-statements=1
+    ports:
+      - "3306:3306"
+    networks: [tailor-is-network]
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '2.0', memory: 2048M }
+      reservations: { cpus: '0.5', memory: 512M }
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 30s; timeout: 5s; retries: 5; start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: tailor-is-redis
+    hostname: redis
+    command: >
+      sh -c "redis-server
+      --requirepass ${REDIS_PASSWORD:?请在.env中配置REDIS_PASSWORD}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+      --save 900 1 --save 300 10 --save 60 10000
+      --slowlog-max-len 128
+      --tcp-keepalive 300
+      --timeout 0"
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks: [tailor-is-network]
+    <<: *restart-policy
+    logging: *default-logging
+    <<: *default-resources
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 15s; timeout: 5s; retries: 5; start_period: 15s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: tailor-is-rabbitmq
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-tailor_is}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?请在.env中配置RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: /tailor-is
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbit disk_free_limit 2GB
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # 管理界面
+    networks: [tailor-is-network]
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.0', memory: 1024M }
+      reservations: { cpus: '0.2', memory: 256M }
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s; timeout: 10s; retries: 5; start_period: 60s
+
+  nacos:
+    image: nacos/nacos-server:v3.0.3
+    container_name: tailor-is-nacos
+    hostname: nacos
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_DB_NAME: nacos_config
+      MYSQL_SERVICE_USER: root
+      MYSQL_SERVICE_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在.env中配置MYSQL_ROOT_PASSWORD}
+      NACOS_AUTH_ENABLE: "true"
+      NACOS_AUTH_TOKEN: ${NACOS_TOKEN:?请在.env中配置NACOS_TOKEN}
+      NACOS_AUTH_IDENTITY_KEY: serverIdentity
+      NACOS_AUTH_IDENTITY_VALUE: ${NACOS_SERVER_IDENTITY_VALUE:-security}
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+      JVM_MN: 256m
+      TZ: Asia/Shanghai
+    volumes:
+      - nacos-data:/home/nacos/data
+      - nacos-logs:/home/nacos/logs
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    networks: [tailor-is-network]
+    depends_on:
+      mysql: { condition: service_healthy }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '2.0', memory: 1536M }
+      reservations: { cpus: '0.5', memory: 512M }
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
+      interval: 30s; timeout: 5s; retries: 10; start_period: 120s
+
+# ==============================================================================
+# 监控层 (Monitoring)
+# ==============================================================================
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: tailor-is-prometheus
+    hostname: prometheus
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    networks: [tailor-is-network, monitor-network]
+    <<: *restart-policy
+    logging: *default-logging
+    user: "65534:65534"
+    resources:
+      limits: { cpus: '1.0', memory: 1024M }
+      reservations: { cpus: '0.1', memory: 128M }
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s; timeout: 5s; retries: 3; start_period: 30s
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: tailor-is-grafana
+    hostname: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?请在.env中配置GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: "grafana-piechart-panel,grafana-clock-panel"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    networks: [monitor-network]
+    depends_on: [prometheus]
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.0', memory: 512M }
+      reservations: { cpus: '0.1', memory: 128M }
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s; timeout: 5s; retries: 3; start_period: 30s
+
+# ==============================================================================
+# 反向代理与前端 (Reverse Proxy & Frontend)
+# ==============================================================================
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: tailor-is-nginx
+    hostname: nginx
+    volumes:
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx/security-headers.conf:/etc/nginx/snippets/security-headers.conf:ro
+      - ./tailor-is-frontend/pc-mall/dist:/usr/share/nginx/html/pc-mall:ro
+      - ./tailor-is-frontend/platform-admin/dist:/usr/share/nginx/html/platform-admin:ro
+      - ./tailor-is-frontend/merchant-admin/dist:/usr/share/nginx/html/merchant-admin:ro
+      - ./tailor-is-frontend/mobile-app/dist:/usr/share/nginx/html/mobile-app:ro
+      - ssl-certs:/etc/letsencrypt/live/tailoris.com:ro
+      - nginx-logs:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    networks: [tailor-is-network]
+    depends_on:
+      - core-gateway
+      - lite-gateway
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '2.0', memory: 1024M }
+      reservations: { cpus: '0.5', memory: 256M }
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 15s; timeout: 5s; retries: 3; start_period: 10s
+
+# ==============================================================================
+# API 网关层 (API Gateway)
+# ==============================================================================
+  core-gateway:
+    image: tailor-is/core-gateway:latest
+    container_name: tailor-is-core-gateway
+    hostname: core-gateway
+    build:
+      context: ./tailor-is
+      dockerfile: ./tailor-is-core-gateway/Dockerfile
+      args:
+        SERVICE_NAME: tailor-is-core-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tailor_is?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      JWT_SECRET: ${JWT_SECRET}
+      AES_KEY: ${AES_KEY}
+      TZ: Asia/Shanghai
+      JAVA_OPTS: -Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "8080:8080"
+    networks: [tailor-is-network]
+    depends_on:
+      nacos: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '2.0', memory: 1536M }
+      reservations: { cpus: '0.5', memory: 512M }
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s; timeout: 10s; retries: 5; start_period: 120s
+
+  lite-gateway:
+    image: tailor-is/lite-gateway:latest
+    container_name: tailor-is-lite-gateway
+    hostname: lite-gateway
+    build:
+      context: ./tailor-is
+      dockerfile: ./tailor-is-lite-gateway/Dockerfile
+      args:
+        SERVICE_NAME: tailor-is-lite-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TZ: Asia/Shanghai
+      JAVA_OPTS: -Xms256m -Xmx512m -XX:+UseG1GC
+    ports:
+      - "8081:8081"
+    networks: [tailor-is-network]
+    depends_on:
+      nacos: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.0', memory: 768M }
+      reservations: { cpus: '0.2', memory: 128M }
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s; timeout: 10s; retries: 5; start_period: 120s
+
+# ==============================================================================
+# 核心业务微服务 (Core Microservices)
+# ==============================================================================
+  user-service:
+    image: tailor-is/user-service:latest
+    container_name: tailor-is-user-service
+    build:
+      context: ./tailor-is
+      dockerfile: ./tailor-is-user/Dockerfile
+      args: { SERVICE_NAME: tailor-is-user }
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tailor_is?useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      TZ: Asia/Shanghai
+      JAVA_OPTS: -Xms512m -Xmx1024m
+    networks: [tailor-is-network]
+    depends_on: { nacos: { condition: service_healthy }, mysql: { condition: service_healthy } }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.5', memory: 1024M }
+      reservations: { cpus: '0.3', memory: 256M }
+
+  product-service:
+    image: tailor-is/product-service:latest
+    container_name: tailor-is-product-service
+    build:
+      context: ./tailor-is
+      dockerfile: ./tailor-is-product/Dockerfile
+      args: { SERVICE_NAME: tailor-is-product }
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tailor_is?useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TZ: Asia/Shanghai
+      JAVA_OPTS: -Xms512m -Xmx1024m
+    networks: [tailor-is-network]
+    depends_on: { nacos: { condition: service_healthy }, mysql: { condition: service_healthy } }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.5', memory: 1024M }
+      reservations: { cpus: '0.3', memory: 256M }
+
+  order-service:
+    image: tailor-is/order-service:latest
+    container_name: tailor-is-order-service
+    build:
+      context: ./tailor-is
+      dockerfile: ./tailor-is-order/Dockerfile
+      args: { SERVICE_NAME: tailor-is-order }
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tailor_is?useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      TZ: Asia/Shanghai
+      JAVA_OPTS: -Xms512m -Xmx1024m
+    networks: [tailor-is-network]
+    depends_on: { nacos: { condition: service_healthy }, mysql: { condition: service_healthy } }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.5', memory: 1024M }
+      reservations: { cpus: '0.3', memory: 256M }
+
+  payment-service:
+    image: tailor-is/payment-service:latest
+    container_name: tailor-is-payment-service
+    build:
+      context: ./tailor-is
+      dockerfile: ./tailor-is-payment/Dockerfile
+      args: { SERVICE_NAME: tailor-is-payment }
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tailor_is?useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      WECHAT_PAY_APP_ID: ${WECHAT_PAY_APP_ID}
+      WECHAT_PAY_MCH_ID: ${WECHAT_PAY_MCH_ID}
+      WECHAT_PAY_API_KEY: ${WECHAT_PAY_API_KEY}
+      ALIPAY_APP_ID: ${ALIPAY_APP_ID}
+      ALIPAY_PRIVATE_KEY: ${ALIPAY_PRIVATE_KEY}
+      ALIPAY_PUBLIC_KEY: ${ALIPAY_PUBLIC_KEY}
+      TZ: Asia/Shanghai
+      JAVA_OPTS: -Xms512m -Xmx1024m
+    networks: [tailor-is-network]
+    depends_on: { nacos: { condition: service_healthy }, mysql: { condition: service_healthy } }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.5', memory: 1024M }
+      reservations: { cpus: '0.3', memory: 256M }
+
+  marketing-service:
+    image: tailor-is/marketing-service:latest
+    container_name: tailor-is-marketing-service
+    build:
+      context: ./tailor-is
+      dockerfile: ./tailor-is-marketing/Dockerfile
+      args: { SERVICE_NAME: tailor-is-marketing }
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tailor_is?useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TZ: Asia/Shanghai
+      JAVA_OPTS: -Xms256m -Xmx512m
+    networks: [tailor-is-network]
+    depends_on: { nacos: { condition: service_healthy }, mysql: { condition: service_healthy } }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.0', memory: 768M }
+      reservations: { cpus: '0.2', memory: 128M }
+
+  ai-service:
+    image: tailor-is/ai-service:latest
+    container_name: tailor-is-ai-service
+    build:
+      context: ./tailor-is
+      dockerfile: ./tailor-is-ai/Dockerfile
+      args: { SERVICE_NAME: tailor-is-ai }
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tailor_is?useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TZ: Asia/Shanghai
+      JAVA_OPTS: -Xms512m -Xmx1024m
+    networks: [tailor-is-network]
+    depends_on: { nacos: { condition: service_healthy } }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '2.0', memory: 1536M }
+      reservations: { cpus: '0.5', memory: 512M }
+
+  community-service:
+    image: tailor-is/community-service:latest
+    container_name: tailor-is-community-service
+    build:
+      context: ./tailor-is
+      dockerfile: ./tailor-is-community/Dockerfile
+      args: { SERVICE_NAME: tailor-is-community }
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tailor_is?useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      TZ: Asia/Shanghai
+      JAVA_OPTS: -Xms256m -Xmx512m
+    networks: [tailor-is-network]
+    depends_on: { nacos: { condition: service_healthy }, mysql: { condition: service_healthy } }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.0', memory: 768M }
+      reservations: { cpus: '0.2', memory: 128M }
+
+  merchant-service:
+    image: tailor-is/merchant-service:latest
+    container_name: tailor-is-merchant-service
+    build:
+      context: ./tailor-is
+      dockerfile: ./tailor-is-merchant/Dockerfile
+      args: { SERVICE_NAME: tailor-is-merchant }
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tailor_is?useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TZ: Asia/Shanghai
+      JAVA_OPTS: -Xms256m -Xmx512m
+    networks: [tailor-is-network]
+    depends_on: { nacos: { condition: service_healthy }, mysql: { condition: service_healthy } }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.0', memory: 768M }
+      reservations: { cpus: '0.2', memory: 128M }
+
+# ==============================================================================
+# GraphQL API 聚合层
+# ==============================================================================
+  graphql-gateway:
+    image: tailor-is/graphql-gateway:latest
+    container_name: tailor-is-graphql-gateway
+    build:
+      context: ./tailor-is-frontend/graphql-gateway
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      API_BASE_URL: http://core-gateway:8080
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      TZ: Asia/Shanghai
+    ports:
+      - "4000:4000"
+    networks: [tailor-is-network]
+    depends_on:
+      core-gateway: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    <<: *restart-policy
+    logging: *default-logging
+    resources:
+      limits: { cpus: '1.0', memory: 512M }
+      reservations: { cpus: '0.2', memory: 128M }
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 30s; timeout: 5s; retries: 3; start_period: 30s

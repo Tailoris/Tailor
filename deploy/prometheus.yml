@@ -1,0 +1,62 @@
+# Prometheus Configuration for Tailor IS
+# Generated: 2026-06-03
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'tailor-is-monitor'
+    env: 'production'
+
+rule_files:
+  - "alerts.yml"
+
+# Alertmanager 集成
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+          labels:
+            alertmanager: 'tailor-is-alertmanager'
+      scheme: http
+      timeout: 10s
+      path_prefix: /
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          env: 'production'
+
+  - job_name: 'tailor-is-microservices'
+    metrics_path: '/actuator/prometheus'
+    scheme: 'http'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['localhost:8080']
+        labels: {service: 'tailor-is-gateway',  port: '8080', env: 'production'}
+      - targets: ['localhost:8101']
+        labels: {service: 'tailor-is-user',     port: '8101', env: 'production'}
+      - targets: ['localhost:8102']
+        labels: {service: 'tailor-is-merchant', port: '8102', env: 'production'}
+      - targets: ['localhost:8103']
+        labels: {service: 'tailor-is-product',  port: '8103', env: 'production'}
+      - targets: ['localhost:8104']
+        labels: {service: 'tailor-is-order',    port: '8104', env: 'production'}
+      - targets: ['localhost:8105']
+        labels: {service: 'tailor-is-payment',  port: '8105', env: 'production'}
+      - targets: ['localhost:8106']
+        labels: {service: 'tailor-is-marketing',port: '8106', env: 'production'}
+      - targets: ['localhost:8107']
+        labels: {service: 'tailor-is-ai',       port: '8107', env: 'production'}
+      - targets: ['localhost:8108']
+        labels: {service: 'tailor-is-copyright',port: '8108', env: 'production'}
+      - targets: ['localhost:8109']
+        labels: {service: 'tailor-is-community',port: '8109', env: 'production'}
+      - targets: ['localhost:8110']
+        labels: {service: 'tailor-is-supply',   port: '8110', env: 'production'}
+      - targets: ['localhost:8111']
+        labels: {service: 'tailor-is-message',  port: '8111', env: 'production'}

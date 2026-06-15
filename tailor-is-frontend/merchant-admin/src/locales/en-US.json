@@ -1,0 +1,52 @@
+{
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "reset": "Reset",
+    "submit": "Submit",
+    "back": "Back",
+    "loading": "Loading...",
+    "noData": "No Data",
+    "operationFailed": "Operation Failed",
+    "operationSuccess": "Operation Successful",
+    "networkError": "Network error, please check your connection"
+  },
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "cart": "Cart",
+    "orders": "Orders",
+    "settings": "Settings",
+    "login": "Login",
+    "logout": "Logout"
+  },
+  "auth": {
+    "username": "Username",
+    "password": "Password",
+    "loginTitle": "Login",
+    "forgotPassword": "Forgot Password",
+    "rememberMe": "Remember Me"
+  },
+  "product": {
+    "title": "Products",
+    "detail": "Product Detail",
+    "price": "Price",
+    "stock": "Stock",
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now"
+  },
+  "order": {
+    "title": "Orders",
+    "orderNo": "Order No.",
+    "status": "Status",
+    "amount": "Amount",
+    "all": "All",
+    "pendingPayment": "Pending Payment",
+    "pendingDelivery": "Pending Delivery",
+    "completed": "Completed"
+  }
+}

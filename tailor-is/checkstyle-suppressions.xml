@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<!--
+  Tailor IS 项目 Checkstyle 抑制规则
+  排除: 生成代码、第三方代码、迁移期模块
+-->
+<suppressions>
+    <!-- Lombok 生成代码 -->
+    <suppress files=".*Builder\.java" checks=".*"/>
+    <suppress files=".*BuilderImpl\.java" checks=".*"/>
+
+    <!-- 生成的 DTO/VO -->
+    <suppress files=".*generated.*\.java" checks=".*"/>
+    <suppress files=".*[\\/]generated[\\/].*" checks=".*"/>
+
+    <!-- SpringBoot 配置属性类可放宽 -->
+    <suppress files=".*Properties\.java" checks="MemberName|ParameterName|LocalVariableName"/>
+    <suppress files=".*Config\.java" checks="MethodLength|CyclomaticComplexity"/>
+
+    <!-- 主程序入口 -->
+    <suppress files=".*Application\.java" checks=".*"/>
+
+    <!-- 迁移期允许的模块: 空/骨架模块 -->
+    <suppress files="tailor-is[\\/]tailor-is-common-web[\\/].*" checks=".*"/>
+    <suppress files="tailor-is[\\/]tailor-is-admin[\\/].*" checks="MethodLength|ParameterNumber|CyclomaticComplexity"/>
+    <suppress files="tailor-is[\\/]tailor-is-analytics[\\/].*" checks=".*"/>
+    <suppress files="tailor-is[\\/]tailor-is-pattern[\\/].*" checks=".*"/>
+    <suppress files="tailor-is[\\/]tailor-is-supply[\\/].*" checks=".*"/>
+    <suppress files="tailor-is[\\/]tailor-is-message[\\/].*" checks=".*"/>
+    <suppress files="tailor-is[\\/]tailor-is-message-im[\\/].*" checks=".*"/>
+    <suppress files="tailor-is[\\/]tailor-is-academy[\\/].*" checks=".*"/>
+    <suppress files="tailor-is[\\/]tailor-is-copyright[\\/].*" checks=".*"/>
+
+    <!-- 测试类放宽(参数多、辅助方法多) -->
+    <suppress files=".*[\\/]src[\\/]test[\\/].*" checks="MethodLength|ParameterNumber|CyclomaticComplexity|JavadocMethod|MagicNumber"/>
+    <suppress files=".*Test\.java" checks="MethodLength|ParameterNumber|CyclomaticComplexity|JavadocMethod|MagicNumber"/>
+    <suppress files=".*Tests\.java" checks="MethodLength|ParameterNumber|CyclomaticComplexity|JavadocMethod|MagicNumber"/>
+</suppressions>

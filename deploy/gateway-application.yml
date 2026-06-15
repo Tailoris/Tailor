@@ -1,0 +1,182 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: tailor-is-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:}
+      config:
+        enabled: false
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+      routes:
+        # ========== 用户服务 (User) ==========
+        - id: tailor-is-user
+          uri: lb://tailor-is-user
+          predicates:
+            - Path=/api/user/**, /api/auth/**, /api/addresses/**
+          filters:
+            - StripPrefix=0
+            - RewritePath=/api/addresses(?<suffix>/?.*), /api/user/address/list$\{suffix}
+
+        # ========== 商品服务 (Product) ==========
+        - id: tailor-is-product-exact
+          uri: lb://tailor-is-product
+          predicates:
+            - Path=/api/products, /api/products/hot, /api/products/new, /api/products/categories
+          filters:
+            - StripPrefix=0
+            - SetPath=/api/product/list
+
+        - id: tailor-is-product-seckill
+          uri: lb://tailor-is-marketing
+          predicates:
+            - Path=/api/products/seckill
+          filters:
+            - StripPrefix=0
+            - SetPath=/api/marketing/seckill/activities
+
+        - id: tailor-is-product
+          uri: lb://tailor-is-product
+          predicates:
+            - Path=/api/product/**, /api/products/**, /api/favorite/**, /api/favorites/**, /api/admin/product/**, /api/category/**
+          filters:
+            - StripPrefix=0
+            - RewritePath=/api/products/categories, /api/product/category/tree
+            - RewritePath=/api/products/(?<segment>.*), /api/product/$\{segment}
+            - RewritePath=/api/favorites, /api/favorite/list
+            - RewritePath=/api/favorites/(?<segment>.*), /api/favorite/$\{segment}
+            - RewritePath=/api/category/(?<segment>.*), /api/product/category/$\{segment}
+
+        # ========== 订单服务 (Order) ==========
+        - id: tailor-is-order
+          uri: lb://tailor-is-order
+          predicates:
+            - Path=/api/order/**, /api/orders/**, /api/cart/**
+          filters:
+            - StripPrefix=0
+            - RewritePath=/api/orders(?<suffix>/?.*), /api/order/list$\{suffix}
+
+        # ========== 支付服务 (Payment) ==========
+        - id: tailor-is-payment
+          uri: lb://tailor-is-payment
+          predicates:
+            - Path=/api/payment/**, /api/payments/**, /api/settlement/**, /api/account/**, /api/sandbox/**
+          filters:
+            - StripPrefix=0
+            - RewritePath=/api/payments(?<suffix>/?.*), /api/payment/list$\{suffix}
+
+        # ========== 消息服务 (Message) ==========
+        - id: tailor-is-message
+          uri: lb://tailor-is-message
+          predicates:
+            - Path=/api/message/**, /api/messages/**, /api/im/**
+          filters:
+            - StripPrefix=0
+            - RewritePath=/api/messages(?<suffix>/?.*), /api/message/list$\{suffix}
+            - RewritePath=/api/im(?<suffix>/?.*), /api/message/list$\{suffix}
+
+        # ========== 商家服务 (Merchant) ==========
+        - id: tailor-is-merchant
+          uri: lb://tailor-is-merchant
+          predicates:
+            - Path=/api/merchant/**, /api/merchants/**, /api/admin/merchant/**
+          filters:
+            - StripPrefix=0
+            - RewritePath=/api/merchants(?<suffix>/?.*), /api/merchant/list$\{suffix}
+
+        # ========== 营销服务 (Marketing) ==========
+        - id: tailor-is-marketing
+          uri: lb://tailor-is-marketing
+          predicates:
+            - Path=/api/marketing/**, /api/coupon/**, /api/coupons/**, /api/seckill/**, /api/admin/marketing/**
+          filters:
+            - StripPrefix=0
+            - RewritePath=/api/coupons(?<suffix>/?.*), /api/coupon/list$\{suffix}
+            - RewritePath=/api/seckill(?<suffix>/?.*), /api/marketing/seckill/list$\{suffix}
+
+        # ========== 版权服务 (Copyright) ==========
+        - id: tailor-is-copyright
+          uri: lb://tailor-is-copyright
+          predicates:
+            - Path=/api/copyright/**, /api/copyrights/**
+          filters:
+            - StripPrefix=0
+            - RewritePath=/api/copyrights(?<suffix>/?.*), /api/copyright/list$\{suffix}
+
+        # ========== 社区服务 (Community) ==========
+        - id: tailor-is-community-exact
+          uri: lb://tailor-is-community
+          predicates:
+            - Path=/api/community/posts, /api/community/posts/**
+          filters:
+            - StripPrefix=0
+            - SetPath=/api/community/post/list
+
+        - id: tailor-is-community
+          uri: lb://tailor-is-community
+          predicates:
+            - Path=/api/community/**
+          filters:
+            - StripPrefix=0
+
+        # ========== 供应链服务 (Supply) ==========
+        - id: tailor-is-supply
+          uri: lb://tailor-is-supply
+          predicates:
+            - Path=/api/supply/**
+          filters:
+            - StripPrefix=0
+
+        # ========== AI 服务 ==========
+        - id: tailor-is-ai
+          uri: lb://tailor-is-ai
+          predicates:
+            - Path=/api/ai/**, /api/pattern/**
+          filters:
+            - StripPrefix=0
+
+  data:
+    redis:
+      # 凭证从环境变量读取 (source deploy/load-credentials.sh)
+      # 启动时必须设置 REDIS_HOST / REDIS_PORT / REDIS_PASSWORD
+      host: ${REDIS_HOST:172.28.249.179}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_RSeR4G}
+      database: 0
+
+knife4j:
+  gateway:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: tailor-is-gateway
+
+logging:
+  level:
+    com.tailoris.gateway: info
+    org.springframework.cloud.gateway: info

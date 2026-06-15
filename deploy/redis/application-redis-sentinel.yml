@@ -1,0 +1,30 @@
+# ==============================================================================
+# Tailor IS - Spring Boot Redis Sentinel 配置
+# Phase 3 P3-1: Redis Sentinel 高可用 (M-07)
+#
+# 使用方式: 将此配置应用到各微服务的 application-prod.yml
+# 或在 docker-compose 环境变量中设置
+# ==============================================================================
+
+spring:
+  data:
+    redis:
+      # Sentinel 模式
+      sentinel:
+        master: tailor-is-master
+        nodes:
+          - redis-sentinel1:26379
+          - redis-sentinel2:26379
+          - redis-sentinel3:26379
+      password: ${REDIS_PASSWORD:redis_jD2N8n}
+      # 连接池配置
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 4
+          max-wait: 3000ms
+        shutdown-timeout: 200ms
+      # 超时配置
+      timeout: 5000ms
+      connect-timeout: 3000ms

@@ -1,0 +1,192 @@
+# =============================================================================
+# Tailor IS Backend CI Pipeline
+# 对应: Phase 1 / P1-3 / C-05
+# 触发: PR 推送到 main/develop, push 到 main
+# 流程: checkout → setup jdk → cache → build → test → checkstyle/pmd → jacoco
+# =============================================================================
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'tailor-is/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'tailor-is/**'
+      - '.github/workflows/backend-ci.yml'
+
+# 取消正在运行的同分支 CI(节省资源)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MAVEN_OPTS: -Xmx2g -XX:+HeapDumpOnOutOfMemoryError
+  JAVA_VERSION: 17
+  MAVEN_VERSION: 3.9.9
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: 编译 + 单元测试 + 静态分析 + 覆盖率
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 完整历史, SonarQube blame 需要
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/tailor-is/**/pom.xml', 'tailor-is/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-
+            ${{ runner.os }}-
+
+      - name: Display Maven version
+        run: mvn --version
+
+      - name: Verify Maven settings.xml
+        run: |
+          if [ -f tailor-is/settings.xml ]; then
+            mkdir -p ~/.m2
+            cp tailor-is/settings.xml ~/.m2/settings.xml
+            echo "settings.xml configured"
+          fi
+
+      # ------ 编译(不运行测试) ------
+      - name: Compile all modules
+        run: |
+          mvn -B -ntp -T 4 \
+              -f tailor-is/pom.xml \
+              -DskipTests \
+              -Dmaven.javadoc.skip=true \
+              clean install
+
+      # ------ 单元测试 + 覆盖率 ------
+      - name: Run unit tests
+        run: |
+          mvn -B -ntp -T 4 \
+              -f tailor-is/pom.xml \
+              -Dtest='*Test,!IT*' \
+              -DfailIfNoTests=false \
+              -Dmaven.javadoc.skip=true \
+              -DjacocoArgLine="-javaagent:$HOME/.m2/repository/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.12-runtime.jar=destfile=$GITHUB_WORKSPACE/tailor-is/target/jacoco.exec" \
+              test
+
+      # ------ Checkstyle ------
+      - name: Run Checkstyle
+        if: always()
+        run: |
+          mvn -B -ntp \
+              -f tailor-is/pom.xml \
+              -Dcheckstyle.configLocation=checkstyle.xml \
+              -Dcheckstyle.suppressionsLocation=checkstyle-suppressions.xml \
+              -Dcheckstyle.includes='**/src/main/java/**/*.java' \
+              -Pcheckstyle \
+              checkstyle:check
+        continue-on-error: true  # Phase 1 期间允许警告, Phase 2 改为 false
+
+      # ------ PMD ------
+      - name: Run PMD
+        if: always()
+        run: |
+          mvn -B -ntp \
+              -f tailor-is/pom.xml \
+              -Ppmd \
+              pmd:check
+        continue-on-error: true
+
+      # ------ 上传测试报告 ------
+      - name: Upload Surefire test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: |
+            tailor-is/**/target/surefire-reports/*.xml
+            tailor-is/**/target/surefire-reports/*.txt
+          retention-days: 14
+          if-no-files-found: warn
+
+      # ------ 上传 JaCoCo 报告 ------
+      - name: Upload JaCoCo coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-reports
+          path: |
+            tailor-is/**/target/site/jacoco/**/*
+            tailor-is/**/target/jacoco.exec
+          retention-days: 14
+          if-no-files-found: warn
+
+      # ------ 覆盖率摘要到 PR ------
+      - name: Generate coverage summary
+        if: github.event_name == 'pull_request' && always()
+        run: |
+          echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f tailor-is/target/site/jacoco/index.html ]; then
+            # 简单提取覆盖率百分比
+            pct=$(grep -oE 'Total[^<]*<td>[0-9]+%' tailor-is/target/site/jacoco/index.html | head -1 | grep -oE '[0-9]+%' || echo "N/A")
+            echo "- **Overall JaCoCo Coverage**: $pct" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- **Build Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Docker 镜像构建(仅 main 分支触发, 节省 PR 资源)
+  # ---------------------------------------------------------------------------
+  docker:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - tailor-is-common
+          - tailor-is-user
+          - tailor-is-merchant
+          - tailor-is-product
+          - tailor-is-order
+          - tailor-is-payment
+          - tailor-is-marketing
+          - tailor-is-community
+          - tailor-is-ai
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: tailor-is
+          file: tailor-is/${{ matrix.service }}/Dockerfile
+          tags: |
+            tailor-is/${{ matrix.service }}:latest
+            tailor-is/${{ matrix.service }}:${{ github.sha }}
+          push: false
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

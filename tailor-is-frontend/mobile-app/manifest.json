@@ -1,0 +1,53 @@
+{
+  "name": "Tailor IS",
+  "appid": "",
+  "description": "Tailor IS 移动端商城",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "app-plus": {
+    "usingComponents": true,
+    "nvueCompiler": "uni-app",
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    },
+    "modules": {}
+  },
+  "quickapp": {},
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "minified": true,
+      "postcss": true
+    },
+    "usingComponents": true,
+    "permission": {
+      "scope.userLocation": {
+        "desc": "获取您的位置信息"
+      }
+    }
+  },
+  "h5": {
+    "devServer": {
+      "port": 8080,
+      "proxy": {
+        "/api": {
+          "target": "http://localhost:8080",
+          "changeOrigin": true,
+          "pathRewrite": {
+            "^/api": "/api"
+          }
+        }
+      }
+    },
+    "title": "Tailor IS",
+    "router": {
+      "mode": "hash"
+    }
+  }
+}

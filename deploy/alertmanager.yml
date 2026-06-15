@@ -1,0 +1,139 @@
+# =============================================================
+# Alertmanager 通知配置 - Tailor IS 生产环境
+# =============================================================
+# 架构说明:
+#   · 告警接收器统一走 alert-webhook:8080 中继服务
+#   · 由中继服务根据 path / 告警级别分发到钉钉/飞书/企业微信/邮件
+#   · 邮件使用 Resend HTTP API (见 deploy/alert-webhook/server.py)
+#
+# 启动方式（示例）:
+#   docker run -d --name alertmanager \
+#       -p 9093:9093 \
+#       -v $(pwd)/alertmanager.yml:/etc/alertmanager/alertmanager.yml \
+#       prom/alertmanager:latest \
+#       --config.file=/etc/alertmanager/alertmanager.yml \
+#       --web.external-url=http://alertmanager:9093
+#
+# alert-webhook 启动（见 deploy/alert-webhook/Dockerfile）:
+#   docker run -d --name alert-webhook \
+#       -p 8080:8080 \
+#       -e DINGTALK_WEBHOOK=https://oapi.dingtalk.com/robot/send?access_token=XXX \
+#       -e FEISHU_WEBHOOK=https://open.feishu.cn/open-apis/bot/v2/hook/XXX \
+#       -e RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxx \
+#       -e ALERT_TO_EMAIL=oncall@tailoris.com,ops@tailoris.com \
+#       tailor-is-alert-webhook
+# =============================================================
+
+global:
+  # Alertmanager 自身的 smtp 保留为空；邮件通过 alert-webhook + Resend 发送
+  resolve_timeout: 5m
+
+# 告警路由树
+route:
+  receiver: 'default-receiver'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s      # 同组告警首次触发前等待，可合并相近告警
+  group_interval: 2m   # 同组告警之间至少间隔
+  repeat_interval: 4h  # 重复发送间隔
+
+  routes:
+    # ----- 严重告警：立即通知所有渠道 -----
+    - matchers:
+        - severity = "critical"
+      receiver: 'critical-receiver'
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 1h
+      continue: true
+      routes:
+        # 服务下线：进一步升级
+        - matchers:
+            - alertname = "ServiceDown"
+          receiver: 'service-down-receiver'
+          group_wait: 0s
+          repeat_interval: 30m
+
+    # ----- 警告级别：飞书 / 邮件 -----
+    - matchers:
+        - severity = "warning"
+      receiver: 'warning-receiver'
+      group_wait: 1m
+      group_interval: 10m
+      repeat_interval: 6h
+
+    # ----- 业务类告警（登录异常/用户数异常等）-----
+    - matchers:
+        - category = "security"
+      receiver: 'security-receiver'
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 2h
+
+    - matchers:
+        - category = "business"
+      receiver: 'business-receiver'
+      group_wait: 1m
+      group_interval: 10m
+
+# =============================================================
+# 抑制规则（高级别告警抑制低级别告警，避免告警风暴）
+# =============================================================
+inhibit_rules:
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal: ['alertname', 'service']
+
+  - source_matchers:
+      - alertname = "ServiceDown"
+    target_matchers:
+      - alertname =~ "HighErrorRate|SlowResponse|HighJVMMemory|DBPoolExhausted"
+    equal: ['service']
+
+# =============================================================
+# 接收器：统一走 alert-webhook:8080，由其负责分发
+# =============================================================
+receivers:
+  # 兜底接收器：所有未被其他路由命中的告警走这里
+  - name: 'default-receiver'
+    webhook_configs:
+      - url: 'http://alert-webhook:8080/api/v1/alerts/default'
+        send_resolved: true
+        max_alerts: 0
+        timeout: 10s
+
+  # 严重告警：钉钉 + 飞书 + 企业微信 + 邮件（四通道）
+  - name: 'critical-receiver'
+    webhook_configs:
+      - url: 'http://alert-webhook:8080/api/v1/alerts/critical'
+        send_resolved: true
+        timeout: 10s
+
+  # 服务下线：严重告警 + 额外升级路径
+  - name: 'service-down-receiver'
+    webhook_configs:
+      - url: 'http://alert-webhook:8080/api/v1/alerts/service-down'
+        send_resolved: true
+        timeout: 10s
+
+  # 警告：飞书 + 邮件
+  - name: 'warning-receiver'
+    webhook_configs:
+      - url: 'http://alert-webhook:8080/api/v1/alerts/warning'
+        send_resolved: true
+        timeout: 10s
+
+  # 安全类告警：钉钉 + 飞书 + 邮件
+  - name: 'security-receiver'
+    webhook_configs:
+      - url: 'http://alert-webhook:8080/api/v1/alerts/critical'
+        send_resolved: true
+        timeout: 10s
+
+  # 业务类告警：企业微信 + 邮件
+  - name: 'business-receiver'
+    webhook_configs:
+      - url: 'http://alert-webhook:8080/api/v1/alerts/business'
+        send_resolved: true
+        timeout: 10s

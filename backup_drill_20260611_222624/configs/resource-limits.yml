@@ -1,0 +1,191 @@
+# ============================================================================
+# 生产环境服务资源限制配置文件
+# ----------------------------------------------------------------------------
+# 说明：本文件与 Docker Compose 兼容，定义各服务的 deploy.resources 限制
+# 及对应的环境变量。可作为 docker-compose.yml 的 extends 或 override 参考。
+# ============================================================================
+
+version: '3.8'
+
+services:
+
+  # --------------------------------------------------------------------------
+  # 1. MySQL 数据库
+  #    数据库是平台最核心的存储组件，预留较高的 CPU 与内存，
+  #    并通过环境变量调整最大连接数与 InnoDB 缓冲池，避免高并发时抖动。
+  # --------------------------------------------------------------------------
+  mysql:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4096M
+        reservations:
+          cpus: '0.5'
+          memory: 1024M
+    environment:
+      MAX_CONNECTIONS: 500
+      INNODB_BUFFER_POOL_SIZE: 2G
+      INNODB_LOG_FILE_SIZE: 256M
+
+  # --------------------------------------------------------------------------
+  # 2. Redis 缓存
+  #    缓存层承担高频读写，内存上限配合 allkeys-lru 淘汰策略，
+  #    同时限制最大客户端数，防止异常连接打爆服务。
+  # --------------------------------------------------------------------------
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    environment:
+      MAXMEMORY: 512MB
+      MAXMEMORY_POLICY: allkeys-lru
+      MAX_CLIENTS: 1000
+
+  # --------------------------------------------------------------------------
+  # 3. RabbitMQ 消息队列
+  #    消息队列在业务高峰期间会产生大量堆积，需预留较高内存与连接数，
+  #    并通过 VM 内存高水位线防止 RabbitMQ 被 OOM Kill。
+  # --------------------------------------------------------------------------
+  rabbitmq:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    environment:
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.6
+      RABBITMQ_MAX_CONNECTIONS: 2000
+
+  # --------------------------------------------------------------------------
+  # 4. Nacos 配置中心
+  #    Nacos 作为 Java 应用，需要显式约束 JVM 堆内存，
+  #    并开启鉴权以保障生产环境配置的安全。
+  # --------------------------------------------------------------------------
+  nacos:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    environment:
+      JVM_XMS: 512m
+      JVM_XMX: 1024m
+      JVM_MN: 256m
+      TOMCAT_MAX_THREADS: 200
+      NACOS_AUTH_ENABLE: 'true'
+
+  # --------------------------------------------------------------------------
+  # 5. API 网关 / 核心服务 (gateway-core)
+  #    核心网关承载主要业务流量，使用 G1 垃圾回收器，
+  #    并限制 Tomcat 最大连接数以防雪崩。
+  # --------------------------------------------------------------------------
+  gateway-core:
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    environment:
+      JAVA_OPTS: -Xms512m -Xmx1024m -XX:+UseG1GC
+      TOMCAT_MAX_CONNECTIONS: 500
+
+  # --------------------------------------------------------------------------
+  # 6. API 网关 / 轻量服务 (gateway-lite)
+  #    轻量网关用于低流量场景，资源配额较小以节约成本。
+  # --------------------------------------------------------------------------
+  gateway-lite:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.3'
+          memory: 256M
+
+  # --------------------------------------------------------------------------
+  # 7. Nginx 反向代理
+  #    Nginx 作为边缘入口，需具备较高的并发连接能力，
+  #    通过 worker 进程与连接数参数调优吞吐量。
+  # --------------------------------------------------------------------------
+  nginx:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 128M
+    environment:
+      NGINX_WORKER_PROCESSES: auto
+      NGINX_WORKER_CONNECTIONS: 4096
+      NGINX_KEEPALIVE_TIMEOUT: 65
+
+  # --------------------------------------------------------------------------
+  # 8. Prometheus 监控
+  #    Prometheus 通过保留策略与采样间隔控制磁盘与内存占用，
+  #    限制保留时间为 15 天以避免历史数据无限增长。
+  # --------------------------------------------------------------------------
+  prometheus:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    environment:
+      STORAGE_RETENTION: 15d
+      STORAGE_RETENTION_SIZE: 10GB
+      EVALUATION_INTERVAL: 15s
+      SCRAPE_INTERVAL: 15s
+
+  # --------------------------------------------------------------------------
+  # 9. Grafana 可视化
+  #    Grafana 作为只读展示组件，资源需求较低，配额较小。
+  # --------------------------------------------------------------------------
+  grafana:
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # --------------------------------------------------------------------------
+  # 10. GraphQL 聚合层 (graphql-gateway)
+  #     聚合层集中处理前端查询，限制并发连接与请求超时，
+  #     避免慢查询拖垮后端服务。
+  # --------------------------------------------------------------------------
+  graphql-gateway:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    environment:
+      NODE_ENV: production
+      MAX_CONCURRENT_CONNECTIONS: 1000
+      REQUEST_TIMEOUT: 30000

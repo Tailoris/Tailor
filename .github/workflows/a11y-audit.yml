@@ -1,0 +1,77 @@
+# ==============================================================================
+# Tailor IS - WCAG 2.1 AA 无障碍合规 CI 集成
+# Phase 3 P3-6: WCAG 2.1 AA 无障碍合规 (M-02)
+# ==============================================================================
+# 用途: 在 CI 流水线中自动执行无障碍检测
+# 集成到 GitHub Actions: backend-ci.yml 或 frontend-ci.yml
+# ==============================================================================
+
+name: Accessibility Audit
+
+on:
+  pull_request:
+    paths:
+      - 'tailor-is-frontend/**'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'tailor-is-frontend/**'
+
+jobs:
+  a11y-audit:
+    name: WCAG 2.1 AA Accessibility Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tailor-is-frontend/pc-mall/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tailor-is-frontend/pc-mall
+        run: npm ci
+
+      - name: Install Playwright
+        working-directory: tailor-is-frontend/pc-mall
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        working-directory: tailor-is-frontend/pc-mall
+        run: npm run build
+
+      - name: Start dev server
+        working-directory: tailor-is-frontend/pc-mall
+        run: |
+          npm run preview -- --port 4173 &
+          sleep 5
+          curl -s -o /dev/null -w "%{http_code}" http://localhost:4173
+
+      - name: Run accessibility tests
+        working-directory: tailor-is-frontend/e2e-tests
+        run: |
+          npx playwright test tests/accessibility.spec.ts --reporter=html
+        env:
+          BASE_URL: http://localhost:4173
+
+      - name: Upload accessibility report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-report
+          path: |
+            tailor-is-frontend/e2e-tests/playwright-report/
+            tailor-is-frontend/e2e-tests/test-results/
+
+      - name: Check critical violations
+        if: always()
+        run: |
+          echo "Checking for critical accessibility violations..."
+          # 如果存在 critical 违规，则构建失败
+          grep -r "critical" tailor-is-frontend/e2e-tests/test-results/ && exit 1 || exit 0

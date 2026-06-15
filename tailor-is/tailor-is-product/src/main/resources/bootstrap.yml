@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: tailor-is-product
+  config:
+    import: optional:nacos:
+  cloud:
+    nacos:
+      config:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        file-extension: yaml
+        shared-configs:
+          - data-id: tailor-is-common.yml
+            group: DEFAULT_GROUP
+            refresh: true

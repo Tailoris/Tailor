@@ -1,0 +1,131 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scale-down-idle-hours
+  namespace: tailor-is-prod
+  labels:
+    app.kubernetes.io/name: scale-down-idle-hours
+    app.kubernetes.io/component: autoscaling
+spec:
+  # 每天 00:00 UTC (即北京时间 08:00) 执行缩容
+  # 如需在 00:00-06:00 北京时间执行, 使用 "0 16-21 * * *" (UTC 16:00-21:00 = 北京时间 00:00-05:00)
+  schedule: "0 16 * * *"
+  # 时区: 如果使用 Kubernetes 1.27+, 可添加 timeZone: "Asia/Shanghai"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: scale-down-sa
+          containers:
+            - name: scale-down
+              image: bitnami/kubectl:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "=== 闲时缩容开始: $(date) ==="
+
+                  # 缩容非核心服务到 1 个副本 (保留最小可用性)
+                  echo "缩容 copyright 到 1 副本..."
+                  kubectl scale deployment copyright --replicas=1 -n tailor-is-prod
+
+                  echo "缩容 ai 到 1 副本..."
+                  kubectl scale deployment ai --replicas=1 -n tailor-is-prod
+
+                  echo "缩容 payment 到 1 副本..."
+                  kubectl scale deployment payment --replicas=1 -n tailor-is-prod
+
+                  # 注意: core-gateway 和 order 保持 HPA 自动管理, 不手动缩容
+                  # 如果 HPA 的 minReplicas 也需调整, 可以:
+                  # kubectl patch hpa core-gateway-hpa -n tailor-is-prod -p '{"spec":{"minReplicas":1}}'
+                  # kubectl patch hpa order-hpa -n tailor-is-prod -p '{"spec":{"minReplicas":1}}'
+
+                  echo "=== 闲时缩容完成: $(date) ==="
+              resources:
+                requests:
+                  cpu: "50m"
+                  memory: "64Mi"
+                limits:
+                  cpu: "100m"
+                  memory: "128Mi"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scale-up-peak-hours
+  namespace: tailor-is-prod
+  labels:
+    app.kubernetes.io/name: scale-up-peak-hours
+    app.kubernetes.io/component: autoscaling
+spec:
+  # 每天 06:00 UTC+8 (即北京时间 06:00 = UTC 22:00 前一天)
+  schedule: "0 22 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: scale-down-sa
+          containers:
+            - name: scale-up
+              image: bitnami/kubectl:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "=== 高峰时段扩容开始: $(date) ==="
+
+                  # 恢复非核心服务到正常副本数
+                  echo "扩容 copyright 到 2 副本..."
+                  kubectl scale deployment copyright --replicas=2 -n tailor-is-prod
+
+                  echo "扩容 ai 到 1 副本 (HPA 自动管理)..."
+                  kubectl scale deployment ai --replicas=1 -n tailor-is-prod
+
+                  echo "扩容 payment 到 2 副本..."
+                  kubectl scale deployment payment --replicas=2 -n tailor-is-prod
+
+                  echo "=== 高峰时段扩容完成: $(date) ==="
+              resources:
+                requests:
+                  cpu: "50m"
+                  memory: "64Mi"
+                limits:
+                  cpu: "100m"
+                  memory: "128Mi"
+          restartPolicy: OnFailure
+---
+# ServiceAccount 用于 CronJob 执行 kubectl 命令
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: scale-down-sa
+  namespace: tailor-is-prod
+---
+# RBAC 角色: 允许 scale deployment 和 patch HPA
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: scale-manager
+  namespace: tailor-is-prod
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "update", "patch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: scale-down-sa-binding
+  namespace: tailor-is-prod
+subjects:
+  - kind: ServiceAccount
+    name: scale-down-sa
+    namespace: tailor-is-prod
+roleRef:
+  kind: Role
+  name: scale-manager
+  apiGroup: rbac.authorization.k8s.io

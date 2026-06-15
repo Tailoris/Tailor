@@ -1,0 +1,87 @@
+package com.tailoris.common.config;
+
+import com.tailoris.common.interceptor.AuthInterceptor;
+import com.tailoris.common.interceptor.CsrfTokenInterceptor;
+import com.tailoris.common.interceptor.DataPermissionInterceptor;
+import com.tailoris.common.interceptor.RateLimitInterceptor;
+import com.tailoris.common.filter.CspFilter;
+import com.tailoris.common.filter.XssFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.util.Arrays;
+
+@Configuration
+public class WebMvcConfig implements WebMvcConfigurer {
+
+    private final AuthInterceptor authInterceptor;
+    private final RateLimitInterceptor rateLimitInterceptor;
+
+    public WebMvcConfig(AuthInterceptor authInterceptor, RateLimitInterceptor rateLimitInterceptor) {
+        this.authInterceptor = authInterceptor;
+        this.rateLimitInterceptor = rateLimitInterceptor;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(rateLimitInterceptor)
+                .addPathPatterns("/api/**");
+        registry.addInterceptor(authInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns(
+                        "/api/auth/login",
+                        "/api/auth/register",
+                        "/api/auth/captcha",
+                        "/api/public/**"
+                );
+        registry.addInterceptor(new CsrfTokenInterceptor())
+                .addPathPatterns("/api/**")
+                .excludePathPatterns(
+                        "/api/auth/login",
+                        "/api/auth/register",
+                        "/api/auth/captcha",
+                        "/api/public/**",
+                        "/api/webhook/**"
+                );
+        registry.addInterceptor(new DataPermissionInterceptor())
+                .addPathPatterns("/api/**")
+                .excludePathPatterns(
+                        "/api/auth/login",
+                        "/api/auth/register",
+                        "/api/auth/captcha",
+                        "/api/public/**"
+                );
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOriginPatterns("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
+
+    @Bean
+    public FilterRegistrationBean<XssFilter> xssFilterRegistration() {
+        FilterRegistrationBean<XssFilter> xssFilter = new FilterRegistrationBean<>();
+        xssFilter.setFilter(new XssFilter());
+        xssFilter.addUrlPatterns("/*");
+        xssFilter.setOrder(1);
+        return xssFilter;
+    }
+
+    @Bean
+    public FilterRegistrationBean<CspFilter> cspFilter() {
+        FilterRegistrationBean<CspFilter> cspFilter = new FilterRegistrationBean<>();
+        cspFilter.setFilter(new CspFilter());
+        cspFilter.addUrlPatterns("/*");
+        cspFilter.setOrder(0);
+        return cspFilter;
+    }
+}

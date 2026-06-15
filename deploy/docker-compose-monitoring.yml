@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    container_name: tailor-is-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/consoles'
+      - '--web.enable-lifecycle'
+    network_mode: host
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: tailor-is-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./data/alertmanager:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    network_mode: host
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: tailor-is-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-TailorIS2026@Grafana}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana:/var/lib/grafana
+      - ./dashboards:/etc/grafana/provisioning/dashboards:ro
+    network_mode: host
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ------------------------------------------------------------
+  # Alertmanager Webhook 中继服务
+  # 将 Alertmanager 告警分发到 钉钉 / 飞书 / 企业微信 / Resend 邮件
+  # 配置说明:
+  #   - DINGTALK_WEBHOOK / FEISHU_WEBHOOK / WECOM_WEBHOOK:
+  #     在对应 IM 平台配置"自定义机器人"后填入 webhook URL
+  #   - RESEND_API_KEY: 邮件通知的 API Key
+  #   - ALERT_TO_EMAIL: 逗号分隔的告警收件人
+  # 注意: 因使用 network_mode: host, alertmanager 通过 localhost:8080 访问本服务
+  # ------------------------------------------------------------
+  alert-webhook:
+    build:
+      context: ./alert-webhook
+      dockerfile: Dockerfile
+    image: tailor-is-alert-webhook:latest
+    container_name: tailor-is-alert-webhook
+    environment:
+      - PORT=8080
+      - DINGTALK_WEBHOOK=${DINGTALK_WEBHOOK:-}
+      - DINGTALK_SECRET=${DINGTALK_SECRET:-}
+      - FEISHU_WEBHOOK=${FEISHU_WEBHOOK:-}
+      - WECOM_WEBHOOK=${WECOM_WEBHOOK:-}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - ALERT_FROM_EMAIL=${ALERT_FROM_EMAIL:-Tailor IS 告警 <noreply@tailorbot.top>}
+      - ALERT_TO_EMAIL=${ALERT_TO_EMAIL:-}
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+              "import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3); sys.exit(0 if r.status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M

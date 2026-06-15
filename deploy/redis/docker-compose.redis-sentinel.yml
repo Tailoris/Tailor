@@ -1,0 +1,188 @@
+# ==============================================================================
+# Tailor IS - Redis Sentinel 高可用部署配置
+# ==============================================================================
+# Phase 3 性能与安全: P3-1 Redis Cluster/Sentinel 部署 (M-07)
+#
+# 架构: 1 Master + 2 Replica + 3 Sentinel
+# 启动: docker compose -f deploy/redis/docker-compose.redis-sentinel.yml up -d
+# 停止: docker compose -f deploy/redis/docker-compose.redis-sentinel.yml down
+# 状态: docker compose -f deploy/redis/docker-compose.redis-sentinel.yml ps
+# ==============================================================================
+
+networks:
+  redis-sentinel-net:
+    name: tailor-is-redis-sentinel
+    driver: bridge
+
+volumes:
+  redis-master-data:  { name: tailor-is-redis-master-data }
+  redis-replica1-data: { name: tailor-is-redis-replica1-data }
+  redis-replica2-data: { name: tailor-is-redis-replica2-data }
+
+x-redis-common: &redis-common
+  image: redis:8-alpine
+  restart: unless-stopped
+  networks: [redis-sentinel-net]
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+  healthcheck:
+    test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_jD2N8n}", "ping"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+    start_period: 10s
+  deploy:
+    resources:
+      limits:   { cpus: "1.0", memory: 512M }
+      reservations: { cpus: "0.25", memory: 128M }
+
+services:
+  # ============================================================================
+  # Redis Master (主节点)
+  # ============================================================================
+  redis-master:
+    <<: *redis-common
+    container_name: tailor-is-redis-master
+    hostname: redis-master
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-master-data:/data
+      - ./redis-master.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  # ============================================================================
+  # Redis Replica 1 (从节点1)
+  # ============================================================================
+  redis-replica1:
+    <<: *redis-common
+    container_name: tailor-is-redis-replica1
+    hostname: redis-replica1
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-replica1-data:/data
+      - ./redis-replica.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    depends_on:
+      redis-master:
+        condition: service_healthy
+
+  # ============================================================================
+  # Redis Replica 2 (从节点2)
+  # ============================================================================
+  redis-replica2:
+    <<: *redis-common
+    container_name: tailor-is-redis-replica2
+    hostname: redis-replica2
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis-replica2-data:/data
+      - ./redis-replica.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    depends_on:
+      redis-master:
+        condition: service_healthy
+
+  # ============================================================================
+  # Redis Sentinel 1
+  # ============================================================================
+  redis-sentinel1:
+    image: redis:8-alpine
+    container_name: tailor-is-redis-sentinel1
+    hostname: redis-sentinel1
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./sentinel1.conf:/usr/local/etc/redis/sentinel.conf:ro
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    networks: [redis-sentinel-net]
+    restart: unless-stopped
+    depends_on:
+      redis-master:    { condition: service_healthy }
+      redis-replica1:  { condition: service_healthy }
+      redis-replica2:  { condition: service_healthy }
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:   { cpus: "0.5", memory: 256M }
+        reservations: { cpus: "0.1", memory: 64M }
+
+  # ============================================================================
+  # Redis Sentinel 2
+  # ============================================================================
+  redis-sentinel2:
+    image: redis:8-alpine
+    container_name: tailor-is-redis-sentinel2
+    hostname: redis-sentinel2
+    ports:
+      - "26380:26379"
+    volumes:
+      - ./sentinel2.conf:/usr/local/etc/redis/sentinel.conf:ro
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    networks: [redis-sentinel-net]
+    restart: unless-stopped
+    depends_on:
+      redis-master:    { condition: service_healthy }
+      redis-replica1:  { condition: service_healthy }
+      redis-replica2:  { condition: service_healthy }
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:   { cpus: "0.5", memory: 256M }
+        reservations: { cpus: "0.1", memory: 64M }
+
+  # ============================================================================
+  # Redis Sentinel 3
+  # ============================================================================
+  redis-sentinel3:
+    image: redis:8-alpine
+    container_name: tailor-is-redis-sentinel3
+    hostname: redis-sentinel3
+    ports:
+      - "26381:26379"
+    volumes:
+      - ./sentinel3.conf:/usr/local/etc/redis/sentinel.conf:ro
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    networks: [redis-sentinel-net]
+    restart: unless-stopped
+    depends_on:
+      redis-master:    { condition: service_healthy }
+      redis-replica1:  { condition: service_healthy }
+      redis-replica2:  { condition: service_healthy }
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:   { cpus: "0.5", memory: 256M }
+        reservations: { cpus: "0.1", memory: 64M }
