@@ -78,3 +78,21 @@ jacoco/
 # 数据库备份/演练目录
 rto-drill/
 backup_drill_*/
+
+# 备份目录
+rto-drill/
+backup_drill_*/
+
+# 数据库、压缩包类大文件
+*.db
+*.gz
+*.tar
+*.tar.gz
+*.sql.gz
+
+# 项目笔记、临时文档（按需保留）
+.obsidian/
+.claudian/
+*.md
+*.log
+*.tmp
