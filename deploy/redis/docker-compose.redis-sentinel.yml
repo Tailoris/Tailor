@@ -48,7 +48,7 @@ services:
     container_name: tailor-is-redis-master
     hostname: redis-master
     ports:
-      - "6379:6379"
+      - "6390:6379"
     volumes:
       - redis-master-data:/data
       - ./redis-master.conf:/usr/local/etc/redis/redis.conf:ro
@@ -62,7 +62,7 @@ services:
     container_name: tailor-is-redis-replica1
     hostname: redis-replica1
     ports:
-      - "6380:6379"
+      - "6391:6379"
     volumes:
       - redis-replica1-data:/data
       - ./redis-replica.conf:/usr/local/etc/redis/redis.conf:ro
@@ -79,7 +79,7 @@ services:
     container_name: tailor-is-redis-replica2
     hostname: redis-replica2
     ports:
-      - "6381:6379"
+      - "6392:6379"
     volumes:
       - redis-replica2-data:/data
       - ./redis-replica.conf:/usr/local/etc/redis/redis.conf:ro

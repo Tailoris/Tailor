@@ -8,7 +8,7 @@
 set -euo pipefail
 
 PROJECT=${1:-all}
-ROOT_DIR="$(cd "$(dirname "$0")" && pwd)/../tailor-is-frontend"
+ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)/tailor-is-frontend"
 # 使用用户级日志目录 (避免 sudo)
 BUILD_LOG="${HOME}/.local/log/tailor-is-frontend-build.log"
 mkdir -p "$(dirname "$BUILD_LOG")"
