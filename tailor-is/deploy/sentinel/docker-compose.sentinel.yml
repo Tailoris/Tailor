@@ -19,7 +19,10 @@ services:
     hostname: sentinel
     restart: unless-stopped
     ports:
-      - "8719:8719"
+      # Sentinel Dashboard Web UI: container 8858 -> host 8719
+      # 容器内 Spring Boot 启动在 8858 (web 端口), 8719 是 Sentinel client transport 端口
+      # 浏览器访问 http://<host>:8719 应走 Web UI, 因此映射 8858->8719
+      - "8719:8858"
     environment:
       # 用户名/密码
       - AUTH_USERNAME=sentinel
@@ -39,7 +42,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O-", "http://localhost:8719/api/bind"]
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:8858/api/bind"]
       interval: 30s
       timeout: 10s
       retries: 3
