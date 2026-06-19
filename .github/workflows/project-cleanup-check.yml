@@ -1,0 +1,82 @@
+# =============================================================================
+# Tailor IS 项目定期清理检查
+# 触发: 每周一凌晨 2:00 (UTC) 自动运行
+# 功能: 检测废弃文件、编辑器缓存、日志文件等
+# =============================================================================
+name: Project Cleanup Check
+
+on:
+  schedule:
+    # 每周一凌晨 2:00 UTC (北京时间 10:00)
+    - cron: '0 2 * * 1'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  cleanup-check:
+    name: Scan for abandoned files
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect abandoned/backup files
+        run: |
+          echo "## Abandoned Files Detection Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # 检测废弃备份文件
+          abandoned=$(find . -type f \
+            \( -name "*-old.*" -o -name "*-backup.*" -o -name "*.old" -o -name "*备份*" \) \
+            -not -path './.git/*' -not -path '*/node_modules/*' 2>/dev/null)
+          if [ -n "$abandoned" ]; then
+            echo "### ⚠️ Abandoned/Backup Files Found:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$abandoned" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ No abandoned/backup files" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # 检测编辑器缓存
+          cache_dirs=(".trae" ".obsidian" ".claudian" ".idea" ".vscode")
+          for dir in "${cache_dirs[@]}"; do
+            if [ -d "$dir" ]; then
+              echo "### ⚠️ Editor cache directory found: $dir" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          # 检测日志文件
+          logs=$(find . -type f -name "*.log" -not -path './.git/*' -not -path '*/node_modules/*' 2>/dev/null)
+          if [ -n "$logs" ]; then
+            echo "### ⚠️ Log files found:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$logs" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ No log files" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # 检测 Python 缓存
+          pycache=$(find . -type d -name "__pycache__" -not -path './.git/*' -not -path '*/node_modules/*' 2>/dev/null)
+          if [ -n "$pycache" ]; then
+            echo "### ⚠️ Python cache directories found:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$pycache" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Run \`./clean-project.sh\` locally to clean up these files." >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for large files in repo
+        run: |
+          echo "### Large Files (>5MB) in Repository" >> $GITHUB_STEP_SUMMARY
+          large=$(find . -type f -size +5M -not -path './.git/*' -not -path '*/node_modules/*' 2>/dev/null)
+          if [ -n "$large" ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$large" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No large files (>5MB) found" >> $GITHUB_STEP_SUMMARY
+          fi

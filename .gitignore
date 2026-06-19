@@ -93,5 +93,27 @@ backup_drill_*/
 # 项目笔记、临时文档（按需保留）
 .obsidian/
 .claudian/
+.trae/
 *.tmp
 *.bak
+
+# ===== 废弃/备份文件 =====
+*-old.*
+*备份*
+*-backup.*
+*.old
+
+# ===== 安装包/资源缓存 =====
+*.deb
+*.zip
+*.tar.gz
+*.rar
+
+# ===== Python =====
+venv/
+.venv/
+
+# ===== 编辑器缓存 =====
+.obsidian/
+.claudian/
+.trae/

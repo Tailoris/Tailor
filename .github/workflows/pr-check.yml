@@ -93,3 +93,76 @@ jobs:
             exit 1
           fi
           echo "✅ .env files are properly ignored"
+
+      # 检查 6: 废弃/备份文件检测
+      - name: Check for abandoned files
+        run: |
+          echo "Scanning for abandoned/backup files..."
+          failed=0
+
+          # 检测废弃备份文件匹配模式
+          abandoned_patterns=(
+            '*-old.*'
+            '*-backup.*'
+            '*.old'
+            '*备份*'
+          )
+
+          for pattern in "${abandoned_patterns[@]}"; do
+            matches=$(find . -type f -name "$pattern" -not -path './.git/*' -not -path '*/node_modules/*' 2>/dev/null)
+            if [ -n "$matches" ]; then
+              echo "::error::Abandoned/backup files detected: $matches"
+              echo "  Please remove these files before committing."
+              failed=1
+            fi
+          done
+
+          if [ $failed -eq 1 ]; then
+            exit 1
+          fi
+          echo "✅ No abandoned/backup files found"
+
+      # 检查 7: 编辑器缓存文件检测
+      - name: Check for editor cache files
+        run: |
+          echo "Scanning for editor cache files..."
+          failed=0
+
+          cache_dirs=(".trae" ".obsidian" ".claudian" ".idea" ".vscode")
+
+          for dir in "${cache_dirs[@]}"; do
+            if [ -d "$dir" ]; then
+              echo "::error::Editor cache directory '$dir' is committed. Add it to .gitignore."
+              failed=1
+            fi
+          done
+
+          if [ $failed -eq 1 ]; then
+            exit 1
+          fi
+          echo "✅ No editor cache files committed"
+
+      # 检查 8: 日志/Python缓存文件检测
+      - name: Check for log and cache files
+        run: |
+          echo "Scanning for log and cache files..."
+          failed=0
+
+          # 检测日志文件
+          log_files=$(find . -type f -name "*.log" -not -path './.git/*' -not -path '*/node_modules/*' 2>/dev/null)
+          if [ -n "$log_files" ]; then
+            echo "::error::Log files detected: $log_files"
+            failed=1
+          fi
+
+          # 检测 Python 缓存目录
+          pycache=$(find . -type d -name "__pycache__" -not -path './.git/*' -not -path '*/node_modules/*' 2>/dev/null)
+          if [ -n "$pycache" ]; then
+            echo "::error::Python cache directories detected: $pycache"
+            failed=1
+          fi
+
+          if [ $failed -eq 1 ]; then
+            exit 1
+          fi
+          echo "✅ No log/cache files committed"
