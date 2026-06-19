@@ -1,0 +1,734 @@
+# ==============================================================================
+# Tailor IS - Docker Compose 核心微服务编排
+# ==============================================================================
+# 任务溯源:
+#   Phase 0 / C-01  - 微服务 Docker 镜像构建
+#   Phase 0 / C-02  - Spring Boot 版本统一 (父 POM 3.3.5)
+#   Phase 2 / P2-1  - 网关路由规则 (见 CoreGatewayRouteConfig.java)
+#   Phase 2 / P2-3  - 消息队列集成 (RabbitMQ / RocketMQ 通过 Nacos 自动发现)
+#   Phase 3 / P3-1  - k6 性能测试 (见 deploy/perf/smoke-test.js)
+# ==============================================================================
+# 前置条件:
+#   1. 构建镜像前: `mvn -f tailor-is/pom.xml clean package -DskipTests`
+#      或直接使用本 compose 的 build 阶段, 每个服务的 Dockerfile 已集成 Maven 构建
+#   2. 基础设施应已就绪:
+#      - Nacos:        host.docker.internal:8848  (1panel-nacos-TXuU-standalone)
+#      - Redis Master: host.docker.internal:6379  (tailor-is-redis-sentinel*)
+#      - MySQL:        host.docker.internal:3306  (1panel-mysql-CXKd)
+#      - RabbitMQ:     host.docker.internal:5672  (1panel-rabbitmq-afrK)
+#   3. 将本文件所在目录中的 .env.example 复制为 .env 并填入真实密码
+# ==============================================================================
+# 使用方式:
+#   cp deploy/.env.example deploy/.env
+#   # 编辑 deploy/.env 填入真实凭据
+#   cd deploy
+#   docker compose -f docker-compose.services.yml up -d --build
+# ==============================================================================
+
+version: '3.8'
+
+# =====================================================================
+# 网络: tailoris-services - 所有微服务容器共享此网络
+#       通过 extra_hosts 将 "host.docker.internal" 映射到宿主机网关
+# =====================================================================
+networks:
+  tailoris-services:
+    name: tailoris-services
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+
+# =====================================================================
+# 核心微服务列表 (端口标准见 CoreGatewayRouteConfig.java)
+# =====================================================================
+#  服务名              端口  路由前缀                    用途
+#  --------------------  ----  --------------------------  ------------------
+#  core-gateway          8080  /api/user/**, /api/product/**  API 入口网关
+#  lite-gateway          8081  /api/community/**, /api/academy/** 轻量网关
+#  user-service          8101  /api/user/**, /api/auth/**  用户/认证
+#  merchant-service      8110  /api/merchant/**, /api/shop/** 商家
+#  product-service       8102  /api/product/**, /api/favorite/** 商品
+#  order-service         8103  /api/order/**, /api/cart/**    订单/购物车
+#  payment-service       8104  /api/payment/**, /api/settlement/** 支付
+#  marketing-service     8105  /api/marketing/**, /api/coupon/** 营销
+#  ai-service            8106  /api/ai/**, /api/body-size/**  AI/体型
+#  copyright-service     8107  /api/copyright/**             版权
+#  community-service     8108  /api/community/**             社区
+#  supply-service        8109  /api/supply/**                供应链
+#  admin-service         8100  /api/admin/**                 管理后台
+#  message-service       8111  /api/message/**               消息
+#  message-im-service    8114  /api/message-im/**            IM 聊天
+#  academy-service       8112  /api/academy/**               学院
+#  analytics-service     8113  /api/analytics/**             数据统计
+#  pattern-service       8115  /api/pattern/**               图案/纸样
+# =====================================================================
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - tailoris-services
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+    - "nacos:host-gateway"
+    - "mysql:host-gateway"
+    - "redis-master:host-gateway"
+    - "rabbitmq:host-gateway"
+  env_file:
+    - .env
+  environment:
+    # 基础设施地址 (通过 host.docker.internal 访问宿主机服务)
+    - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+    - SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+    - SPRING_DATASOURCE_URL=${MYSQL_URL_TEMPLATE:-jdbc:mysql://host.docker.internal:3306/tailor_is_user?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+    - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+    - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+    - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+    - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+    - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+    - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+    - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+    # 运行时参数
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+    - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    # Actuator 监控暴露 (Prometheus 抓取)
+    - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,prometheus,metrics
+    - MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=when-authorized
+  logging:
+    driver: json-file
+    options:
+      max-size: "50m"
+      max-file: "3"
+  deploy:
+    resources:
+      limits:
+        cpus: '1.0'
+        memory: 1024M
+      reservations:
+        cpus: '0.25'
+        memory: 256M
+
+services:
+
+  # ==================================================================
+  # 核心网关 (Core Gateway) - 所有业务 API 统一入口
+  # ==================================================================
+  core-gateway:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-core-gateway/Dockerfile
+    image: tailor-is-core-gateway:latest
+    container_name: tailor-is-core-gateway
+    hostname: core-gateway
+    ports:
+      - "9000:8080"
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx1024m -Xms512m -XX:+UseG1GC
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,prometheus,metrics,gateway
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 轻量网关 (Lite Gateway) - 社区/学院等轻量业务
+  # ==================================================================
+  lite-gateway:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-lite-gateway/Dockerfile
+    image: tailor-is-lite-gateway:latest
+    container_name: tailor-is-lite-gateway
+    hostname: lite-gateway
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 用户服务 (User) - /api/user/** /api/auth/**
+  # ==================================================================
+  user-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-user/Dockerfile
+    image: tailor-is-user:latest
+    container_name: tailor-is-user
+    hostname: user-service
+    ports:
+      - "8101:8101"
+    environment:
+      - SERVER_PORT=8101
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_USER_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_user?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8101/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 商品服务 (Product) - /api/product/** /api/favorite/**
+  # ==================================================================
+  product-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-product/Dockerfile
+    image: tailor-is-product:latest
+    container_name: tailor-is-product
+    hostname: product-service
+    ports:
+      - "8102:8102"
+    environment:
+      - SERVER_PORT=8102
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_PRODUCT_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_product?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8102/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 订单服务 (Order) - /api/order/** /api/cart/**
+  # ==================================================================
+  order-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-order/Dockerfile
+    image: tailor-is-order:latest
+    container_name: tailor-is-order
+    hostname: order-service
+    ports:
+      - "8103:8103"
+    environment:
+      - SERVER_PORT=8103
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_ORDER_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx1024m -Xms512m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8103/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 支付服务 (Payment) - /api/payment/** /api/settlement/** /api/account/**
+  # ==================================================================
+  payment-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-payment/Dockerfile
+    image: tailor-is-payment:latest
+    container_name: tailor-is-payment
+    hostname: payment-service
+    ports:
+      - "8104:8104"
+    environment:
+      - SERVER_PORT=8104
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_PAYMENT_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_payment?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8104/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 营销服务 (Marketing) - /api/marketing/** /api/coupon/** /api/seckill/**
+  # ==================================================================
+  marketing-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-marketing/Dockerfile
+    image: tailor-is-marketing:latest
+    container_name: tailor-is-marketing
+    hostname: marketing-service
+    ports:
+      - "8105:8105"
+    environment:
+      - SERVER_PORT=8105
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_MARKETING_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_marketing?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8105/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # AI 服务 (AI) - /api/ai/** /api/body-size/**
+  # ==================================================================
+  ai-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-ai/Dockerfile
+    image: tailor-is-ai:latest
+    container_name: tailor-is-ai
+    hostname: ai-service
+    ports:
+      - "8106:8106"
+    environment:
+      - SERVER_PORT=8106
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_AI_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_ai?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx1024m -Xms512m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8106/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 版权服务 (Copyright) - /api/copyright/**
+  # ==================================================================
+  copyright-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-copyright/Dockerfile
+    image: tailor-is-copyright:latest
+    container_name: tailor-is-copyright
+    hostname: copyright-service
+    ports:
+      - "8107:8107"
+    environment:
+      - SERVER_PORT=8107
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_COPYRIGHT_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_copyright?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8107/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 商家服务 (Merchant) - /api/merchant/** /api/shop/**
+  # ==================================================================
+  merchant-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-merchant/Dockerfile
+    image: tailor-is-merchant:latest
+    container_name: tailor-is-merchant
+    hostname: merchant-service
+    ports:
+      - "8110:8110"
+    environment:
+      - SERVER_PORT=8110
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_MERCHANT_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_merchant?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8110/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 管理后台服务 (Admin) - /api/admin/**
+  # ==================================================================
+  admin-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-admin/Dockerfile
+    image: tailor-is-admin:latest
+    container_name: tailor-is-admin
+    hostname: admin-service
+    ports:
+      - "8100:8100"
+    environment:
+      - SERVER_PORT=8100
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_ADMIN_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_admin?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8100/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 图案/纸样服务 (Pattern) - /api/pattern/**
+  # ==================================================================
+  pattern-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-pattern/Dockerfile
+    image: tailor-is-pattern:latest
+    container_name: tailor-is-pattern
+    hostname: pattern-service
+    ports:
+      - "8115:8115"
+    environment:
+      - SERVER_PORT=8115
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_PATTERN_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_pattern?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8115/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 社区服务 (Community) - /api/community/** (路由由 lite-gateway 转发)
+  # ==================================================================
+  community-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-community/Dockerfile
+    image: tailor-is-community:latest
+    container_name: tailor-is-community
+    hostname: community-service
+    ports:
+      - "8108:8108"
+    environment:
+      - SERVER_PORT=8108
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_COMMUNITY_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_community?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8108/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 供应链服务 (Supply) - /api/supply/**
+  # ==================================================================
+  supply-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-supply/Dockerfile
+    image: tailor-is-supply:latest
+    container_name: tailor-is-supply
+    hostname: supply-service
+    ports:
+      - "8109:8109"
+    environment:
+      - SERVER_PORT=8109
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_SUPPLY_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_supply?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8109/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 消息服务 (Message) - /api/message/**
+  # ==================================================================
+  message-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-message/Dockerfile
+    image: tailor-is-message:latest
+    container_name: tailor-is-message
+    hostname: message-service
+    ports:
+      - "8111:8111"
+    environment:
+      - SERVER_PORT=8111
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_MESSAGE_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_message?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8111/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # IM 聊天服务 (Message IM) - /api/message-im/**
+  # ==================================================================
+  message-im-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-message-im/Dockerfile
+    image: tailor-is-message-im:latest
+    container_name: tailor-is-message-im
+    hostname: message-im-service
+    ports:
+      - "8114:8114"
+    environment:
+      - SERVER_PORT=8114
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_IM_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_im?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8114/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 学院服务 (Academy) - /api/academy/** (轻量业务)
+  # ==================================================================
+  academy-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-academy/Dockerfile
+    image: tailor-is-academy:latest
+    container_name: tailor-is-academy
+    hostname: academy-service
+    ports:
+      - "8112:8112"
+    environment:
+      - SERVER_PORT=8112
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_ACADEMY_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_academy?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx256m -Xms128m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8112/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ==================================================================
+  # 数据统计服务 (Analytics) - /api/analytics/**
+  # ==================================================================
+  analytics-service:
+    <<: *service-defaults
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-analytics/Dockerfile
+    image: tailor-is-analytics:latest
+    container_name: tailor-is-analytics
+    hostname: analytics-service
+    ports:
+      - "8113:8113"
+    environment:
+      - SERVER_PORT=8113
+      - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+      - SPRING_DATASOURCE_URL=${MYSQL_ANALYTICS_URL:-jdbc:mysql://host.docker.internal:3306/tailor_is_analytics?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-tailoris}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD:-TailorIS2026}
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+      - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-guest}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8113/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

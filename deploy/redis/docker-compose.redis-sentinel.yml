@@ -18,6 +18,9 @@ volumes:
   redis-master-data:  { name: tailor-is-redis-master-data }
   redis-replica1-data: { name: tailor-is-redis-replica1-data }
   redis-replica2-data: { name: tailor-is-redis-replica2-data }
+  redis-sentinel1-data: { name: tailor-is-redis-sentinel1-data }
+  redis-sentinel2-data: { name: tailor-is-redis-sentinel2-data }
+  redis-sentinel3-data: { name: tailor-is-redis-sentinel3-data }
 
 x-redis-common: &redis-common
   image: redis:8-alpine
@@ -98,8 +101,21 @@ services:
     ports:
       - "26379:26379"
     volumes:
-      - ./sentinel1.conf:/usr/local/etc/redis/sentinel.conf:ro
-    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+      - redis-sentinel1-data:/data
+    command: >
+      sh -c "
+        echo 'port 26379' > /data/sentinel.conf &&
+        echo 'bind 0.0.0.0' >> /data/sentinel.conf &&
+        echo 'protected-mode no' >> /data/sentinel.conf &&
+        echo 'sentinel resolve-hostnames yes' >> /data/sentinel.conf &&
+        echo 'sentinel monitor tailor-is-master redis-master 6379 2' >> /data/sentinel.conf &&
+        echo 'sentinel auth-pass tailor-is-master redis_jD2N8n' >> /data/sentinel.conf &&
+        echo 'sentinel down-after-milliseconds tailor-is-master 5000' >> /data/sentinel.conf &&
+        echo 'sentinel parallel-syncs tailor-is-master 1' >> /data/sentinel.conf &&
+        echo 'sentinel failover-timeout tailor-is-master 30000' >> /data/sentinel.conf &&
+        echo 'logfile /data/sentinel.log' >> /data/sentinel.conf &&
+        redis-sentinel /data/sentinel.conf
+      "
     networks: [redis-sentinel-net]
     restart: unless-stopped
     depends_on:
@@ -131,8 +147,21 @@ services:
     ports:
       - "26380:26379"
     volumes:
-      - ./sentinel2.conf:/usr/local/etc/redis/sentinel.conf:ro
-    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+      - redis-sentinel2-data:/data
+    command: >
+      sh -c "
+        echo 'port 26379' > /data/sentinel.conf &&
+        echo 'bind 0.0.0.0' >> /data/sentinel.conf &&
+        echo 'protected-mode no' >> /data/sentinel.conf &&
+        echo 'sentinel resolve-hostnames yes' >> /data/sentinel.conf &&
+        echo 'sentinel monitor tailor-is-master redis-master 6379 2' >> /data/sentinel.conf &&
+        echo 'sentinel auth-pass tailor-is-master redis_jD2N8n' >> /data/sentinel.conf &&
+        echo 'sentinel down-after-milliseconds tailor-is-master 5000' >> /data/sentinel.conf &&
+        echo 'sentinel parallel-syncs tailor-is-master 1' >> /data/sentinel.conf &&
+        echo 'sentinel failover-timeout tailor-is-master 30000' >> /data/sentinel.conf &&
+        echo 'logfile /data/sentinel.log' >> /data/sentinel.conf &&
+        redis-sentinel /data/sentinel.conf
+      "
     networks: [redis-sentinel-net]
     restart: unless-stopped
     depends_on:
@@ -154,9 +183,6 @@ services:
         limits:   { cpus: "0.5", memory: 256M }
         reservations: { cpus: "0.1", memory: 64M }
 
-  # ============================================================================
-  # Redis Sentinel 3
-  # ============================================================================
   redis-sentinel3:
     image: redis:8-alpine
     container_name: tailor-is-redis-sentinel3
@@ -164,8 +190,21 @@ services:
     ports:
       - "26381:26379"
     volumes:
-      - ./sentinel3.conf:/usr/local/etc/redis/sentinel.conf:ro
-    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+      - redis-sentinel3-data:/data
+    command: >
+      sh -c "
+        echo 'port 26379' > /data/sentinel.conf &&
+        echo 'bind 0.0.0.0' >> /data/sentinel.conf &&
+        echo 'protected-mode no' >> /data/sentinel.conf &&
+        echo 'sentinel resolve-hostnames yes' >> /data/sentinel.conf &&
+        echo 'sentinel monitor tailor-is-master redis-master 6379 2' >> /data/sentinel.conf &&
+        echo 'sentinel auth-pass tailor-is-master redis_jD2N8n' >> /data/sentinel.conf &&
+        echo 'sentinel down-after-milliseconds tailor-is-master 5000' >> /data/sentinel.conf &&
+        echo 'sentinel parallel-syncs tailor-is-master 1' >> /data/sentinel.conf &&
+        echo 'sentinel failover-timeout tailor-is-master 30000' >> /data/sentinel.conf &&
+        echo 'logfile /data/sentinel.log' >> /data/sentinel.conf &&
+        redis-sentinel /data/sentinel.conf
+      "
     networks: [redis-sentinel-net]
     restart: unless-stopped
     depends_on:

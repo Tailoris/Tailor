@@ -4,8 +4,8 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
 
-  <!-- 本地仓库目录 -->
-  <localRepository>/opt/maven/repository</localRepository>
+  <!-- 本地仓库目录（${user.home}/.m2/tailor-is-repo 默认用户目录，避免 root 权限问题） -->
+  <localRepository>${user.home}/.m2/tailor-is-repo</localRepository>
 
   <mirrors>
     <!-- 阿里云公共仓库 主镜像（拦截 central） -->

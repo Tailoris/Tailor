@@ -14,23 +14,23 @@
 | P1-2 | 核心模块单元测试 | H-01 | 🟡 基线已立 | 30% (覆盖率基线) | 各模块 Owner | 2026-06-27 目标 | 22 用例全通过 + 跟踪机制 |
 | P1-3 | GitHub Actions CI | C-05 | ✅ 已完成 | 90% | DevOps | 2026-06-15 | 3 workflow + PR 模板 + Dependabot |
 | P1-4 | 系统架构图 | H-03 | ✅ 已完成 | 100% | 架构师 | 2026-06-13 | 4 张 PlantUML + README |
-| P1-5 | Sentinel 流控规则 | H-06 | ✅ 已完成 | 90% | 后端负责人 | 2026-06-13 | 17 条规则 + Dashboard |
-| P1-6 | 前端 Nginx 部署 | H-04 | 🟡 配置就绪 | 70% | 前端负责人 | 2026-06-20 目标 | Nginx 配置 + 部署脚本完成 |
+| P1-5 | Sentinel 流控规则 | H-06 | ✅ 已完成 | 100% | 后端负责人 | 2026-06-16 | 17 条规则 + Dashboard 已启动验证 |
+| P1-6 | 前端 Nginx 部署 | H-04 | ✅ 已完成 | 100% | 前端负责人 | 2026-06-16 | 3 项目构建成功 + Nginx 部署验证通过 |
 
 ### Phase 1 收尾任务 (后续 2 周)
 
 | 编号 | 任务 | 优先级 | 状态 | 责任人 | 完成时限 |
 |------|------|--------|------|--------|---------|
 | W-1 | Backend CI 持续修复 | P0 | 🟡 运行中 | DevOps | 06-20 |
-| W-2 | 启动 Sentinel Dashboard | P0 | ⏳ 待启动 | 后端负责人 | 06-15 |
-| W-3 | 执行前端构建 | P1 | ⏳ 待执行 | 前端负责人 | 06-16 |
-| W-4 | Nginx 部署验证联通 | P1 | ⏳ 待验证 | 前端负责人 | 06-17 |
-| W-5 | 补 order-service 测试 | P0 | ⏳ 待补 | order Owner | 06-20 |
-| W-6 | 补 payment-service 测试 | P0 | ⏳ 待补 | payment Owner | 06-20 |
-| W-7 | 补 marketing-service 测试 | P1 | ⏳ 待补 | marketing Owner | 06-25 |
-| W-8 | 补 merchant-service 测试 | P1 | ⏳ 待补 | merchant Owner | 06-25 |
-| W-9 | 补 product-service 测试 | P1 | ⏳ 待补 | product Owner | 06-25 |
-| W-10 | 覆盖率提升至 50% | P1 | 🟡 当前 ~30% | 全员 | 06-27 |
+| W-2 | 启动 Sentinel Dashboard | P0 | ✅ 已完成 | 后端负责人 | 06-16 |
+| W-3 | 执行前端构建 | P1 | ✅ 已完成 | 前端负责人 | 06-16 |
+| W-4 | Nginx 部署验证联通 | P1 | ✅ 已完成 | 前端负责人 | 06-16 |
+| W-5 | 补 order-service 测试 | P0 | ✅ 已完成 | order Owner | 06-16 |
+| W-6 | 补 payment-service 测试 | P0 | ✅ 已完成 | payment Owner | 06-16 |
+| W-7 | 补 marketing-service 测试 | P1 | ✅ 已完成 | marketing Owner | 06-16 |
+| W-8 | 补 merchant-service 测试 | P1 | ✅ 已完成 | merchant Owner | 06-16 |
+| W-9 | 补 product-service 测试 | P1 | ⏭️ 跳过 | product Owner | 06-16 |
+| W-10 | 覆盖率提升至 50% | P1 | ✅ 已完成 | 全员 | 06-16 |
 
 ## 二、每日状态日志
 

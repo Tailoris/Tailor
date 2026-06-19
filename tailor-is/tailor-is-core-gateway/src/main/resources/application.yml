@@ -29,14 +29,14 @@ spring:
       eager: true
       filter:
         enabled: true
-      datasource:
-        # 使用 Nacos 作为 Sentinel 规则数据源, 支持动态规则推送
-        # flow:
-        #   nacos:
-        #     server-addr: ${NACOS_ADDR:localhost:8848}
-        #     data-id: ${spring.application.name}-flow-rules
-        #     group-id: SENTINEL_GROUP
-        #     rule-type: flow
+      # Sentinel 规则数据源: 当前未配置动态规则; 如需从 Nacos 拉取规则, 可按下方模板配置
+      #   flow:
+      #     nacos:
+      #       server-addr: ${NACOS_ADDR:localhost:8848}
+      #       data-id: ${spring.application.name}-flow-rules
+      #       group-id: SENTINEL_GROUP
+      #       rule-type: flow
+      datasource: {}
     gateway:
       discovery:
         locator:

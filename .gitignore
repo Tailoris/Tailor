@@ -93,6 +93,5 @@ backup_drill_*/
 # 项目笔记、临时文档（按需保留）
 .obsidian/
 .claudian/
-*.md
-*.log
 *.tmp
+*.bak
