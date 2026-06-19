@@ -165,7 +165,6 @@ jobs:
       fail-fast: false
       matrix:
         service:
-          - tailor-is-common
           - tailor-is-user
           - tailor-is-merchant
           - tailor-is-product
@@ -185,7 +184,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: tailor-is
-          file: tailor-is/${{ matrix.service }}/Dockerfile
+          file: ${{ matrix.service }}/Dockerfile
           tags: |
             tailor-is/${{ matrix.service }}:latest
             tailor-is/${{ matrix.service }}:${{ github.sha }}

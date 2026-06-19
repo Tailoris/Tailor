@@ -1,9 +1,51 @@
 # ============================================================
-# Tailor IS 用户服务 (user) - 精简版 Dockerfile
-# 前置条件: 已在 tailor-is 目录执行 `mvn clean package -DskipTests`
-# 生成: tailor-is-user/target/tailor-is-user-1.0.0.jar
+# Tailor IS 用户服务 (user) - 多阶段构建
+# - 端口: 8101
+# - 多阶段构建：Maven 编译 + JRE 运行
 # ============================================================
 
+# -------- 阶段 1: 构建
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
+LABEL maintainer="Tailor IS Team"
+WORKDIR /build
+
+# 配置阿里云 Maven 镜像加速
+COPY settings.xml /usr/share/maven/conf/settings.xml
+
+# 先复制 pom.xml，利用 Docker 缓存依赖
+COPY pom.xml /build/pom.xml
+COPY tailor-is-common/pom.xml /build/tailor-is-common/pom.xml
+COPY tailor-is-common-web/pom.xml /build/tailor-is-common-web/pom.xml
+COPY tailor-is-api/pom.xml /build/tailor-is-api/pom.xml
+COPY tailor-is-core-gateway/pom.xml /build/tailor-is-core-gateway/pom.xml
+COPY tailor-is-lite-gateway/pom.xml /build/tailor-is-lite-gateway/pom.xml
+COPY tailor-is-user/pom.xml /build/tailor-is-user/pom.xml
+COPY tailor-is-merchant/pom.xml /build/tailor-is-merchant/pom.xml
+COPY tailor-is-product/pom.xml /build/tailor-is-product/pom.xml
+COPY tailor-is-order/pom.xml /build/tailor-is-order/pom.xml
+COPY tailor-is-payment/pom.xml /build/tailor-is-payment/pom.xml
+COPY tailor-is-marketing/pom.xml /build/tailor-is-marketing/pom.xml
+COPY tailor-is-ai/pom.xml /build/tailor-is-ai/pom.xml
+COPY tailor-is-copyright/pom.xml /build/tailor-is-copyright/pom.xml
+COPY tailor-is-community/pom.xml /build/tailor-is-community/pom.xml
+COPY tailor-is-supply/pom.xml /build/tailor-is-supply/pom.xml
+COPY tailor-is-message/pom.xml /build/tailor-is-message/pom.xml
+COPY tailor-is-message-im/pom.xml /build/tailor-is-message-im/pom.xml
+COPY tailor-is-academy/pom.xml /build/tailor-is-academy/pom.xml
+COPY tailor-is-analytics/pom.xml /build/tailor-is-analytics/pom.xml
+COPY tailor-is-pattern/pom.xml /build/tailor-is-pattern/pom.xml
+COPY tailor-is-admin/pom.xml /build/tailor-is-admin/pom.xml
+
+# 复制源码（仅复制依赖模块和当前模块）
+COPY tailor-is-common/src /build/tailor-is-common/src
+COPY tailor-is-common-web/src /build/tailor-is-common-web/src
+COPY tailor-is-user/src /build/tailor-is-user/src
+
+# 编译用户服务
+RUN mvn -f /build/pom.xml -pl tailor-is-user -am clean package -DskipTests -B -U
+RUN ls -la /build/tailor-is-user/target/*.jar
+
+# -------- 阶段 2: 运行
 FROM openjdk:17-slim
 LABEL maintainer="Tailor IS Team"
 LABEL description="Tailor IS 用户服务"
@@ -18,20 +60,27 @@ RUN apt-get update -y \
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+ENV JVM_XMX=1024m
+ENV JVM_XMS=512m
 ENV SERVER_PORT=8101
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV JAVA_OPTS="-Xmx1024m -Xms512m -XX:+UseG1GC"
 
 EXPOSE 8101
 
-COPY tailor-is-user/target/*.jar /app/app.jar
+# 从构建阶段复制 JAR
+COPY --from=builder /build/tailor-is-user/target/*.jar /app/app.jar
 
 RUN groupadd --system tailor \
     && useradd --system -g tailor tailor \
     && chown -R tailor:tailor /app
 USER tailor
 
-ENTRYPOINT [ "sh", "-c", "java $JAVA_OPTS -Duser.timezone=${TZ} -Dserver.port=${SERVER_PORT} -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} -jar /app/app.jar" ]
+ENTRYPOINT [ "sh", "-c", "java \
+    -Duser.timezone=${TZ} \
+    -Dserver.port=${SERVER_PORT} \
+    -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
+    -Xmx${JVM_XMX} -Xms${JVM_XMS} \
+    -jar /app/app.jar" ]
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD curl -fsS http://127.0.0.1:8101/actuator/health || exit 1
