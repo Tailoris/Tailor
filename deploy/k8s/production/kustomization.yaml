@@ -1,0 +1,189 @@
+# ==============================================================================
+# Tailor IS - Kustomize 配置 (Vault 集成)
+# ==============================================================================
+# 使用方式:
+#   kubectl apply -k deploy/k8s/production/
+#
+# 此 kustomization 会:
+#   1. 应用所有基础资源 (namespace, secrets, configmap, pvc, ...)
+#   2. 通过 patch 为所有 Deployment 注入 Vault Agent 注解
+#   3. 通过 patch 统一设置 public image registry
+# ==============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tailor-is-prod
+
+# ==============================================================================
+# 基础资源
+# ==============================================================================
+resources:
+  - namespace.yaml
+  - secrets.yaml
+  - configmap.yaml
+  - pvc.yaml
+  - statefulset-mysql.yaml
+  - statefulset-redis.yaml
+  - statefulset-rabbitmq.yaml
+  - deployments/core-gateway.yaml
+  - deployments/lite-gateway.yaml
+  - deployments/user-service.yaml
+  - deployments/product-service.yaml
+  - deployments/order-service.yaml
+  - deployments/payment-service.yaml
+  - deployments/marketing-service.yaml
+  - deployments/ai-service.yaml
+  - deployments/copyright-service.yaml
+  - deployments/community-service.yaml
+  - deployments/supply-service.yaml
+  - deployments/merchant-service.yaml
+  - deployments/message-service.yaml
+  - deployments/message-im-service.yaml
+  - deployments/academy-service.yaml
+  - deployments/analytics-service.yaml
+  - deployments/pattern-service.yaml
+  - deployments/admin-service.yaml
+  - deployments/api-service.yaml
+  - ingress.yaml
+  - hpa.yaml
+  - network-policy.yaml
+
+# ==============================================================================
+# Vault Agent Injector Patch - 为所有 Deployment 添加 Vault 注解
+# ==============================================================================
+# 此 patch 会为所有 Deployment 的 Pod Template 添加 Vault Agent Injector 注解
+# 前提: 已安装 vault-agent-injector
+#   helm repo add hashicorp https://helm.releases.hashicorp.com
+#   helm install vault hashicorp/vault \
+#     --set injector.enabled=true \
+#     -n tailor-is-prod
+# ==============================================================================
+patches:
+  - target:
+      kind: Deployment
+      labelSelector: app=tailor-is
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: not-used
+      spec:
+        template:
+          metadata:
+            annotations:
+              vault.hashicorp.com/agent-inject: "true"
+              vault.hashicorp.com/agent-init-first: "true"
+              vault.hashicorp.com/role: "tailor-is"
+              vault.hashicorp.com/agent-inject-secret-mysql: "tailor-is/data/mysql"
+              vault.hashicorp.com/agent-inject-template-mysql: |
+                {{- with secret "tailor-is/data/mysql" -}}
+                export SPRING_DATASOURCE_USERNAME="{{ .Data.data.username }}"
+                export SPRING_DATASOURCE_PASSWORD="{{ .Data.data.password }}"
+                {{- end -}}
+              vault.hashicorp.com/agent-inject-secret-redis: "tailor-is/data/redis"
+              vault.hashicorp.com/agent-inject-template-redis: |
+                {{- with secret "tailor-is/data/redis" -}}
+                export SPRING_DATA_REDIS_PASSWORD="{{ .Data.data.password }}"
+                {{- end -}}
+              vault.hashicorp.com/agent-inject-secret-rabbitmq: "tailor-is/data/rabbitmq"
+              vault.hashicorp.com/agent-inject-template-rabbitmq: |
+                {{- with secret "tailor-is/data/rabbitmq" -}}
+                export SPRING_RABBITMQ_USERNAME="{{ .Data.data.username }}"
+                export SPRING_RABBITMQ_PASSWORD="{{ .Data.data.password }}"
+                {{- end -}}
+              vault.hashicorp.com/agent-inject-secret-security: "tailor-is/data/security"
+              vault.hashicorp.com/agent-inject-template-security: |
+                {{- with secret "tailor-is/data/security" -}}
+                export JWT_SECRET="{{ .Data.data.jwt_secret }}"
+                export AES_KEY="{{ .Data.data.aes_key }}"
+                {{- end -}}
+
+# ==============================================================================
+# 支付服务专用 Patch - 注入支付凭证
+# ==============================================================================
+  - target:
+      kind: Deployment
+      name: payment-service
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: payment-service
+      spec:
+        template:
+          metadata:
+            annotations:
+              vault.hashicorp.com/agent-inject-secret-payment: "tailor-is/data/payment"
+              vault.hashicorp.com/agent-inject-template-payment: |
+                {{- with secret "tailor-is/data/payment" -}}
+                export WECHAT_PAY_APP_ID="{{ .Data.data.wechat_app_id }}"
+                export WECHAT_PAY_MCH_ID="{{ .Data.data.wechat_mch_id }}"
+                export WECHAT_PAY_API_KEY="{{ .Data.data.wechat_api_key }}"
+                export ALIPAY_APP_ID="{{ .Data.data.alipay_app_id }}"
+                export ALIPAY_PRIVATE_KEY="{{ .Data.data.alipay_private_key }}"
+                export ALIPAY_PUBLIC_KEY="{{ .Data.data.alipay_public_key }}"
+                {{- end -}}
+
+# ==============================================================================
+# AI 服务专用 Patch - 注入 AI API Key
+# ==============================================================================
+  - target:
+      kind: Deployment
+      name: ai-service
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ai-service
+      spec:
+        template:
+          metadata:
+            annotations:
+              vault.hashicorp.com/agent-inject-secret-ai: "tailor-is/data/ai"
+              vault.hashicorp.com/agent-inject-template-ai: |
+                {{- with secret "tailor-is/data/ai" -}}
+                export AI_API_KEY="{{ .Data.data.api_key }}"
+                export AI_MODEL_ENDPOINT="{{ .Data.data.model_endpoint }}"
+                {{- end -}}
+
+# ==============================================================================
+# 版权服务专用 Patch - 注入区块链凭证
+# ==============================================================================
+  - target:
+      kind: Deployment
+      name: copyright-service
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: copyright-service
+      spec:
+        template:
+          metadata:
+            annotations:
+              vault.hashicorp.com/agent-inject-secret-blockchain: "tailor-is/data/blockchain"
+              vault.hashicorp.com/agent-inject-template-blockchain: |
+                {{- with secret "tailor-is/data/blockchain" -}}
+                export BLOCKCHAIN_API_KEY="{{ .Data.data.api_key }}"
+                export BLOCKCHAIN_ENDPOINT="{{ .Data.data.endpoint }}"
+                {{- end -}}
+
+# ==============================================================================
+# 通用标签
+# ==============================================================================
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: tailor-is
+
+# ==============================================================================
+# 镜像前缀替换 (如果需要推送到私有 Registry)
+# ==============================================================================
+# images:
+#   - name: tailor-is/core-gateway
+#     newName: registry.tailoris.com/tailor-is/core-gateway
+#     newTag: v1.0.0
+#   - name: tailor-is/lite-gateway
+#     newName: registry.tailoris.com/tailor-is/lite-gateway
+#     newTag: v1.0.0
+#   ...

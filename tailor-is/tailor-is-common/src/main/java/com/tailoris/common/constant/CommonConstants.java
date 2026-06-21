@@ -40,8 +40,6 @@ public final class CommonConstants {
     public static final int CAPTCHA_EXPIRE_SECONDS = 300;
     public static final int TOKEN_EXPIRE_SECONDS = 1800;
 
-    public static final String DEFAULT_PASSWORD = "Tailor@2024";
-
     public static final int SORT_ASC = 1;
     public static final int SORT_DESC = 0;
 }

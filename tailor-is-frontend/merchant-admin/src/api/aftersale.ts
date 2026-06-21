@@ -15,7 +15,7 @@ interface ProcessParams {
 }
 
 export const listTickets = (params: TicketListParams) => {
-  return request<any, PageResponse<AfterSaleTicket>>({
+  return request<Record<string, unknown>, PageResponse<AfterSaleTicket>>({
     url: '/aftersale/tickets',
     method: 'GET',
     params,
@@ -23,14 +23,14 @@ export const listTickets = (params: TicketListParams) => {
 }
 
 export const getTicketDetail = (ticketNo: string) => {
-  return request<any, AfterSaleTicket>({
+  return request<Record<string, unknown>, AfterSaleTicket>({
     url: `/aftersale/tickets/${ticketNo}`,
     method: 'GET',
   })
 }
 
 export const processTicket = (ticketNo: string, data: ProcessParams) => {
-  return request<any, AfterSaleTicket>({
+  return request<Record<string, unknown>, AfterSaleTicket>({
     url: `/aftersale/tickets/${ticketNo}/process`,
     method: 'POST',
     data,
@@ -38,7 +38,7 @@ export const processTicket = (ticketNo: string, data: ProcessParams) => {
 }
 
 export const approveRefund = (ticketNo: string, refundAmount: number, remark: string) => {
-  return request<any, AfterSaleTicket>({
+  return request<Record<string, unknown>, AfterSaleTicket>({
     url: `/aftersale/tickets/${ticketNo}/approve`,
     method: 'POST',
     data: { refundAmount, remark },
@@ -46,7 +46,7 @@ export const approveRefund = (ticketNo: string, refundAmount: number, remark: st
 }
 
 export const rejectTicket = (ticketNo: string, remark: string) => {
-  return request<any, AfterSaleTicket>({
+  return request<Record<string, unknown>, AfterSaleTicket>({
     url: `/aftersale/tickets/${ticketNo}/reject`,
     method: 'POST',
     data: { remark },

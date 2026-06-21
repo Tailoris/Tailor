@@ -17,8 +17,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -80,6 +78,11 @@ public class AuthController {
         return Result.success(response);
     }
 
+    /**
+     * 用户注册
+     *
+     * <p>手机号+密码+短信验证码注册新用户</p>
+     */
     @Operation(summary = "用户注册", description = "手机号+密码+短信验证码注册")
     @RateLimit(key = "register", permitsPerSecond = 5, capacity = 60, message = "注册请求过于频繁")
     @PostMapping("/register")
@@ -118,7 +121,7 @@ public class AuthController {
     @Operation(summary = "微信授权登录", description = "微信公众号/小程序授权登录，自动注册并签发Token")
     @RateLimit(key = "wechat-login", permitsPerSecond = 5, capacity = 30, message = "微信登录请求过于频繁")
     @PostMapping("/wechat-login")
-    public Result<LoginResponse> wechatLogin(@RequestBody WechatLoginRequest request) {
+    public Result<LoginResponse> wechatLogin(@Valid @RequestBody WechatLoginRequest request) {
         LoginResponse response = wechatLoginService.loginByWechat(request);
         return Result.success(response);
     }
@@ -133,6 +136,11 @@ public class AuthController {
         return Result.success();
     }
 
+    /**
+     * 刷新Token
+     *
+     * <p>使用当前有效的Token换取新的Token，延长登录有效期</p>
+     */
     @Operation(
             summary = "刷新Token",
             description = "使用当前有效的Token换取新的Token，延长登录有效期。"
@@ -173,13 +181,5 @@ public class AuthController {
             return token;
         }
         return StpUtil.getTokenValue();
-    }
-
-    /**
-     * 🔒 B-L03修复: getClientIp已提取到HttpRequestUtils工具类
-     */
-    @Deprecated
-    private String getClientIp(HttpServletRequest request) {
-        return com.tailoris.common.util.HttpRequestUtils.getClientIp(request);
     }
 }

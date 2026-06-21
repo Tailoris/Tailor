@@ -1,0 +1,230 @@
+name: Tailor IS - CD (生产部署)
+
+on:
+  push:
+    branches:
+      - main
+      - release/*
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "部署目标环境"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+      rollback:
+        description: "是否执行回滚 (仅故障时使用)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+env:
+  REGISTRY: docker.io
+  NAMESPACE: tailor-is
+  K8S_NAMESPACE: tailor-is-prod
+
+jobs:
+  # ==================== 回滚 Job ====================
+  # 手动触发: workflow_dispatch 中选择 rollback=true
+  rollback:
+    name: 生产回滚
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.rollback == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 配置 kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.28.0"
+
+      - name: 配置 K8s 访问凭证
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: 查看最近部署历史
+        run: |
+          echo "=== 最近 5 个 Deployment 版本 ==="
+          kubectl rollout history deployment -n ${{ env.K8S_NAMESPACE }} \
+            tailor-is-order tailor-is-payment tailor-is-ai \
+            tailor-is-copyright tailor-is-merchant tailor-is-product \
+            tailor-is-core-gateway 2>/dev/null || echo "未找到部署历史"
+
+      - name: 回滚到上一个版本
+        run: |
+          echo "=== 开始回滚所有核心服务到上一个版本 ==="
+          services=(
+            "tailor-is-order"
+            "tailor-is-payment"
+            "tailor-is-ai"
+            "tailor-is-copyright"
+            "tailor-is-merchant"
+            "tailor-is-product"
+          )
+          for svc in "${services[@]}"; do
+            echo "--- 回滚 $svc ---"
+            kubectl rollout undo deployment/"$svc" -n ${{ env.K8S_NAMESPACE }} --to-revision=0 || echo "WARN: $svc 回滚失败或无历史版本"
+          done
+
+      - name: 等待回滚完成
+        run: |
+          echo "=== 等待所有 Deployment 回滚完成 ==="
+          kubectl rollout status deployment -n ${{ env.K8S_NAMESPACE }} \
+            -l app.kubernetes.io/part-of=tailor-is --timeout=300s || echo "WARN: 部分服务回滚超时"
+
+      - name: 回滚后健康检查
+        run: |
+          echo "=== 回滚后检查 Pod 状态 ==="
+          kubectl get pods -n ${{ env.K8S_NAMESPACE }} -l app.kubernetes.io/part-of=tailor-is
+          echo ""
+          echo "=== 检查最近事件 ==="
+          kubectl get events -n ${{ env.K8S_NAMESPACE }} --sort-by='.lastTimestamp' | tail -20
+
+      - name: 发送回滚通知
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          echo "回滚结果: $STATUS"
+          # 此处可集成企业微信/钉钉/邮件通知
+          # curl -X POST "${{ secrets.NOTIFY_WEBHOOK }}" \
+          #   -H "Content-Type: application/json" \
+          #   -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"Tailor IS 生产回滚 $STATUS\"}}"
+
+  # ==================== 构建与部署 Job ====================
+  build-and-deploy:
+    name: 构建镜像并部署到 K8s
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.rollback == 'false'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - tailor-is-order
+          - tailor-is-payment
+          - tailor-is-ai
+          - tailor-is-copyright
+          - tailor-is-merchant
+          - tailor-is-product
+          - tailor-is-core-gateway
+          - tailor-is-community
+          - tailor-is-academy
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: 设置 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: maven
+
+      - name: 构建 ${{ matrix.service }}
+        run: |
+          mvn clean package -pl ${{ matrix.service }} -am -DskipTests \
+            -s settings.xml
+
+      - name: 登录 Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 构建并推送 Docker 镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ matrix.service }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ matrix.service }}:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ matrix.service }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ matrix.service }}:buildcache,mode=max
+
+      - name: 配置 kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.28.0"
+
+      - name: 配置 K8s 访问凭证
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: 部署到 K8s
+        run: |
+          # 更新镜像版本
+          kubectl set image deployment/${{ matrix.service }} \
+            ${{ matrix.service }}=${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ matrix.service }}:${{ github.sha }} \
+            -n ${{ env.K8S_NAMESPACE }}
+
+      - name: 等待部署完成
+        run: |
+          kubectl rollout status deployment/${{ matrix.service }} \
+            -n ${{ env.K8S_NAMESPACE }} --timeout=300s
+
+      - name: 部署后健康检查
+        run: |
+          kubectl get pods -n ${{ env.K8S_NAMESPACE }} \
+            -l app.kubernetes.io/name=${{ matrix.service }}
+
+      - name: 部署失败自动回滚
+        if: failure()
+        run: |
+          echo "=== 部署 ${{ matrix.service }} 失败，执行自动回滚 ==="
+          kubectl rollout undo deployment/${{ matrix.service }} \
+            -n ${{ env.K8S_NAMESPACE }}
+          echo "WARN: ${{ matrix.service }} 已自动回滚到上一个版本"
+
+  # ==================== 部署后验证 ====================
+  verify:
+    name: 部署后验证
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: 配置 kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.28.0"
+
+      - name: 配置 K8s 访问凭证
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: 验证所有 Pod 运行状态
+        run: |
+          echo "=== 检查所有 Pod 状态 ==="
+          kubectl get pods -n ${{ env.K8S_NAMESPACE }} -l app.kubernetes.io/part-of=tailor-is
+          echo ""
+          echo "=== 检查未就绪的 Pod ==="
+          NOT_READY=$(kubectl get pods -n ${{ env.K8S_NAMESPACE }} \
+            -l app.kubernetes.io/part-of=tailor-is \
+            --field-selector=status.phase!=Running \
+            -o jsonpath='{.items[*].metadata.name}')
+          if [ -n "$NOT_READY" ]; then
+            echo "ERROR: 以下 Pod 未就绪: $NOT_READY"
+            exit 1
+          fi
+          echo "所有 Pod 运行正常"
+
+      - name: 发送部署成功通知
+        if: success()
+        run: |
+          echo "Tailor IS 生产部署成功"
+          # 此处可集成企业微信/钉钉/邮件通知
+          # curl -X POST "${{ secrets.NOTIFY_WEBHOOK }}" \
+          #   -H "Content-Type: application/json" \
+          #   -d "{\"msgtype\":\"text\",\"text\":{\"content\":\"Tailor IS 生产部署成功\"}}"

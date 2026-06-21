@@ -1,0 +1,238 @@
+# ==============================================================================
+# Tailor IS - CDN 配置
+# ==============================================================================
+# 支持多种 CDN 提供商:
+#   1. 阿里云 CDN (Aliyun CDN)
+#   2. AWS CloudFront
+#   3. 七牛云 CDN
+#   4. 腾讯云 CDN
+#
+# 使用方式:
+#   根据实际使用的 CDN 提供商，取消对应配置段的注释
+# ==============================================================================
+
+# ==============================================================================
+# 第一部分: 阿里云 CDN 配置
+# ==============================================================================
+aliyun_cdn:
+  # 加速域名
+  domain: "cdn.tailoris.com"
+  # 源站配置
+  origin:
+    type: "domain"          # domain / oss / ip
+    domain: "origin.tailoris.com"
+    port: 443
+    protocol: "https"
+  # 缓存规则
+  cache_rules:
+    # 静态资源 - 长期缓存
+    - path: "/static/**"
+      ttl: 31536000          # 365天
+      weight: 99
+    - path: "/assets/**"
+      ttl: 31536000
+      weight: 98
+    # JS/CSS 带 hash - 永久缓存
+    - path: "/**/*.[a-f0-9]{8,}.js"
+      ttl: 31536000
+      weight: 97
+    - path: "/**/*.[a-f0-9]{8,}.css"
+      ttl: 31536000
+      weight: 96
+    # 图片 - 长期缓存
+    - path: "/**/*.{jpg,jpeg,gif,png,webp,svg,ico}"
+      ttl: 7776000           # 90天
+      weight: 95
+    # 字体文件 - 永久缓存
+    - path: "/**/*.{woff,woff2,ttf,otf,eot}"
+      ttl: 31536000
+      weight: 94
+    # API 接口 - 不缓存
+    - path: "/api/**"
+      ttl: 0
+      weight: 1
+    # HTML 文件 - 不缓存
+    - path: "/**/*.html"
+      ttl: 0
+      weight: 2
+    # 默认 - 短期缓存
+    - path: "/**"
+      ttl: 3600
+      weight: 3
+  # HTTPS 配置
+  https:
+    enabled: true
+    http2: true
+    force_redirect: true
+    cert_name: "tailoris.com"
+  # 性能优化
+  performance:
+    gzip: true
+    brotli: true
+    range: true
+    page_speed: false
+  # 访问控制
+  access_control:
+    referer_whitelist: []
+    ip_blacklist: []
+    # CORS 配置
+    cors:
+      enabled: true
+      origin: "https://www.tailoris.com"
+      methods: "GET,POST,PUT,DELETE,OPTIONS"
+      max_age: 86400
+  # 鉴权配置 (URL 鉴权)
+  auth:
+    enabled: false
+    type: "type_a"          # type_a / type_b / type_c
+    key: ""
+
+
+# ==============================================================================
+# 第二部分: AWS CloudFront 配置
+# ==============================================================================
+aws_cloudfront:
+  # 分配配置
+  distribution:
+    comment: "Tailor IS CDN Distribution"
+    enabled: true
+    price_class: "PriceClass_All"  # PriceClass_100 / 200 / All
+    aliases:
+      - "cdn.tailoris.com"
+      - "static.tailoris.com"
+    default_root_object: "index.html"
+  # 源站配置
+  origins:
+    - id: "tailor-is-origin"
+      domain_name: "origin.tailoris.com"
+      custom_origin:
+        http_port: 80
+        https_port: 443
+        origin_protocol_policy: "https-only"
+        origin_ssl_protocols: ["TLSv1.2", "TLSv1.3"]
+  # 缓存行为
+  cache_behaviors:
+    # 静态资源
+    - path_pattern: "/static/*"
+      target_origin_id: "tailor-is-origin"
+      viewer_protocol_policy: "redirect-to-https"
+      allowed_methods: ["GET", "HEAD", "OPTIONS"]
+      cached_methods: ["GET", "HEAD"]
+      compress: true
+      min_ttl: 86400
+      default_ttl: 604800
+      max_ttl: 31536000
+      forwarded_values:
+        query_string: false
+        cookies:
+          forward: "none"
+    # 图片
+    - path_pattern: "*.{jpg,jpeg,gif,png,webp,svg}"
+      target_origin_id: "tailor-is-origin"
+      viewer_protocol_policy: "redirect-to-https"
+      allowed_methods: ["GET", "HEAD", "OPTIONS"]
+      cached_methods: ["GET", "HEAD"]
+      compress: true
+      min_ttl: 86400
+      default_ttl: 2592000
+      max_ttl: 7776000
+      forwarded_values:
+        query_string: false
+        cookies:
+          forward: "none"
+    # API - 不缓存
+    - path_pattern: "/api/*"
+      target_origin_id: "tailor-is-origin"
+      viewer_protocol_policy: "redirect-to-https"
+      allowed_methods: ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+      cached_methods: ["GET", "HEAD"]
+      compress: false
+      min_ttl: 0
+      default_ttl: 0
+      max_ttl: 0
+      forwarded_values:
+        query_string: true
+        cookies:
+          forward: "all"
+        headers: ["Authorization", "Host", "Origin"]
+    # 默认
+    - path_pattern: ""
+      target_origin_id: "tailor-is-origin"
+      viewer_protocol_policy: "redirect-to-https"
+      allowed_methods: ["GET", "HEAD", "OPTIONS"]
+      cached_methods: ["GET", "HEAD"]
+      compress: true
+      min_ttl: 0
+      default_ttl: 3600
+      max_ttl: 86400
+      forwarded_values:
+        query_string: false
+        cookies:
+          forward: "none"
+  # 自定义错误页面
+  custom_error_responses:
+    - error_code: 404
+      response_code: 200
+      response_page_path: "/index.html"
+  # 日志
+  logging:
+    enabled: true
+    bucket: "tailor-is-logs.s3.amazonaws.com"
+    prefix: "cloudfront/"
+  # WAF 集成
+  # web_acl_id: "arn:aws:wafv2:..."
+
+# ==============================================================================
+# 第三部分: 通用 CDN 配置参数
+# ==============================================================================
+common:
+  # 预热 URL 列表
+  warmup_urls:
+    - "/"
+    - "/pc-mall/index.html"
+    - "/merchant-admin/index.html"
+    - "/platform-admin/index.html"
+    - "/static/css/app.css"
+    - "/static/js/app.js"
+    - "/static/img/logo.png"
+  # 需要 CDN 加速的文件类型
+  static_extensions:
+    - ".js"
+    - ".css"
+    - ".jpg"
+    - ".jpeg"
+    - ".png"
+    - ".gif"
+    - ".webp"
+    - ".svg"
+    - ".ico"
+    - ".woff"
+    - ".woff2"
+    - ".ttf"
+    - ".otf"
+    - ".eot"
+    - ".mp4"
+    - ".webm"
+    - ".pdf"
+  # 缓存规则
+  rules:
+    hashed_assets:
+      ttl: "365d"
+      max_age: 31536000
+      pattern: ".*[a-f0-9]{8,}\\.(js|css)$"
+    images:
+      ttl: "90d"
+      max_age: 7776000
+      pattern: ".*\\.(jpg|jpeg|gif|png|webp|svg|ico)$"
+    fonts:
+      ttl: "365d"
+      max_age: 31536000
+      pattern: ".*\\.(woff|woff2|ttf|otf|eot)$"
+    html:
+      ttl: "0s"
+      max_age: 0
+      pattern: ".*\\.html$"
+    api:
+      ttl: "0s"
+      max_age: 0
+      pattern: "/api/.*"

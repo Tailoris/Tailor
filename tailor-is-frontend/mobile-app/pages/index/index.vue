@@ -75,7 +75,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { getProducts, getCategories, getSeckillProducts } from '@/api/product'
 

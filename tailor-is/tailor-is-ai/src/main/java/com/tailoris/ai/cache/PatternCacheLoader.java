@@ -95,19 +95,18 @@ public class PatternCacheLoader {
 
     /**
      * 按类型加载图案到 pattern:base:{type}:{size}
+     *
+     * <p>修复 N+1：原实现先全量查询所有记录获取 patternType（含重复），
+     * 再对每条记录逐类型查询，N 条记录产生 N 次查询。现改为使用
+     * SELECT DISTINCT 一次性获取所有不重复类型，仅对去重后的类型执行查询。</p>
      */
     private void loadPatternsByType() {
         RedisTemplate<String, Object> template = cacheRouter.getCoreTemplate();
 
-        // 查询所有不重复的 patternType
-        List<PatternRecord> allTypes = patternRecordMapper.selectList(
-                new LambdaQueryWrapper<PatternRecord>()
-                        .eq(PatternRecord::getStatus, 1)
-                        .select(PatternRecord::getPatternType)
-        );
+        // 一次性查询所有不重复的 patternType（DISTINCT）
+        List<Integer> types = patternRecordMapper.selectDistinctPatternTypes();
 
-        for (PatternRecord record : allTypes) {
-            Integer type = record.getPatternType();
+        for (Integer type : types) {
             if (type == null) continue;
 
             String typeKey = CACHE_KEY_PREFIX + "type:" + type;

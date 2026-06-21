@@ -111,7 +111,7 @@ tailoris:
 
 logging:
   level:
-    com.tailoris.merchant: debug
+    com.tailoris.merchant: info
 
 ---
 spring.config.activate.on-profile: prod

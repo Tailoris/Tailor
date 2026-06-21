@@ -126,16 +126,16 @@ const balance = reactive({
   totalWithdrawn: 0,
 })
 
-const recordStatusType: Record<string, string> = {
-  pending: 'warning',
-  settled: 'success',
-  withdrawn: 'info',
+const recordStatusType: Record<number, string> = {
+  0: 'warning',
+  1: 'success',
+  2: 'info',
 }
 
-const recordStatusLabel: Record<string, string> = {
-  pending: '待结算',
-  settled: '已结算',
-  withdrawn: '已提现',
+const recordStatusLabel: Record<number, string> = {
+  0: '待结算',
+  1: '已结算',
+  2: '已提现',
 }
 
 const withdrawDialogVisible = ref(false)

@@ -182,16 +182,16 @@ const couponTypeLabel: Record<string, string> = {
   percentage: '折扣',
 }
 
-const couponStatusType: Record<string, string> = {
-  active: 'success',
-  inactive: 'info',
-  expired: 'danger',
+const couponStatusType: Record<number, string> = {
+  1: 'success',
+  0: 'info',
+  2: 'danger',
 }
 
-const couponStatusLabel: Record<string, string> = {
-  active: '进行中',
-  inactive: '未开始',
-  expired: '已过期',
+const couponStatusLabel: Record<number, string> = {
+  1: '进行中',
+  0: '未开始',
+  2: '已过期',
 }
 
 async function fetchCoupons() {

@@ -172,16 +172,16 @@ const joinRules = {
   stock: [{ required: true, message: '请输入秒杀库存', trigger: 'change' }],
 }
 
-const seckillStatusType: Record<string, string> = {
-  upcoming: 'info',
-  ongoing: 'success',
-  ended: 'danger',
+const seckillStatusType: Record<number, string> = {
+  0: 'info',
+  1: 'success',
+  2: 'danger',
 }
 
-const seckillStatusLabel: Record<string, string> = {
-  upcoming: '即将开始',
-  ongoing: '进行中',
-  ended: '已结束',
+const seckillStatusLabel: Record<number, string> = {
+  0: '即将开始',
+  1: '进行中',
+  2: '已结束',
 }
 
 async function fetchActivities() {

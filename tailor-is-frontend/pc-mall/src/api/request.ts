@@ -79,7 +79,9 @@ function processPendingRequests(token: string | null, error: unknown = null): vo
 
 async function refreshToken(): Promise<string | null> {
   try {
-    const refreshTokenValue = localStorage.getItem('refresh_token')
+    // TODO: refresh_token 应迁移至服务端 httpOnly cookie，前端不应持久化存储。
+    // 当前使用 sessionStorage 降低泄露窗口（关闭浏览器即清除）。
+    const refreshTokenValue = sessionStorage.getItem('refresh_token')
     if (!refreshTokenValue) {
       return null
     }
@@ -92,7 +94,7 @@ async function refreshToken(): Promise<string | null> {
       const newToken = response.data.data.token
       localStorage.setItem('token', encryptSync(newToken))
       if (response.data.data.refreshToken) {
-        localStorage.setItem('refresh_token', response.data.data.refreshToken)
+        sessionStorage.setItem('refresh_token', response.data.data.refreshToken)
       }
       return newToken
     }
@@ -115,9 +117,8 @@ service.interceptors.request.use(
 )
 
 // 响应拦截器：提取 data 字段并处理错误
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 service.interceptors.response.use(
-  async (response: AxiosResponse<ApiResponse<any>>) => {
+  async (response: AxiosResponse<ApiResponse<unknown>>) => {
     const apiResponse = response.data
     if (!apiResponse || typeof apiResponse !== 'object') {
       ElMessage.error('响应格式错误')
@@ -171,7 +172,7 @@ service.interceptors.response.use(
           // 刷新失败，跳转登录
           processPendingRequests(null, new Error('Token refresh failed'))
           localStorage.removeItem('token')
-          localStorage.removeItem('refresh_token')
+          sessionStorage.removeItem('refresh_token')
           ElMessage.error('登录已过期，请重新登录')
           router.push('/login')
           return Promise.reject(error)
@@ -182,7 +183,7 @@ service.interceptors.response.use(
         case 401:
           // 已在上面处理过刷新Token，这里是刷新失败或非auth请求的兜底
           localStorage.removeItem('token')
-          localStorage.removeItem('refresh_token')
+          sessionStorage.removeItem('refresh_token')
           ElMessage.error('登录已过期，请重新登录')
           router.push('/login')
           break

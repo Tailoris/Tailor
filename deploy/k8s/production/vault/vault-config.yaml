@@ -1,0 +1,45 @@
+# ==============================================================================
+# Tailor IS - Vault 配置
+# ==============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-config
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: vault
+    environment: production
+data:
+  vault-config.hcl: |
+    ui = true
+    disable_mlock = false
+
+    api_addr = "http://vault.tailor-is-prod.svc.cluster.local:8200"
+    cluster_addr = "http://vault-internal.tailor-is-prod.svc.cluster.local:8201"
+
+    listener "tcp" {
+      address     = "0.0.0.0:8200"
+      tls_disable = "true"
+    }
+
+    storage "file" {
+      path = "/vault/data"
+    }
+
+    telemetry {
+      prometheus_retention_time = "30s"
+      disable_hostname = true
+    }
+
+    # Seal 配置 (可选: 使用 AWS KMS / Azure Key Vault / GCP KMS 自动解封)
+    # seal "awskms" {
+    #   region     = "us-east-1"
+    #   kms_key_id = "alias/tailor-is-vault"
+    # }
+
+    max_lease_ttl = "768h"
+    default_lease_ttl = "168h"
+
+    log_level = "info"

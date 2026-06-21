@@ -126,18 +126,18 @@ const balance = reactive({
   totalWithdrawn: 0,
 })
 
-const withdrawStatusType: Record<string, string> = {
-  pending: 'warning',
-  processing: 'primary',
-  success: 'success',
-  failed: 'danger',
+const withdrawStatusType: Record<number, string> = {
+  0: 'warning',
+  1: 'primary',
+  2: 'success',
+  3: 'danger',
 }
 
-const withdrawStatusLabel: Record<string, string> = {
-  pending: '待处理',
-  processing: '处理中',
-  success: '已到账',
-  failed: '提现失败',
+const withdrawStatusLabel: Record<number, string> = {
+  0: '待处理',
+  1: '处理中',
+  2: '已到账',
+  3: '提现失败',
 }
 
 const bankNameLabel: Record<string, string> = {

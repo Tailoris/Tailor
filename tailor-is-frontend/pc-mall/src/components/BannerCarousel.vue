@@ -1,12 +1,12 @@
 <template>
-  <div class="banner-carousel">
-    <el-carousel :interval="4000" type="card" height="400px">
-      <el-carousel-item v-for="(slide, index) in slides" :key="index">
+  <div class="banner-carousel" role="region" aria-label="促销横幅轮播" aria-roledescription="carousel">
+    <el-carousel :interval="4000" type="card" height="400px" aria-label="轮播广告">
+      <el-carousel-item v-for="(slide, index) in slides" :key="index" :aria-label="`第${index + 1}张: ${slide.title}`" role="group" :aria-roledescription="`slide ${index + 1} of ${slides.length}`">
         <div class="banner-slide" :style="{ background: slide.background }">
           <div class="slide-content">
             <h2 class="slide-title">{{ slide.title }}</h2>
             <p class="slide-desc">{{ slide.description }}</p>
-            <el-button type="primary" size="large" @click="handleAction(slide.action)">
+            <el-button type="primary" size="large" @click="handleAction(slide.action)" :aria-label="`${slide.ctaText}: ${slide.title}`">
               {{ slide.ctaText }}
             </el-button>
           </div>

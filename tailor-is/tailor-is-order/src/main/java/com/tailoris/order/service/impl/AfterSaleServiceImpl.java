@@ -133,8 +133,8 @@ public class AfterSaleServiceImpl implements AfterSaleService {
         if (!ticket.getMerchantId().equals(userId) && !ticket.getShopId().equals(userId)) {
             throw new BusinessException("无权操作该售后工单");
         }
-        if (ticket.getStatus() != OrderConstants.TICKET_STATUS_PENDING
-                && ticket.getStatus() != OrderConstants.TICKET_STATUS_PROCESSING) {
+        if (!Integer.valueOf(OrderConstants.TICKET_STATUS_PENDING).equals(ticket.getStatus())
+                && !Integer.valueOf(OrderConstants.TICKET_STATUS_PROCESSING).equals(ticket.getStatus())) {
             throw new BusinessException("售后工单状态异常");
         }
 
@@ -163,8 +163,8 @@ public class AfterSaleServiceImpl implements AfterSaleService {
         if (!ticket.getMerchantId().equals(userId) && !ticket.getShopId().equals(userId)) {
             throw new BusinessException("无权操作该售后工单");
         }
-        if (ticket.getStatus() != OrderConstants.TICKET_STATUS_PENDING
-                && ticket.getStatus() != OrderConstants.TICKET_STATUS_PROCESSING) {
+        if (!Integer.valueOf(OrderConstants.TICKET_STATUS_PENDING).equals(ticket.getStatus())
+                && !Integer.valueOf(OrderConstants.TICKET_STATUS_PROCESSING).equals(ticket.getStatus())) {
             throw new BusinessException("售后工单状态异常");
         }
 

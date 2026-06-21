@@ -1,6 +1,7 @@
 package com.tailoris.community.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.tailoris.common.dto.PageRequest;
 import com.tailoris.common.dto.PageResponse;
@@ -80,6 +81,7 @@ public class PostController {
     }
 
     @Operation(summary = "置顶/取消置顶", description = "运营：置顶帖子")
+    @SaCheckRole("admin")
     @PostMapping("/top/{postId}")
     public Result<Void> setTop(@PathVariable Long postId, @RequestParam Integer isTop) {
         communityPostService.setTop(postId, isTop);
@@ -87,6 +89,7 @@ public class PostController {
     }
 
     @Operation(summary = "加精/取消加精", description = "运营：加精帖子")
+    @SaCheckRole("admin")
     @PostMapping("/essence/{postId}")
     public Result<Void> setEssence(@PathVariable Long postId, @RequestParam Integer isEssence) {
         communityPostService.setEssence(postId, isEssence);

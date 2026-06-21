@@ -1,0 +1,11 @@
+# Development-only files excluded from production builds
+mock-server.js
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__/
+node_modules/
+.git/
+.env.local
+.env.development

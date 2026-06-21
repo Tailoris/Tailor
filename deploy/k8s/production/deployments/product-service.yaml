@@ -1,0 +1,132 @@
+# ==============================================================================
+# Tailor IS - Product Service Deployment + Service
+# ==============================================================================
+# 商品服务 - /api/product/** /api/favorite/**
+# 端口: 8102 | 副本: 3
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: product-service
+    environment: production
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8102
+      targetPort: 8102
+      protocol: TCP
+  selector:
+    app: tailor-is
+    component: product-service
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: product-service
+    environment: production
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: product-service
+  template:
+    metadata:
+      labels:
+        app: tailor-is
+        component: product-service
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8102"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: product-service
+          image: tailor-is/product-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8102
+              protocol: TCP
+          env:
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: PRODUCT_SERVICE_PORT
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: MYSQL_PRODUCT_URL
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+          envFrom:
+            - configMapRef:
+                name: tailor-is-config
+            - secretRef:
+                name: tailor-is-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1500m"
+              memory: "1536Mi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8102
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8102
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8102
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+      volumes:
+        - name: logs
+          emptyDir: {}
+      terminationGracePeriodSeconds: 30

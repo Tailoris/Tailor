@@ -28,7 +28,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -91,7 +93,7 @@ class PayControllerTest {
         record.setAmount(new BigDecimal("99.00"));
 
         when(paymentService.createPayment(anyLong(), any(PayRequest.class))).thenReturn(record);
-        when(wechatPayService.createOrder(anyString(), any(BigDecimal.class), anyString(),
+        when(wechatPayService.createJsapiPayment(anyString(), any(BigDecimal.class), anyString(),
                 anyString(), anyString(), anyString())).thenReturn(new HashMap<>());
 
         PayRequest request = new PayRequest();
@@ -118,7 +120,7 @@ class PayControllerTest {
         record.setAmount(new BigDecimal("99.00"));
 
         when(paymentService.createPayment(anyLong(), any(PayRequest.class))).thenReturn(record);
-        when(wechatPayService.createOrder(anyString(), any(BigDecimal.class), any(),
+        when(wechatPayService.createJsapiPayment(anyString(), any(BigDecimal.class), any(),
                 anyString(), anyString(), anyString())).thenReturn(new HashMap<>());
 
         PayRequest request = new PayRequest();
@@ -212,7 +214,7 @@ class PayControllerTest {
     void testQueryWechatOrder() throws Exception {
         Map<String, Object> queryResult = new HashMap<>();
         queryResult.put("trade_state", "SUCCESS");
-        when(wechatPayService.queryOrder(anyString(), any())).thenReturn(queryResult);
+        when(wechatPayService.queryPayment(anyString(), any())).thenReturn(queryResult);
 
         mockMvc.perform(get("/api/v1/payment/wechat/query")
                         .param("transactionId", "TXN123"))
@@ -246,7 +248,7 @@ class PayControllerTest {
 
         Map<String, Object> refundResult = new HashMap<>();
         refundResult.put("refund_id", "REF123");
-        when(wechatPayService.refund(anyString(), anyString(), any(BigDecimal.class), any(BigDecimal.class)))
+        when(wechatPayService.createRefund(anyString(), anyString(), any(BigDecimal.class), any(BigDecimal.class), any()))
                 .thenReturn(refundResult);
 
         mockMvc.perform(post("/api/v1/payment/refund")
@@ -354,8 +356,19 @@ class PayControllerTest {
         paramMap.put("sign_type", new String[]{"MD5"});
 
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getInputStream()).thenReturn(new jakarta.servlet.ServletInputStream() {
+            private final ByteArrayInputStream bais = new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8));
+            @Override public int read() { return bais.read(); }
+            @Override public boolean isFinished() { return bais.available() == 0; }
+            @Override public boolean isReady() { return true; }
+            @Override public void setReadListener(jakarta.servlet.ReadListener rl) {}
+        });
+        when(mockRequest.getHeader("Wechatpay-Signature")).thenReturn("VALID_SIGN");
+        when(mockRequest.getHeader("Wechatpay-Timestamp")).thenReturn("1234567890");
+        when(mockRequest.getHeader("Wechatpay-Nonce")).thenReturn("nonce123");
+        when(mockRequest.getHeader("Wechatpay-Serial")).thenReturn("SERIAL001");
         when(mockRequest.getParameterMap()).thenReturn(paramMap);
-        when(wechatPayService.verifyCallback(anyMap())).thenReturn(true);
+        when(wechatPayService.verifyCallback(anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(true);
 
         String result = payController.wechatCallback(mockRequest);
         assertTrue(result.contains("SUCCESS"));
@@ -368,6 +381,13 @@ class PayControllerTest {
         paramMap.put("trade_state", new String[]{"SUCCESS"});
 
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getInputStream()).thenReturn(new jakarta.servlet.ServletInputStream() {
+            private final ByteArrayInputStream bais = new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8));
+            @Override public int read() { return bais.read(); }
+            @Override public boolean isFinished() { return bais.available() == 0; }
+            @Override public boolean isReady() { return true; }
+            @Override public void setReadListener(jakarta.servlet.ReadListener rl) {}
+        });
         when(mockRequest.getParameterMap()).thenReturn(paramMap);
 
         String result = payController.wechatCallback(mockRequest);
@@ -382,6 +402,13 @@ class PayControllerTest {
         paramMap.put("trade_state", new String[]{"REFUND"});
 
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getInputStream()).thenReturn(new jakarta.servlet.ServletInputStream() {
+            private final ByteArrayInputStream bais = new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8));
+            @Override public int read() { return bais.read(); }
+            @Override public boolean isFinished() { return bais.available() == 0; }
+            @Override public boolean isReady() { return true; }
+            @Override public void setReadListener(jakarta.servlet.ReadListener rl) {}
+        });
         when(mockRequest.getParameterMap()).thenReturn(paramMap);
 
         String result = payController.wechatCallback(mockRequest);
@@ -399,6 +426,13 @@ class PayControllerTest {
         paramMap.put("err_code_des", new String[]{"系统错误"});
 
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getInputStream()).thenReturn(new jakarta.servlet.ServletInputStream() {
+            private final ByteArrayInputStream bais = new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8));
+            @Override public int read() { return bais.read(); }
+            @Override public boolean isFinished() { return bais.available() == 0; }
+            @Override public boolean isReady() { return true; }
+            @Override public void setReadListener(jakarta.servlet.ReadListener rl) {}
+        });
         when(mockRequest.getParameterMap()).thenReturn(paramMap);
 
         String result = payController.wechatCallback(mockRequest);
@@ -413,8 +447,19 @@ class PayControllerTest {
         paramMap.put("result_code", new String[]{"SUCCESS"});
 
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        when(mockRequest.getInputStream()).thenReturn(new jakarta.servlet.ServletInputStream() {
+            private final ByteArrayInputStream bais = new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8));
+            @Override public int read() { return bais.read(); }
+            @Override public boolean isFinished() { return bais.available() == 0; }
+            @Override public boolean isReady() { return true; }
+            @Override public void setReadListener(jakarta.servlet.ReadListener rl) {}
+        });
+        when(mockRequest.getHeader("Wechatpay-Signature")).thenReturn("INVALID_SIGN");
+        when(mockRequest.getHeader("Wechatpay-Timestamp")).thenReturn("1234567890");
+        when(mockRequest.getHeader("Wechatpay-Nonce")).thenReturn("nonce123");
+        when(mockRequest.getHeader("Wechatpay-Serial")).thenReturn("SERIAL001");
         when(mockRequest.getParameterMap()).thenReturn(paramMap);
-        when(wechatPayService.verifyCallback(anyMap())).thenReturn(false);
+        when(wechatPayService.verifyCallback(anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(false);
 
         String result = payController.wechatCallback(mockRequest);
         assertTrue(result.contains("FAIL"));

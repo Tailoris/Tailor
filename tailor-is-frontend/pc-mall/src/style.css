@@ -33,6 +33,10 @@
   --header-height: 64px;
   --footer-height: 320px;
   --content-width: 1200px;
+
+  /* 大屏扩展容器变量 */
+  --content-width-xxl: 1536px;
+  --content-width-xxxl: 1920px;
 }
 
 * {
@@ -78,6 +82,20 @@ button:hover {
   max-width: var(--content-width);
   margin: 0 auto;
   padding: 0 20px;
+}
+
+@media (min-width: 1536px) {
+  .container {
+    max-width: var(--content-width-xxl);
+    padding: 0 40px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .container {
+    max-width: var(--content-width-xxxl);
+    padding: 0 60px;
+  }
 }
 
 .section-title {

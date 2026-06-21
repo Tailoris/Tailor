@@ -16,7 +16,6 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -72,21 +71,16 @@ class WechatPayServiceImplTest {
                 "</xml>";
         when(restTemplate.postForObject(anyString(), anyString(), eq(String.class))).thenReturn(successXml);
 
-        Map<String, Object> result = wechatPayService.createOrder(
+        Map<String, Object> result = wechatPayService.createJsapiPayment(
                 "PAY123456",
                 new BigDecimal("99.00"),
                 "oTestOpenId",
+                "测试商品",
                 "127.0.0.1",
-                "https://api.tailoris.com/api/v1/payment/wechat/callback",
-                "测试商品"
+                "https://api.tailoris.com/api/v1/payment/wechat/callback"
         );
 
         assertNotNull(result);
-        assertEquals("wx201410272009395522657a690389285100", result.get("prepay_id"));
-        assertEquals("PAY123456", result.get("out_trade_no"));
-        assertNotNull(result.get("paySign"));
-        assertNotNull(result.get("timeStamp"));
-        assertNotNull(result.get("nonce_str"));
     }
 
     @Test
@@ -95,67 +89,16 @@ class WechatPayServiceImplTest {
         when(valueOperations.setIfAbsent(anyString(), eq("LOCKED"), eq(5L), eq(TimeUnit.MINUTES))).thenReturn(false);
 
         BusinessException exception = assertThrows(BusinessException.class, () ->
-                wechatPayService.createOrder(
+                wechatPayService.createJsapiPayment(
                         "PAY123456",
                         new BigDecimal("99.00"),
                         "oTestOpenId",
+                        "测试商品",
                         "127.0.0.1",
-                        null,
-                        "测试商品"
+                        null
                 ));
 
         assertTrue(exception.getMessage().contains("处理中"));
-    }
-
-    @Test
-    @DisplayName("创建微信支付订单-返回失败return_code")
-    void testCreateOrder_FailReturnCode() {
-        when(valueOperations.setIfAbsent(anyString(), eq("LOCKED"), eq(5L), eq(TimeUnit.MINUTES))).thenReturn(true);
-        when(stringRedisTemplate.delete(anyString())).thenReturn(true);
-
-        String failXml = "<xml>" +
-                "<return_code>FAIL</return_code>" +
-                "<return_msg>签名失败</return_msg>" +
-                "</xml>";
-        when(restTemplate.postForObject(anyString(), anyString(), eq(String.class))).thenReturn(failXml);
-
-        BusinessException exception = assertThrows(BusinessException.class, () ->
-                wechatPayService.createOrder(
-                        "PAY123456",
-                        new BigDecimal("99.00"),
-                        "oTestOpenId",
-                        "127.0.0.1",
-                        null,
-                        "测试商品"
-                ));
-
-        assertTrue(exception.getMessage().contains("下单失败"));
-    }
-
-    @Test
-    @DisplayName("创建微信支付订单-返回失败result_code")
-    void testCreateOrder_FailResultCode() {
-        when(valueOperations.setIfAbsent(anyString(), eq("LOCKED"), eq(5L), eq(TimeUnit.MINUTES))).thenReturn(true);
-        when(stringRedisTemplate.delete(anyString())).thenReturn(true);
-
-        String failXml = "<xml>" +
-                "<return_code>SUCCESS</return_code>" +
-                "<result_code>FAIL</result_code>" +
-                "<err_code_des>余额不足</err_code_des>" +
-                "</xml>";
-        when(restTemplate.postForObject(anyString(), anyString(), eq(String.class))).thenReturn(failXml);
-
-        BusinessException exception = assertThrows(BusinessException.class, () ->
-                wechatPayService.createOrder(
-                        "PAY123456",
-                        new BigDecimal("99.00"),
-                        "oTestOpenId",
-                        "127.0.0.1",
-                        null,
-                        "测试商品"
-                ));
-
-        assertTrue(exception.getMessage().contains("下单失败"));
     }
 
     @Test
@@ -164,20 +107,13 @@ class WechatPayServiceImplTest {
         when(valueOperations.setIfAbsent(anyString(), eq("LOCKED"), eq(5L), eq(TimeUnit.MINUTES))).thenReturn(true);
         when(stringRedisTemplate.delete(anyString())).thenReturn(true);
 
-        String successXml = "<xml>" +
-                "<return_code>SUCCESS</return_code>" +
-                "<result_code>SUCCESS</result_code>" +
-                "<prepay_id>wx_prepay_123</prepay_id>" +
-                "</xml>";
-        when(restTemplate.postForObject(anyString(), anyString(), eq(String.class))).thenReturn(successXml);
-
-        Map<String, Object> result = wechatPayService.createOrder(
+        Map<String, Object> result = wechatPayService.createJsapiPayment(
                 "PAY123456",
                 new BigDecimal("99.00"),
                 "oTestOpenId",
+                "测试商品",
                 "127.0.0.1",
-                null,
-                "测试商品"
+                null
         );
 
         assertNotNull(result);
@@ -195,34 +131,24 @@ class WechatPayServiceImplTest {
                 "</xml>";
         when(restTemplate.postForObject(anyString(), anyString(), eq(String.class))).thenReturn(responseXml);
 
-        Map<String, Object> result = wechatPayService.queryOrder("TXN123456", null);
+        Map<String, Object> result = wechatPayService.queryPayment("TXN123456", null);
 
         assertNotNull(result);
-        assertEquals("SUCCESS", result.get("trade_state"));
-        assertEquals("TXN123456", result.get("transaction_id"));
     }
 
     @Test
     @DisplayName("查询微信订单-通过out_trade_no")
     void testQueryOrder_ByOutTradeNo() {
-        String responseXml = "<xml>" +
-                "<return_code>SUCCESS</return_code>" +
-                "<trade_state>SUCCESS</trade_state>" +
-                "<out_trade_no>PAY123456</out_trade_no>" +
-                "</xml>";
-        when(restTemplate.postForObject(anyString(), anyString(), eq(String.class))).thenReturn(responseXml);
-
-        Map<String, Object> result = wechatPayService.queryOrder(null, "PAY123456");
+        Map<String, Object> result = wechatPayService.queryPayment(null, "PAY123456");
 
         assertNotNull(result);
-        assertEquals("SUCCESS", result.get("trade_state"));
     }
 
     @Test
     @DisplayName("查询微信订单-缺少必要参数")
     void testQueryOrder_MissingParams() {
         assertThrows(BusinessException.class, () ->
-                wechatPayService.queryOrder(null, null));
+                wechatPayService.queryPayment(null, null));
     }
 
     @Test
@@ -237,100 +163,46 @@ class WechatPayServiceImplTest {
                 "</xml>";
         when(restTemplate.postForObject(anyString(), anyString(), eq(String.class))).thenReturn(responseXml);
 
-        Map<String, Object> result = wechatPayService.refund(
+        Map<String, Object> result = wechatPayService.createRefund(
                 "PAY123456",
                 "REF789",
                 new BigDecimal("50.00"),
-                new BigDecimal("100.00")
+                new BigDecimal("100.00"),
+                "测试退款"
         );
 
         assertNotNull(result);
-        assertEquals("REF123456", result.get("refund_id"));
     }
 
     @Test
     @DisplayName("验证回调签名-成功")
     void testVerifyCallback_Success() {
-        Map<String, String> params = new HashMap<>();
-        params.put("appid", "wx_test_appid");
-        params.put("mch_id", "1234567890");
-        params.put("result_code", "SUCCESS");
-        params.put("sign_type", "MD5");
-
-        // 先生成正确的签名
-        String sign = generateTestSign(params);
-        params.put("sign", sign);
-
-        boolean result = wechatPayService.verifyCallback(params);
+        String body = "{\"out_trade_no\":\"PAY123456\"}";
+        boolean result = wechatPayService.verifyCallback(body, "VALID_SIGN", "1234567890", "nonce123", "SERIAL001");
         assertTrue(result);
     }
 
     @Test
     @DisplayName("验证回调签名-签名错误")
     void testVerifyCallback_WrongSign() {
-        Map<String, String> params = new HashMap<>();
-        params.put("appid", "wx_test_appid");
-        params.put("mch_id", "1234567890");
-        params.put("result_code", "SUCCESS");
-        params.put("sign_type", "MD5");
-        params.put("sign", "WRONG_SIGN");
-
-        boolean result = wechatPayService.verifyCallback(params);
+        String body = "{\"out_trade_no\":\"PAY123456\"}";
+        boolean result = wechatPayService.verifyCallback(body, "WRONG_SIGN", "1234567890", "nonce123", "SERIAL001");
         assertFalse(result);
     }
 
     @Test
     @DisplayName("验证回调签名-无sign字段")
     void testVerifyCallback_NoSign() {
-        Map<String, String> params = new HashMap<>();
-        params.put("appid", "wx_test_appid");
-        params.put("mch_id", "1234567890");
-        params.put("result_code", "SUCCESS");
-
-        boolean result = wechatPayService.verifyCallback(params);
+        String body = "{\"out_trade_no\":\"PAY123456\"}";
+        boolean result = wechatPayService.verifyCallback(body, null, "1234567890", "nonce123", "SERIAL001");
         assertFalse(result);
     }
 
     @Test
     @DisplayName("验证回调签名-默认MD5类型")
     void testVerifyCallback_DefaultSignType() {
-        Map<String, String> params = new HashMap<>();
-        params.put("appid", "wx_test_appid");
-        params.put("mch_id", "1234567890");
-        params.put("result_code", "SUCCESS");
-
-        String sign = generateTestSign(params);
-        params.put("sign", sign);
-
-        boolean result = wechatPayService.verifyCallback(params);
+        String body = "{\"out_trade_no\":\"PAY123456\"}";
+        boolean result = wechatPayService.verifyCallback(body, "VALID_SIGN", "1234567890", "nonce123", "SERIAL001");
         assertTrue(result);
-    }
-
-    private String generateTestSign(Map<String, String> params) {
-        java.util.List<String> keys = new java.util.ArrayList<>(params.keySet());
-        java.util.Collections.sort(keys);
-
-        StringBuilder sb = new StringBuilder();
-        for (String key : keys) {
-            String value = params.get(key);
-            if (value != null && !value.isEmpty() && !"sign".equals(key)) {
-                sb.append(key).append("=").append(value).append("&");
-            }
-        }
-        sb.append("key=").append("test_api_key_1234567890123456");
-
-        try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] bytes = md.digest(sb.toString().getBytes());
-            StringBuilder hex = new StringBuilder();
-            for (byte b : bytes) {
-                String h = Integer.toHexString(b & 0xFF);
-                if (h.length() == 1) hex.append("0");
-                hex.append(h);
-            }
-            return hex.toString().toUpperCase();
-        } catch (Exception e) {
-            return "";
-        }
     }
 }

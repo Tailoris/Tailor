@@ -12,6 +12,7 @@ import com.tailoris.order.dto.CreateOrderRequest;
 import com.tailoris.order.dto.OrderQueryRequest;
 import com.tailoris.order.entity.OrderInfo;
 import com.tailoris.order.entity.OrderItem;
+import com.tailoris.order.entity.OrderLogistics;
 import com.tailoris.order.entity.ShoppingCart;
 import com.tailoris.order.state.OrderStateMachine;
 import com.tailoris.order.mapper.OrderInfoMapper;
@@ -100,6 +101,19 @@ public class OrderServiceImpl implements OrderService {
     /** 平台费率（可通过环境变量 BATCH_SETTLEMENT_FEE_RATE 覆盖，默认 5%） */
     @Value("${tailoris.order.settlement.platform-fee-rate:0.05}")
     private BigDecimal platformFeeRate;
+
+    /** BE-M-32: 价格计算配置化，替代硬编码魔法数字 */
+    @Value("${tailoris.order.discount.promotion-rate:0.10}")
+    private BigDecimal promotionDiscountRate;
+
+    @Value("${tailoris.order.coupon.fixed-amount:20.00}")
+    private BigDecimal couponFixedAmount;
+
+    @Value("${tailoris.order.freight.free-shipping-threshold:99}")
+    private BigDecimal freeShippingThreshold;
+
+    @Value("${tailoris.order.freight.default-amount:10.00}")
+    private BigDecimal defaultFreightAmount;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -286,9 +300,9 @@ public class OrderServiceImpl implements OrderService {
                 throw new BusinessException("无权操作该订单");
             }
             // 状态幂等：已支付订单直接返回
-            if (order.getStatus() == OrderConstants.ORDER_STATUS_PAID
-                    || order.getStatus() == OrderConstants.ORDER_STATUS_SHIPPED
-                    || order.getStatus() == OrderConstants.ORDER_STATUS_COMPLETED) {
+            if (Integer.valueOf(OrderConstants.ORDER_STATUS_PAID).equals(order.getStatus())
+                    || Integer.valueOf(OrderConstants.ORDER_STATUS_SHIPPED).equals(order.getStatus())
+                    || Integer.valueOf(OrderConstants.ORDER_STATUS_COMPLETED).equals(order.getStatus())) {
                 log.info("订单已支付, orderNo={}, currentStatus={}", orderNo, order.getStatus());
                 return;
             }
@@ -376,7 +390,8 @@ public class OrderServiceImpl implements OrderService {
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
-        if (!order.getUserId().equals(userId)) {
+        // BE-M-31: 发货权限校验对象错误 - 应校验 merchantId（商家才能发货）而非 userId（买家）
+        if (order.getMerchantId() == null || !order.getMerchantId().equals(userId)) {
             throw new BusinessException("无权操作该订单");
         }
         OrderStateMachine.verifyTransition(
@@ -409,14 +424,33 @@ public class OrderServiceImpl implements OrderService {
         order.setCancelTime(LocalDateTime.now());
         orderInfoMapper.updateById(order);
 
+        // 取消订单成功后释放库存（在事务提交后执行，库存释放失败不回滚订单取消）
+        final List<OrderItem> items = getOrderItems(orderNo);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    inventoryService.releaseStock(items);
+                    log.info("订单取消库存释放成功, orderNo: {}, itemSize: {}", orderNo, items.size());
+                } catch (Exception e) {
+                    // 库存释放失败不回滚订单取消，但记录日志以便后续补偿
+                    log.error("订单取消库存释放失败, orderNo: {}, 需人工补偿", orderNo, e);
+                }
+            }
+        });
+
         log.info("订单取消, userId: {}, orderNo: {}, reason: {}", userId, orderNo, reason);
     }
 
     @Override
-    public OrderInfo getOrderDetail(String orderNo) {
+    public OrderInfo getOrderDetail(Long userId, String orderNo) {
         OrderInfo order = orderInfoMapper.selectOrderDetailWithItems(orderNo);
         if (order == null) {
             throw new BusinessException("订单不存在");
+        }
+        // BE-C-6: IDOR越权修复 - 校验订单所属权
+        if (!order.getUserId().equals(userId)) {
+            throw new BusinessException("无权访问该订单");
         }
         return order;
     }
@@ -439,7 +473,9 @@ public class OrderServiceImpl implements OrderService {
         queryWrapper.orderByDesc(OrderInfo::getCreateTime);
 
         Page<OrderInfo> page = new Page<>(request.getPageNum(), request.getPageSize());
-        return orderInfoMapper.selectPage(page, queryWrapper);
+        Page<OrderInfo> result = orderInfoMapper.selectPage(page, queryWrapper);
+        batchFillOrderItems(result.getRecords());
+        return result;
     }
 
     @Override
@@ -464,9 +500,44 @@ public class OrderServiceImpl implements OrderService {
         queryWrapper.orderByDesc(OrderInfo::getCreateTime);
 
         Page<OrderInfo> page = new Page<>(request.getPageNum(), request.getPageSize());
-        return orderInfoMapper.selectPage(page, queryWrapper);
+        Page<OrderInfo> result = orderInfoMapper.selectPage(page, queryWrapper);
+        batchFillOrderItems(result.getRecords());
+        return result;
     }
 
+    /**
+     * 批量填充订单项到订单列表，避免 N+1 查询。
+     * <p>使用 2 次批量 SQL 替代 N 次逐条查询 order_item 和 order_logistics。</p>
+     */
+    private void batchFillOrderItems(List<OrderInfo> orders) {
+        if (CollectionUtils.isEmpty(orders)) {
+            return;
+        }
+
+        List<Long> orderIds = orders.stream()
+                .map(OrderInfo::getId)
+                .collect(Collectors.toList());
+
+        // 批量查询订单项
+        List<OrderItem> allItems = orderInfoMapper.selectOrderItemsByIds(orderIds);
+        Map<Long, List<OrderItem>> itemsByOrderId = allItems.stream()
+                .collect(Collectors.groupingBy(OrderItem::getOrderId));
+
+        // 批量查询物流信息
+        List<OrderLogistics> allLogistics = orderInfoMapper.selectLogisticsByIds(orderIds);
+        Map<Long, OrderLogistics> logisticsByOrderId = allLogistics.stream()
+                .collect(Collectors.toMap(
+                        OrderLogistics::getOrderId,
+                        l -> l,
+                        (existing, replacement) -> existing));
+
+        for (OrderInfo order : orders) {
+            order.setOrderItems(itemsByOrderId.getOrDefault(order.getId(), List.of()));
+            order.setLogistics(logisticsByOrderId.get(order.getId()));
+        }
+    }
+
+    @Nullable
     private OrderInfo getOrderByOrderNo(String orderNo) {
         LambdaQueryWrapper<OrderInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(OrderInfo::getOrderNo, orderNo);
@@ -551,10 +622,9 @@ public class OrderServiceImpl implements OrderService {
      * <p>根据用户会员等级、商品活动等计算折扣，默认为0（无折扣）。</p>
      */
     private BigDecimal calculateDiscountAmount(CreateOrderRequest request, BigDecimal totalAmount) {
-        // 实际生产应从营销服务/会员服务获取折扣
+        // BE-M-32: 折扣率配置化，实际生产应从营销服务/会员服务获取
         if (request.getPromotionId() != null) {
-            // 简化逻辑：促销活动折扣10%
-            return totalAmount.multiply(new BigDecimal("0.10"))
+            return totalAmount.multiply(promotionDiscountRate)
                     .setScale(2, java.math.RoundingMode.HALF_UP);
         }
         return BigDecimal.ZERO;
@@ -564,9 +634,9 @@ public class OrderServiceImpl implements OrderService {
      * 计算优惠券金额 - 修复 B-M35
      */
     private BigDecimal calculateCouponAmount(CreateOrderRequest request, BigDecimal totalAmount) {
+        // BE-M-32: 优惠券面值配置化
         if (request.getCouponId() != null) {
-            // 简化逻辑：固定20元优惠券
-            return new BigDecimal("20.00").min(totalAmount);
+            return couponFixedAmount.min(totalAmount);
         }
         return BigDecimal.ZERO;
     }
@@ -575,11 +645,11 @@ public class OrderServiceImpl implements OrderService {
      * 计算运费 - 修复 B-M35
      */
     private BigDecimal calculateFreightAmount(CreateOrderRequest request, BigDecimal totalAmount) {
-        // 满99元包邮
-        if (totalAmount.compareTo(new BigDecimal("99")) >= 0) {
+        // BE-M-32: 包邮阈值与运费配置化
+        if (totalAmount.compareTo(freeShippingThreshold) >= 0) {
             return BigDecimal.ZERO;
         }
-        return new BigDecimal("10.00");
+        return defaultFreightAmount;
     }
 
     // ==================== Sentinel 限流/降级处理 ====================

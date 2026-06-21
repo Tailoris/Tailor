@@ -10,6 +10,16 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+/**
+ * 加密工具类（AES-CBC / SHA-256 / BCrypt 密码哈希）
+ *
+ * <p>BE-H-14: AES-CBC 模式不安全，已标记为 @Deprecated。
+ * 推荐使用 {@link com.tailoris.common.crypto.AesGcmCrypto} (AES-256-GCM) 替代。
+ * 如仅需简单 AES 加密，可使用 {@link AesEncryptUtils} (已经内置 AES-256-GCM)。</p>
+ *
+ * @deprecated 请迁移到 {@link com.tailoris.common.crypto.AesGcmCrypto} 或 {@link AesEncryptUtils}
+ */
+@Deprecated
 public final class EncryptUtils {
 
     private static final String ALGORITHM = "AES";

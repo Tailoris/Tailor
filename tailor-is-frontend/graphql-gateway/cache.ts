@@ -84,11 +84,16 @@ export async function invalidate(queryName: string, args?: unknown): Promise<voi
       const key = buildCacheKey(queryName, args)
       await redis.del(key)
     } else {
-      // 删除所有匹配前缀的键
-      const keys = await redis.keys(`graphql:${queryName}:*`)
-      if (keys.length > 0) {
-        await redis.del(...keys)
-      }
+      // 删除所有匹配前缀的键（使用 SCAN 迭代，避免 KEYS 阻塞 Redis）
+      const pattern = `graphql:${queryName}:*`
+      let cursor = '0'
+      do {
+        const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100)
+        cursor = nextCursor
+        if (keys.length > 0) {
+          await redis.del(...keys)
+        }
+      } while (cursor !== '0')
     }
   } catch {
     // 静默处理缓存清理失败
@@ -113,7 +118,7 @@ export { redis }
  * @param fetchers 查询函数映射 { queryName: fetcher }
  */
 export async function warmupCache(fetchers: Record<string, () => Promise<unknown>>) {
-  console.log('[CacheWarmup] Starting cache warmup...')
+  process.stdout.write('[CacheWarmup] Starting cache warmup...\n')
   const results: Record<string, string> = {}
 
   for (const [queryName, fetcher] of Object.entries(fetchers)) {
@@ -128,5 +133,5 @@ export async function warmupCache(fetchers: Record<string, () => Promise<unknown
     }
   }
 
-  console.log('[CacheWarmup] Warmup complete:', results)
+  process.stdout.write(`[CacheWarmup] Warmup complete: ${JSON.stringify(results)}\n`)
 }

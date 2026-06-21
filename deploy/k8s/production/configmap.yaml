@@ -1,0 +1,129 @@
+# ==============================================================================
+# Tailor IS - Kubernetes ConfigMap (非敏感配置)
+# ==============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tailor-is-config
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: config
+    environment: production
+data:
+  # ==========================================================================
+  # 运行环境
+  # ==========================================================================
+  TZ: "Asia/Shanghai"
+  SPRING_PROFILES_ACTIVE: "prod"
+
+  # ==========================================================================
+  # 服务端口映射
+  # ==========================================================================
+  # 网关
+  CORE_GATEWAY_PORT: "8080"
+  LITE_GATEWAY_PORT: "8081"
+  # 业务服务
+  USER_SERVICE_PORT: "8101"
+  PRODUCT_SERVICE_PORT: "8102"
+  ORDER_SERVICE_PORT: "8103"
+  PAYMENT_SERVICE_PORT: "8104"
+  MARKETING_SERVICE_PORT: "8105"
+  AI_SERVICE_PORT: "8106"
+  COPYRIGHT_SERVICE_PORT: "8107"
+  COMMUNITY_SERVICE_PORT: "8108"
+  SUPPLY_SERVICE_PORT: "8109"
+  MERCHANT_SERVICE_PORT: "8110"
+  MESSAGE_SERVICE_PORT: "8111"
+  MESSAGE_IM_SERVICE_PORT: "8114"
+  ACADEMY_SERVICE_PORT: "8112"
+  ANALYTICS_SERVICE_PORT: "8113"
+  PATTERN_SERVICE_PORT: "8115"
+  ADMIN_SERVICE_PORT: "8100"
+  API_SERVICE_PORT: "8116"
+
+  # ==========================================================================
+  # Nacos 服务发现 & 配置中心
+  # ==========================================================================
+  NACOS_SERVER_ADDR: "nacos-service.tailor-is-prod.svc.cluster.local:8848"
+  SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: "nacos-service.tailor-is-prod.svc.cluster.local:8848"
+  SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: "nacos-service.tailor-is-prod.svc.cluster.local:8848"
+  NACOS_AUTH_ENABLE: "true"
+  NACOS_AUTH_IDENTITY_KEY: "serverIdentity"
+
+  # ==========================================================================
+  # 数据库连接 (通过 K8s Service 名称访问)
+  # ==========================================================================
+  MYSQL_HOST: "mysql.tailor-is-prod.svc.cluster.local"
+  MYSQL_PORT: "3306"
+  # 各业务库 JDBC URL 模板
+  MYSQL_USER_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_user?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_PRODUCT_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_product?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_ORDER_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_PAYMENT_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_payment?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_MARKETING_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_marketing?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_AI_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_ai?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_COPYRIGHT_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_copyright?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_MERCHANT_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_merchant?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_ADMIN_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_admin?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_PATTERN_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_pattern?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_COMMUNITY_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_community?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_SUPPLY_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_supply?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_MESSAGE_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_message?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_IM_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_im?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_ACADEMY_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_academy?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+  MYSQL_ANALYTICS_URL: "jdbc:mysql://mysql.tailor-is-prod.svc.cluster.local:3306/tailor_is_analytics?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+
+  # ==========================================================================
+  # Redis 缓存
+  # ==========================================================================
+  REDIS_HOST: "redis.tailor-is-prod.svc.cluster.local"
+  REDIS_PORT: "6379"
+
+  # ==========================================================================
+  # RabbitMQ 消息队列
+  # ==========================================================================
+  RABBITMQ_HOST: "rabbitmq.tailor-is-prod.svc.cluster.local"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_MANAGEMENT_PORT: "15672"
+
+  # ==========================================================================
+  # Sentinel Dashboard
+  # ==========================================================================
+  SENTINEL_DASHBOARD_ADDR: "sentinel-dashboard.tailor-is-prod.svc.cluster.local:8858"
+  SPRING_CLOUD_SENTINEL_TRANSPORT_DASHBOARD: "sentinel-dashboard.tailor-is-prod.svc.cluster.local:8858"
+
+  # ==========================================================================
+  # 日志级别
+  # ==========================================================================
+  LOGGING_LEVEL_ROOT: "INFO"
+  LOGGING_LEVEL_COM_TAILORIS: "INFO"
+  LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_CLOUD: "WARN"
+  LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: "WARN"
+
+  # ==========================================================================
+  # Actuator 监控
+  # ==========================================================================
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus,metrics"
+  MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "when-authorized"
+  MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+  MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED: "true"
+
+  # ==========================================================================
+  # 邮件服务
+  # ==========================================================================
+  EMAIL_FROM: "noreply@tailoris.com"
+  SMTP_HOST: "smtp.tailoris.com"
+  SMTP_PORT: "587"
+
+  # ==========================================================================
+  # 文件上传限制
+  # ==========================================================================
+  SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: "50MB"
+  SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: "100MB"
+
+  # ==========================================================================
+  # JVM 参数 (通用)
+  # ==========================================================================
+  JAVA_OPTS_COMMON: "-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp"

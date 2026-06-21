@@ -79,15 +79,15 @@ knife4j:
   gateway:
     enabled: false
 
-# 暴露 actuator 端点用于监控
+# 暴露 actuator 端点用于监控 (BE-H-17: 限制暴露范围)
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus,metrics,gateway
+        include: health,info,prometheus
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
       probes:
         enabled: true
   metrics:

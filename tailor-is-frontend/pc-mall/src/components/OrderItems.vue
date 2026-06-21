@@ -1,5 +1,5 @@
 <template>
-  <section class="section">
+  <section class="section" aria-label="订单商品列表">
     <h3>订单商品</h3>
     <div class="items-header">
       <span class="col-product">商品信息</span>
@@ -9,7 +9,7 @@
     </div>
     <div v-for="item in items" :key="item.id" class="order-item">
       <div class="product-info">
-        <img :src="item.productImage || 'https://via.placeholder.com/60x60'" loading="lazy" />
+        <img :src="item.productImage || 'https://via.placeholder.com/60x60'" :alt="item.productName" loading="lazy" />
         <div>
           <span class="product-name">{{ item.productName }}</span>
           <span class="sku-attrs">{{ Object.entries(item.skuAttributes).map(([k, v]) => `${k}: ${v}`).join('; ') }}</span>

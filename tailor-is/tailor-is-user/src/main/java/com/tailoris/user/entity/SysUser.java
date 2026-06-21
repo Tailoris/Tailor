@@ -11,6 +11,13 @@ import lombok.EqualsAndHashCode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 系统用户实体类，对应 sys_user 表。
+ *
+ * <p>存储用户基本信息、实名认证信息、登录信息等</p>
+ *
+ * @author TailorIS Team
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_user")

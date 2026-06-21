@@ -1,6 +1,6 @@
 <template>
-  <div class="community-view">
-    <el-breadcrumb separator="/">
+  <div class="community-view" role="main" aria-label="社区页面">
+    <el-breadcrumb separator="/" aria-label="面包屑导航">
       <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
       <el-breadcrumb-item>社区</el-breadcrumb-item>
     </el-breadcrumb>

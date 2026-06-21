@@ -1,0 +1,161 @@
+# ============================================================
+# Tailor IS - Alibaba Cloud Function Compute 配置
+# 社区服务和学院服务统一部署
+# 使用: fun deploy 或 serverless-devs deploy
+# ============================================================
+
+# 全局配置
+provider:
+  name: alibaba
+  runtime: custom-container
+  region: ${env:REGION, cn-shanghai}
+  credentials: ${env:ALIBABA_CLOUD_ACCOUNT_ID}
+
+# 社区服务
+community:
+  component: fc
+  inputs:
+    name: tailor-is-community-service
+    description: "Tailor IS 社区服务 - Serverless"
+    runtime: custom-container
+    serviceName: tailor-is-community-service
+    timeout: 60
+    memorySize: 1024
+    diskSize: 512
+    instanceConcurrency: 10
+    environmentVariables:
+      SPRING_PROFILES_ACTIVE: serverless
+      SERVER_PORT: "9000"
+      MYSQL_HOST: ${env:MYSQL_HOST}
+      MYSQL_PORT: ${env:MYSQL_PORT, 3306}
+      MYSQL_USERNAME: ${env:MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${env:MYSQL_PASSWORD}
+      REDIS_HOST: ${env:REDIS_HOST}
+      REDIS_PORT: ${env:REDIS_PORT, 6379}
+      REDIS_PASSWORD: ${env:REDIS_PASSWORD}
+      JAVA_TOOL_OPTIONS: >-
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -XX:+UseSerialGC
+        -XX:+TieredCompilation
+        -XX:TieredStopAtLevel=1
+        -Dspring.main.lazy-initialization=true
+        -Dspring.cloud.nacos.discovery.register-enabled=false
+        -Dspring.cloud.nacos.config.import-check.enabled=false
+    customContainerConfig:
+      image: registry.cn-shanghai.aliyuncs.com/tailoris/community:${env:IMAGE_TAG, latest}
+      command: '["java"]'
+      args: >-
+        ["-Duser.timezone=Asia/Shanghai","-Dserver.port=9000","-Dspring.profiles.active=serverless","-jar","/app/app.jar"]
+    vpcConfig:
+      vpcId: ${env:VPC_ID}
+      vSwitchIds:
+        - ${env:VSWITCH_ID}
+      securityGroupId: ${env:SECURITY_GROUP_ID}
+    triggers:
+      - name: httpTrigger
+        type: http
+        config:
+          authType: anonymous
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - PATCH
+            - HEAD
+            - OPTIONS
+    # 预留实例 - 冷启动保护
+    provisionConfig:
+      alwaysAllocateCPU: false
+      scheduledActions:
+        - name: community-morning-peak
+          startTime: "2026-01-01T09:00:00+08:00"
+          endTime: "2026-01-01T12:00:00+08:00"
+          target: 3
+          scheduleExpression: "cron(0 0 9 ? * MON-FRI *)"
+        - name: community-evening-peak
+          startTime: "2026-01-01T19:00:00+08:00"
+          endTime: "2026-01-01T23:00:00+08:00"
+          target: 3
+          scheduleExpression: "cron(0 0 19 ? * * *)"
+      targetTrackingPolicies:
+        - name: community-concurrency
+          metricType: ProvisionedConcurrencyUtilization
+          metricTarget: 0.7
+          minCapacity: 1
+          maxCapacity: 20
+
+# 学院服务
+academy:
+  component: fc
+  inputs:
+    name: tailor-is-academy-service
+    description: "Tailor IS 学院服务 - Serverless"
+    runtime: custom-container
+    serviceName: tailor-is-academy-service
+    timeout: 60
+    memorySize: 1024
+    diskSize: 512
+    instanceConcurrency: 10
+    environmentVariables:
+      SPRING_PROFILES_ACTIVE: serverless
+      SERVER_PORT: "9000"
+      MYSQL_HOST: ${env:ACADEMY_MYSQL_HOST, ${env:MYSQL_HOST}}
+      MYSQL_PORT: ${env:MYSQL_PORT, 3306}
+      MYSQL_USERNAME: ${env:MYSQL_USERNAME}
+      MYSQL_PASSWORD: ${env:MYSQL_PASSWORD}
+      REDIS_HOST: ${env:REDIS_HOST}
+      REDIS_PORT: ${env:REDIS_PORT, 6379}
+      REDIS_PASSWORD: ${env:REDIS_PASSWORD}
+      JAVA_TOOL_OPTIONS: >-
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -XX:+UseSerialGC
+        -XX:+TieredCompilation
+        -XX:TieredStopAtLevel=1
+        -Dspring.main.lazy-initialization=true
+        -Dspring.cloud.nacos.discovery.register-enabled=false
+        -Dspring.cloud.nacos.config.import-check.enabled=false
+    customContainerConfig:
+      image: registry.cn-shanghai.aliyuncs.com/tailoris/academy:${env:IMAGE_TAG, latest}
+      command: '["java"]'
+      args: >-
+        ["-Duser.timezone=Asia/Shanghai","-Dserver.port=9000","-Dspring.profiles.active=serverless","-jar","/app/app.jar"]
+    vpcConfig:
+      vpcId: ${env:VPC_ID}
+      vSwitchIds:
+        - ${env:VSWITCH_ID}
+      securityGroupId: ${env:SECURITY_GROUP_ID}
+    triggers:
+      - name: httpTrigger
+        type: http
+        config:
+          authType: anonymous
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - PATCH
+            - HEAD
+            - OPTIONS
+    provisionConfig:
+      alwaysAllocateCPU: false
+      scheduledActions:
+        - name: academy-morning-peak
+          startTime: "2026-01-01T08:00:00+08:00"
+          endTime: "2026-01-01T10:00:00+08:00"
+          target: 2
+          scheduleExpression: "cron(0 0 8 ? * MON-FRI *)"
+        - name: academy-evening-peak
+          startTime: "2026-01-01T20:00:00+08:00"
+          endTime: "2026-01-01T23:30:00+08:00"
+          target: 3
+          scheduleExpression: "cron(0 0 20 ? * * *)"
+      targetTrackingPolicies:
+        - name: academy-concurrency
+          metricType: ProvisionedConcurrencyUtilization
+          metricTarget: 0.7
+          minCapacity: 1
+          maxCapacity: 15

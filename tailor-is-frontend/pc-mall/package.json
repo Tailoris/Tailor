@@ -8,16 +8,21 @@
     "build": "vite build",
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --outDir dist/server --ssr src/server/entry-server.ts",
-    "build:ssr": "npm run build:client && npm run build:server",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
     "ssr:dev": "tsx src/server/server.ts",
     "ssr:start": "NODE_ENV=production tsx src/server/server.ts",
+    "build:ssr": "npm run build:client && npm run build:server",
+    "start:prod": "NODE_ENV=production tsx server.prod.ts",
+    "start:pm2": "pm2 start ecosystem.config.js",
     "docker:ssr:build": "docker build -f Dockerfile.ssr -t tailor-is-ssr .",
-    "docker:ssr:run": "docker run -p 3000:3000 --env-file .env tailor-is-ssr"
+    "docker:ssr:run": "docker run -p 3000:3000 --env-file .env tailor-is-ssr",
+    "docker:prod:build": "docker build -f Dockerfile.prod -t tailor-is-ssr-prod .",
+    "docker:prod:run": "docker run -p 3000:3000 --env-file .env tailor-is-ssr-prod"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "axe-core": "^4.10.0",
     "axios": "^1.6.0",
     "dompurify": "^3.0.6",
     "element-plus": "^2.5.0",
@@ -27,9 +32,11 @@
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
+    "@types/compression": "^1.7.5",
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.0",
     "@vitejs/plugin-vue": "^5.2.0",
+    "compression": "^1.7.4",
     "express": "^4.18.2",
     "rollup-plugin-visualizer": "^7.0.1",
     "sass-embedded": "^1.100.0",

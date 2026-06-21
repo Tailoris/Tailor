@@ -12,6 +12,8 @@ import com.tailoris.user.config.WechatProperties;
 import com.tailoris.user.dto.LoginResponse;
 import com.tailoris.user.dto.WechatLoginRequest;
 import com.tailoris.user.entity.SysUser;
+import com.tailoris.user.entity.SysRole;
+import com.tailoris.user.entity.SysPermission;
 import com.tailoris.user.mapper.SysUserMapper;
 import com.tailoris.user.service.SysRoleService;
 import com.tailoris.user.service.SysPermissionService;
@@ -183,7 +185,7 @@ public class WechatLoginServiceImpl implements WechatLoginService {
         user = new SysUser();
         user.setUsername("wx_" + openid);
         user.setNickName("微信用户_" + openid.substring(0, Math.min(6, openid.length())));
-        user.setStatus(1);
+        user.setStatus(0);
         // 头像/手机号由后续绑定流程补充
         sysUserMapper.insert(user);
         log.info("微信新用户创建: userId={}, openid={}", user.getId(), LogMaskUtils.maskString(openid));
@@ -221,9 +223,9 @@ public class WechatLoginServiceImpl implements WechatLoginService {
         // 角色与权限
         try {
             userInfo.setRoles(sysRoleService.listRolesByUserId(user.getId()).stream()
-                    .map(r -> r.getRoleCode()).collect(java.util.stream.Collectors.toList()));
+                    .map(SysRole::getRoleCode).collect(java.util.stream.Collectors.toList()));
             userInfo.setPermissions(sysPermissionService.getPermissionsByUserId(user.getId()).stream()
-                    .map(p -> p.getPermissionCode()).collect(java.util.stream.Collectors.toList()));
+                    .map(SysPermission::getPermissionCode).collect(java.util.stream.Collectors.toList()));
         } catch (Exception e) {
             log.warn("加载用户角色权限失败: userId={}", user.getId(), e);
         }

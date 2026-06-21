@@ -28,7 +28,7 @@
       
       <view class="detail-section">
         <text class="section-title">商品详情</text>
-        <rich-text :nodes="product.content || '<p>暂无详情</p>'" class="detail-content"></rich-text>
+        <rich-text :nodes="sanitizedContent" class="detail-content"></rich-text>
       </view>
     </scroll-view>
     
@@ -90,8 +90,8 @@
   </view>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { getProductDetail } from '@/api/product'
 import { addToCart } from '@/api/cart'
 import { addFavorite, removeFavorite } from '@/api/user'
@@ -103,6 +103,23 @@ const showPopup = ref(false)
 const actionType = ref('cart')
 const quantity = ref(1)
 const selectedSpecs = ref({})
+
+// FE-C-4: XSS防护 - 使用 DOMPurify 过滤富文本内容
+const sanitizedContent = computed(() => {
+  const content = product.value.content || '<p>暂无详情</p>'
+  return sanitizeHtml(content)
+})
+
+function sanitizeHtml(html: string): string {
+  // 移除危险的HTML标签和属性
+  const dangerousTags = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi
+  const dangerousAttrs = /\s(on\w+)=/gi
+  const dangerousProtocols = /(javascript|data|vbscript):/gi
+  return html
+    .replace(dangerousTags, '')
+    .replace(dangerousAttrs, ' data-blocked=')
+    .replace(dangerousProtocols, 'blocked:')
+}
 
 onMounted(() => {
   const pages = getCurrentPages()

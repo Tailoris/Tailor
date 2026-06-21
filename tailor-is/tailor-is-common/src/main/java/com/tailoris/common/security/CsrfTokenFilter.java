@@ -117,7 +117,7 @@ public class CsrfTokenFilter extends OncePerRequestFilter {
             String storedToken = (String) StpUtil.getSession().get(CSRF_SESSION_KEY);
 
             if (storedToken == null || !storedToken.equals(token)) {
-                log.warn("CSRF Token不匹配: stored={}, received={}", storedToken, maskToken(storedToken));
+                log.warn("CSRF Token不匹配: storedToken={}, receivedToken={}", maskToken(storedToken), maskToken(token));
                 return false;
             }
 

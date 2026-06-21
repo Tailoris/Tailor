@@ -211,11 +211,12 @@
                         </goals>
                     </execution>
                     <!--
-                      Phase 1 (P1-2) 覆盖率门禁:
-                        - 项目整体 LINE ≥ 30% (基线目标, 2 周内)
-                        - 单个核心模块 (user/order/payment) INSTRUCTION ≥ 50%
-                        - 非核心/骨架模块豁免, 列入 suppressClasses
-                      后续 Phase 持续提升至 60% / 80%.
+                      Phase 2 (TEST-P2-01) 覆盖率门禁:
+                        - 项目整体 LINE ≥ 80%
+                        - 项目整体 INSTRUCTION ≥ 80%
+                        - BRANCH ≥ 70%
+                        - METHOD ≥ 80%
+                      非核心/骨架模块豁免, 列入 excludes.
                     -->
                     <execution>
                         <id>check</id>
@@ -231,12 +232,22 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.30</minimum>
+                                            <minimum>0.80</minimum>
                                         </limit>
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.40</minimum>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.70</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>METHOD</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
                                         </limit>
                                     </limits>
                                     <excludes>
@@ -273,13 +284,37 @@
                     <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>false</failsOnError>
-                    <failOnViolation>false</failOnViolation>
+                    <failOnViolation>true</failOnViolation>
+                    <maxAllowedViolations>20</maxAllowedViolations>
                     <linkXRef>false</linkXRef>
                 </configuration>
                 <executions>
                     <execution>
                         <id>checkstyle-validate</id>
                         <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.2.0</version>
+                <configuration>
+                    <failBuildOnCVSS>7</failBuildOnCVSS>
+                    <formats>
+                        <format>HTML</format>
+                        <format>JSON</format>
+                    </formats>
+                    <suppressionFiles>
+                        <suppressionFile>owasp-suppressions.xml</suppressionFile>
+                    </suppressionFiles>
+                    <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
                         <goals>
                             <goal>check</goal>
                         </goals>

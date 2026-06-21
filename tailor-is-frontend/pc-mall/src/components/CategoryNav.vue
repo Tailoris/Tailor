@@ -1,12 +1,17 @@
 <template>
-  <section class="section">
+  <section class="section" aria-label="商品分类">
     <h2 class="section-title">商品分类</h2>
-    <div class="category-grid">
+    <div class="category-grid" role="list" aria-label="分类列表">
       <div
         v-for="cat in categories.slice(0, 8)"
         :key="cat.id"
         class="category-item"
+        role="listitem"
+        tabindex="0"
         @click="$router.push(`/products?categoryId=${cat.id}`)"
+        @keydown.enter="$router.push(`/products?categoryId=${cat.id}`)"
+        @keydown.space.prevent="$router.push(`/products?categoryId=${cat.id}`)"
+        :aria-label="`分类: ${cat.name}`"
       >
         <img :src="cat.icon || 'https://via.placeholder.com/60x60'" :alt="cat.name" />
         <span>{{ cat.name }}</span>

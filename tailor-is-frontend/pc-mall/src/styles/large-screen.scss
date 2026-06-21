@@ -1,0 +1,475 @@
+// ==============================================================================
+// Tailor IS - PC 端大屏/超大屏响应式样式
+// UX-P2-02: 大屏响应式设计补充
+// ==============================================================================
+//
+// 断点策略:
+//   xxl  (1536px+): 大屏桌面 — 6 列产品网格、更大 Banner、侧边栏分类导航、多列 Footer
+//   xxxl (1920px+): 4K 超大屏 — 8 列产品网格、全宽视差 Hero、1920px 最大内容容器
+// ==============================================================================
+
+@import './breakpoints.scss';
+
+// ==============================================================================
+// xxl (1536px+) 大屏桌面样式
+// ==============================================================================
+
+@include xxl-up {
+  // --- 全局布局 ---
+
+  .main-content {
+    max-width: $container-xxl;
+    margin: 0 auto;
+  }
+
+  // --- Header 扩展 ---
+
+  .app-header {
+    .header-container {
+      max-width: $container-xxl;
+      padding: 0 40px;
+      height: 72px;
+    }
+
+    .header-center {
+      max-width: 600px;
+    }
+
+    .logo {
+      .logo-text {
+        font-size: 24px;
+      }
+    }
+
+    .nav-links {
+      gap: 32px;
+
+      a {
+        font-size: 15px;
+      }
+    }
+  }
+
+  // --- Hero Banner 放大 ---
+
+  .banner-carousel {
+    .el-carousel {
+      height: 480px;
+    }
+
+    .slide-content {
+      padding: 60px;
+    }
+
+    .slide-title {
+      font-size: 44px;
+    }
+
+    .slide-desc {
+      font-size: 22px;
+    }
+  }
+
+  // --- 首页布局优化 ---
+
+  .home-view {
+    max-width: $container-xxl;
+    padding: 0 40px;
+  }
+
+  // --- 产品网格: 6 列 ---
+
+  .product-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 24px;
+  }
+
+  .product-card {
+    // 大屏卡片可以显示更多信息
+    border-radius: 12px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    }
+  }
+
+  // --- 分类导航: 横向侧边栏布局 ---
+
+  .category-grid {
+    grid-template-columns: repeat(10, 1fr);
+    gap: 20px;
+  }
+
+  .category-item {
+    padding: 24px 16px;
+    border-radius: 12px;
+
+    img {
+      width: 56px;
+      height: 56px;
+    }
+
+    span {
+      font-size: 15px;
+    }
+  }
+
+  // --- 秒杀区域 ---
+
+  .seckill-section {
+    .seckill-products {
+      grid-template-columns: repeat(6, 1fr);
+      gap: 24px;
+    }
+  }
+
+  // --- Footer: 多列布局 ---
+
+  .app-footer {
+    padding: 60px 0 30px;
+
+    .footer-container {
+      max-width: $container-xxl;
+      padding: 0 40px;
+    }
+
+    .footer-content {
+      grid-template-columns: repeat(5, 1fr);
+      gap: 48px;
+    }
+
+    .footer-column {
+      h4 {
+        font-size: 18px;
+        margin-bottom: 20px;
+      }
+
+      ul li a {
+        font-size: 15px;
+      }
+    }
+  }
+
+  // --- 产品列表页 ---
+
+  .product-list-view {
+    max-width: $container-xxl;
+    margin: 0 auto;
+    padding: 0 40px;
+
+    .filter-sidebar {
+      width: 260px;
+    }
+
+    .product-list-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+  }
+
+  // --- 产品详情页 ---
+
+  .product-detail-view {
+    max-width: $container-xxl;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  // --- 购物车/结算页 ---
+
+  .cart-view,
+  .checkout-view {
+    max-width: $container-xxl;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  // --- 订单详情页 ---
+
+  .order-detail-view {
+    max-width: $container-xxl;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  // --- 社区页 ---
+
+  .community-view {
+    max-width: $container-xxl;
+    margin: 0 auto;
+    padding: 0 40px;
+
+    .post-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+  }
+}
+
+// ==============================================================================
+// xxxl (1920px+) 4K 超大屏样式
+// ==============================================================================
+
+@include xxxl-up {
+  // --- 全局布局 ---
+
+  body {
+    background: #f0f2f5;
+  }
+
+  .main-content {
+    max-width: $container-xxxl;
+  }
+
+  // --- Header ---
+
+  .app-header {
+    .header-container {
+      max-width: $container-xxxl;
+      padding: 0 60px;
+      height: 80px;
+    }
+
+    .header-center {
+      max-width: 720px;
+    }
+
+    .logo {
+      .logo-text {
+        font-size: 26px;
+      }
+    }
+
+    .nav-links {
+      gap: 40px;
+
+      a {
+        font-size: 16px;
+      }
+    }
+
+    .search-box {
+      border-radius: 24px;
+
+      input {
+        padding: 10px 20px;
+        font-size: 15px;
+      }
+    }
+  }
+
+  // --- Hero Banner: 全宽视差效果 ---
+
+  .banner-carousel {
+    margin-left: -60px;
+    margin-right: -60px;
+    margin-bottom: 40px;
+
+    .el-carousel {
+      height: 560px;
+    }
+
+    .banner-slide {
+      border-radius: 0;
+    }
+
+    .slide-content {
+      padding: 80px;
+    }
+
+    .slide-title {
+      font-size: 52px;
+    }
+
+    .slide-desc {
+      font-size: 26px;
+    }
+  }
+
+  // --- 首页 ---
+
+  .home-view {
+    max-width: $container-xxxl;
+    padding: 0 60px;
+  }
+
+  // --- 产品网格: 8 列 ---
+
+  .product-grid {
+    grid-template-columns: repeat(8, 1fr);
+    gap: 28px;
+  }
+
+  // --- 分类导航 ---
+
+  .category-grid {
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+  }
+
+  .category-item {
+    padding: 28px 16px;
+    border-radius: 16px;
+
+    img {
+      width: 64px;
+      height: 64px;
+    }
+
+    span {
+      font-size: 16px;
+    }
+  }
+
+  // --- 秒杀 ---
+
+  .seckill-section {
+    .seckill-products {
+      grid-template-columns: repeat(8, 1fr);
+      gap: 28px;
+    }
+  }
+
+  // --- Footer ---
+
+  .app-footer {
+    padding: 80px 0 40px;
+
+    .footer-container {
+      max-width: $container-xxxl;
+      padding: 0 60px;
+    }
+
+    .footer-content {
+      grid-template-columns: repeat(6, 1fr);
+      gap: 60px;
+    }
+
+    .footer-column {
+      h4 {
+        font-size: 20px;
+      }
+
+      ul li a {
+        font-size: 16px;
+      }
+    }
+  }
+
+  // --- 产品列表页 ---
+
+  .product-list-view {
+    max-width: $container-xxxl;
+    padding: 0 60px;
+
+    .filter-sidebar {
+      width: 280px;
+    }
+
+    .product-list-grid {
+      grid-template-columns: repeat(5, 1fr);
+      gap: 28px;
+    }
+  }
+
+  // --- 产品详情页 ---
+
+  .product-detail-view {
+    max-width: $container-xxxl;
+    padding: 0 60px;
+
+    .product-images {
+      max-width: 600px;
+    }
+
+    .product-info {
+      padding-left: 60px;
+    }
+  }
+
+  // --- 购物车 ---
+
+  .cart-view {
+    max-width: $container-xxxl;
+    padding: 0 60px;
+  }
+
+  // --- 社区 ---
+
+  .community-view {
+    max-width: $container-xxxl;
+    padding: 0 60px;
+
+    .post-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 28px;
+    }
+  }
+
+  // --- 通用: 更大的间距和字体 ---
+
+  .section {
+    margin-bottom: 60px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    margin-bottom: 24px;
+  }
+
+  .view-more {
+    font-size: 16px;
+  }
+
+  // --- 按钮和输入框 ---
+
+  .el-button--large {
+    font-size: 18px;
+    padding: 14px 32px;
+    border-radius: 10px;
+  }
+
+  // --- 最大宽度内容容器 (1920px) ---
+
+  .content-max-width {
+    max-width: $container-xxxl;
+    margin: 0 auto;
+    padding: 0 60px;
+  }
+}
+
+// ==============================================================================
+// 高 DPI 屏幕优化
+// ==============================================================================
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .product-card img,
+  .banner-slide,
+  .category-item img {
+    // 高 DPI 屏幕使用更高质量的图片渲染
+    image-rendering: auto;
+  }
+}
+
+// ==============================================================================
+// 暗色模式大屏适配
+// ==============================================================================
+
+@include dark {
+  @include large-screen {
+    body {
+      background: #141414;
+    }
+
+    .app-header {
+      background: #1f1f1f;
+    }
+
+    .product-card {
+      background: #1f1f1f;
+      border-color: #333;
+    }
+  }
+}

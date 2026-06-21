@@ -5,6 +5,7 @@ import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 商品状态枚举 - 修复 B-M38
@@ -28,22 +29,25 @@ public enum ProductStatusEnum {
     DRAFT(2, "草稿"),
 
     /** 违规下架 */
-    VIOLATED_OFF_SHELF(3, "违规下架");
+    VIOLATED_OFF_SHELF(3, "违规下架"),
+
+    /** 审核驳回下架 */
+    AUDIT_REJECTED(4, "审核驳回下架");
 
     private final int code;
     private final String description;
 
     /**
-     * 根据code获取枚举
+     * 根据code获取枚举，使用 Optional 包装避免 NPE.
      */
-    public static ProductStatusEnum of(Integer code) {
+    public static Optional<ProductStatusEnum> of(Integer code) {
         if (code == null) {
-            return null;
+            return Optional.empty();
         }
-        return Arrays.stream(values())
+        return Optional.ofNullable(Arrays.stream(values())
                 .filter(e -> Objects.equals(e.code, code))
                 .findFirst()
-                .orElse(null);
+                .orElse(null));
     }
 
     /**

@@ -1,0 +1,60 @@
+# =============================================================================
+# Tailor IS SonarQube 质量门禁检查 Workflow
+# 对应: SEC-P3-03 接入 SonarQube
+# 触发: PR 合并前 (pull_request_target)
+# 功能: 通过 SonarQube API 查询质量门禁状态, 不通过则阻止合并
+# =============================================================================
+name: SonarQube Quality Gate
+
+on:
+  pull_request_target:
+    branches: [ main, develop ]
+    paths:
+      - 'tailor-is/**'
+      - '.github/workflows/sonar-quality-gate.yml'
+  # 也可手动触发对特定分支的检查
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to check quality gate for'
+        required: false
+        default: 'main'
+
+jobs:
+  quality-gate:
+    name: Check SonarQube Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check SonarQube Quality Gate Status
+        id: quality-gate
+        run: |
+          chmod +x deploy/scripts/sonar-quality-gate-check.sh
+          bash deploy/scripts/sonar-quality-gate-check.sh \
+            "${{ secrets.SONAR_HOST_URL }}" \
+            "${{ secrets.SONAR_TOKEN }}" \
+            "tailor-is"
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Report Quality Gate Result
+        if: always()
+        run: |
+          if [ "${{ steps.quality-gate.outcome }}" = "success" ]; then
+            echo "## ✅ SonarQube Quality Gate Passed" >> $GITHUB_STEP_SUMMARY
+            echo "The project meets all quality requirements." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ SonarQube Quality Gate Failed" >> $GITHUB_STEP_SUMMARY
+            echo "Please check the SonarQube dashboard for details:" >> $GITHUB_STEP_SUMMARY
+            echo "- **SonarQube Dashboard**: ${{ secrets.SONAR_HOST_URL }}/dashboard?id=tailor-is" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Common failures:" >> $GITHUB_STEP_SUMMARY
+            echo "- Coverage below threshold" >> $GITHUB_STEP_SUMMARY
+            echo "- New bugs or vulnerabilities detected" >> $GITHUB_STEP_SUMMARY
+            echo "- Code duplication exceeds limit" >> $GITHUB_STEP_SUMMARY
+            echo "- Security hotspots not reviewed" >> $GITHUB_STEP_SUMMARY
+          fi

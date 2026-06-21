@@ -29,7 +29,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getAddresses, deleteAddress as deleteAddressApi, setDefaultAddress } from '@/api/user'
 

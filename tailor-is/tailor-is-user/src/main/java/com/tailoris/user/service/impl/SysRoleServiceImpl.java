@@ -13,7 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +42,53 @@ public class SysRoleServiceImpl implements SysRoleService {
                 .eq(SysRole::getStatus, 1)
                 .orderByAsc(SysRole::getSort);
         return sysRoleMapper.selectList(wrapper);
+    }
+
+    @Override
+    public Map<Long, List<SysRole>> listRolesByUserIds(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        // 批量查询用户-角色关联（1 次 SQL）
+        LambdaQueryWrapper<SysUserRole> urWrapper = new LambdaQueryWrapper<>();
+        urWrapper.in(SysUserRole::getUserId, userIds);
+        List<SysUserRole> userRoles = sysUserRoleMapper.selectList(urWrapper);
+
+        if (userRoles.isEmpty()) {
+            Map<Long, List<SysRole>> empty = new HashMap<>();
+            userIds.forEach(id -> empty.put(id, List.of()));
+            return empty;
+        }
+
+        // userId -> roleIds
+        Map<Long, List<Long>> userRoleIdsMap = userRoles.stream()
+                .collect(Collectors.groupingBy(SysUserRole::getUserId,
+                        Collectors.mapping(SysUserRole::getRoleId, Collectors.toList())));
+
+        // 批量查询所有角色（1 次 SQL）
+        List<Long> allRoleIds = userRoles.stream()
+                .map(SysUserRole::getRoleId)
+                .distinct()
+                .collect(Collectors.toList());
+        LambdaQueryWrapper<SysRole> roleWrapper = new LambdaQueryWrapper<>();
+        roleWrapper.in(SysRole::getId, allRoleIds)
+                .eq(SysRole::getStatus, 1)
+                .orderByAsc(SysRole::getSort);
+        List<SysRole> roles = sysRoleMapper.selectList(roleWrapper);
+        Map<Long, SysRole> roleMap = roles.stream()
+                .collect(Collectors.toMap(SysRole::getId, role -> role));
+
+        // 组装 userId -> 角色列表
+        Map<Long, List<SysRole>> result = new HashMap<>();
+        for (Long userId : userIds) {
+            List<Long> roleIds = userRoleIdsMap.getOrDefault(userId, Collections.emptyList());
+            List<SysRole> userRoles2 = roleIds.stream()
+                    .map(roleMap::get)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toList());
+            result.put(userId, userRoles2);
+        }
+        return result;
     }
 
     @Override

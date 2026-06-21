@@ -1,0 +1,161 @@
+# ==============================================================================
+# Tailor IS - AI Service Deployment + Service
+# ==============================================================================
+# AI 服务 - /api/ai/** /api/body-size/**
+# 端口: 8106 | 副本: 2 | 含 GPU toleration
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: ai-service
+    environment: production
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8106
+      targetPort: 8106
+      protocol: TCP
+  selector:
+    app: tailor-is
+    component: ai-service
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: ai-service
+    environment: production
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: ai-service
+  template:
+    metadata:
+      labels:
+        app: tailor-is
+        component: ai-service
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8106"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      # GPU 节点亲和性 (可选，如无 GPU 节点可移除)
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: accelerator
+                    operator: In
+                    values:
+                      - nvidia-tesla-t4
+                      - nvidia-tesla-v100
+                      - nvidia-a100
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: ai-service
+          image: tailor-is/ai-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8106
+              protocol: TCP
+          env:
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: AI_SERVICE_PORT
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: MYSQL_AI_URL
+            - name: AI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secrets
+                  key: AI_API_KEY
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+          envFrom:
+            - configMapRef:
+                name: tailor-is-config
+            - secretRef:
+                name: tailor-is-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2048Mi"
+            # 如需 GPU 资源，取消下面注释:
+            # limits:
+            #   nvidia.com/gpu: 1
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8106
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8106
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8106
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 30
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+            - name: model-cache
+              mountPath: /app/models
+      volumes:
+        - name: logs
+          emptyDir: {}
+        - name: model-cache
+          emptyDir: {}
+      terminationGracePeriodSeconds: 30

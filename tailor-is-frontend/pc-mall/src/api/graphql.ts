@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { decryptSync } from '@/utils/crypto'
 
 // GraphQL endpoint
 const GRAPHQL_ENDPOINT = import.meta.env.VITE_GRAPHQL_ENDPOINT || '/graphql'
@@ -18,9 +19,12 @@ interface GraphQLResponse<T> {
 /**
  * Generic GraphQL query executor
  */
-async function graphqlQuery<T>(query: string, variables: Record<string, unknown> = {}): Promise<T | null> {
+async function doGraphQLRequest<T>(query: string, variables: Record<string, unknown>): Promise<T | null> {
   try {
-    const token = localStorage.getItem('token')
+    // FE-H-3: 统一 Token 格式 - 使用 decryptSync 解密加密存储的 Token
+    // 与 request.ts / router / store 保持一致，避免密文当明文使用
+    const rawToken = localStorage.getItem('token')
+    const token = rawToken ? decryptSync(rawToken) : ''
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     }
@@ -46,6 +50,26 @@ async function graphqlQuery<T>(query: string, variables: Record<string, unknown>
     console.error('[GraphQL] Request failed:', error)
     return null
   }
+}
+
+// 进行中的请求去重缓存：相同 query+variables 复用同一个 Promise
+const pendingRequests = new Map<string, Promise<unknown>>()
+
+/**
+ * Generic GraphQL query executor with request deduplication.
+ * 同一时刻对相同 query+variables 的请求会复用同一个 Promise，避免重复请求。
+ */
+async function graphqlQuery<T>(query: string, variables: Record<string, unknown> = {}): Promise<T | null> {
+  const cacheKey = JSON.stringify({ query, variables })
+  const existing = pendingRequests.get(cacheKey)
+  if (existing) {
+    return existing as Promise<T | null>
+  }
+  const promise = doGraphQLRequest<T>(query, variables).finally(() => {
+    pendingRequests.delete(cacheKey)
+  })
+  pendingRequests.set(cacheKey, promise)
+  return promise
 }
 
 // ========== GraphQL Queries ==========

@@ -103,73 +103,9 @@ tailoris:
         max-idle: 20
         min-idle: 5
         max-wait: 3000
-
-logging:
-  level:
-    com.tailoris.copyright: debug
-
----
-spring.config.activate.on-profile: prod
-knife4j:
-  enable: false
-springdoc:
-  api-docs:
-    enabled: false
-
-# ============================================================
-# 版权服务业务配置
-# ============================================================
-copyright:
-  # AES 加密密钥
-  aes:
-    key: t8V4kL0mN2pR6sQ9wX3yZ7aB1cD5eF0hI4jK8lM2nO6pQ0rS4tU8vW0xY2zA4bC
-  # 验证基础 URL
-  verify:
-    base-url: https://verify.tailoris.com
-  # 相似度检测
-  similarity:
-    threshold: 60.0
-    engine: ai-image-similarity
-
   # ============================================================
-  # 批量上链配置
+  # OSS 对象存储配置
   # ============================================================
-  batch-chain:
-    # 是否启用批量上链
-    enabled: true
-    # 触发批量上链的阈值（待上链记录数）
-    threshold: 100
-    # 单次批量上链最大记录数
-    max-batch-size: 200
-    # 定时任务执行间隔（毫秒），默认 30 分钟
-    schedule-interval: 1800000
-
-  # ============================================================
-  # 本地相似度检测配置
-  # ============================================================
-  local-similarity:
-    # 是否启用本地相似度检测
-    enabled: true
-    # 拦截阈值（相似度超过此值直接拦截）
-    threshold: 80.0
-    # 采样大小（字节）
-    sample-size: 1024
-
-  # ============================================================
-  # 证书 OSS 存储配置
-  # ============================================================
-  certificate-storage:
-    # OSS Bucket 名称
-    bucket: copyright-certificates
-    # 存储基础路径
-    base-path: tailoris/copyright/certificates
-    # 预签名 URL 过期时间（秒），默认 24 小时
-    presign-expire-seconds: 86400
-
-# ============================================================
-# OSS 对象存储配置
-# ============================================================
-tailoris:
   oss:
     enabled: true
     endpoint: ${OSS_ENDPOINT:oss-cn-shanghai.aliyuncs.com}
@@ -181,3 +117,62 @@ tailoris:
     max-file-size: 52428800
     allowed-types: pdf,png,jpg,jpeg,webp,json
     local-fallback-path: /data/tailoris/copyright/upload
+
+  # ============================================================
+  # 版权服务业务配置
+  # ============================================================
+  copyright:
+    # AES 加密密钥
+    aes:
+      key: ${COPYRIGHT_AES_KEY:}
+    # 验证基础 URL
+    verify:
+      base-url: https://verify.tailoris.com
+    # 相似度检测
+    similarity:
+      threshold: 60.0
+      engine: ai-image-similarity
+    # ============================================================
+    # 批量上链配置
+    # ============================================================
+    batch-chain:
+      # 是否启用批量上链
+      enabled: true
+      # 触发批量上链的阈值（待上链记录数）
+      threshold: 100
+      # 单次批量上链最大记录数
+      max-batch-size: 200
+      # 定时任务执行间隔（毫秒），默认 30 分钟
+      schedule-interval: 1800000
+    # ============================================================
+    # 本地相似度检测配置
+    # ============================================================
+    local-similarity:
+      # 是否启用本地相似度检测
+      enabled: true
+      # 拦截阈值（相似度超过此值直接拦截）
+      threshold: 80.0
+      # 采样大小（字节）
+      sample-size: 1024
+    # ============================================================
+    # 证书 OSS 存储配置
+    # ============================================================
+    certificate-storage:
+      # OSS Bucket 名称
+      bucket: copyright-certificates
+      # 存储基础路径
+      base-path: tailoris/copyright/certificates
+      # 预签名 URL 过期时间（秒），默认 24 小时
+      presign-expire-seconds: 86400
+
+logging:
+  level:
+    com.tailoris.copyright: info
+
+---
+spring.config.activate.on-profile: prod
+knife4j:
+  enable: false
+springdoc:
+  api-docs:
+    enabled: false

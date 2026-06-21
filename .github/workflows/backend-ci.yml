@@ -2,7 +2,7 @@
 # Tailor IS Backend CI Pipeline
 # 对应: Phase 1 / P1-3 / C-05
 # 触发: PR 推送到 main/develop, push 到 main
-# 流程: checkout → setup jdk → cache → build → test → checkstyle/pmd → jacoco
+# 流程: checkout → setup jdk → cache → build → test → jacoco report → sonar → checkstyle/pmd
 # =============================================================================
 name: Backend CI
 
@@ -17,6 +17,9 @@ on:
     paths:
       - 'tailor-is/**'
       - '.github/workflows/backend-ci.yml'
+  schedule:
+    # 每周一凌晨 3:00 UTC (北京时间 11:00) 执行 OWASP 依赖检查
+    - cron: '0 3 * * 1'
 
 # 取消正在运行的同分支 CI(节省资源)
 concurrency:
@@ -35,6 +38,7 @@ jobs:
   build:
     name: Build & Test
     runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
     timeout-minutes: 60
     steps:
       - name: Checkout code
@@ -79,10 +83,7 @@ jobs:
               clean install
 
       # ------ 单元测试 + 覆盖率 ------
-      # Phase 1 (P1-2 收尾阶段) 暂时允许部分测试失败,
-      # 等模块 Owner 修复遗留问题后改为 fail-fast
       - name: Run unit tests
-        continue-on-error: true  # Phase 1 期间允许通过, Phase 2 改为 false
         run: |
           mvn -B -ntp -T 4 \
               -f tailor-is/pom.xml \
@@ -91,6 +92,33 @@ jobs:
               -Dmaven.javadoc.skip=true \
               -DjacocoArgLine="-javaagent:$HOME/.m2/repository/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.12-runtime.jar=destfile=$GITHUB_WORKSPACE/tailor-is/target/jacoco.exec" \
               test
+
+      # ------ 生成 JaCoCo 覆盖率报告 ------
+      # pom.xml 已配置 jacoco-maven-plugin (prepare-agent / report / check)
+      # 此处显式调用 report 目标, 确保即使 test 阶段被跳过/过滤也能生成报告
+      - name: Generate JaCoCo Report
+        if: always()
+        run: |
+          mvn -B -ntp \
+              -f tailor-is/pom.xml \
+              jacoco:report \
+              -Djacoco.dataFile=tailor-is/target/jacoco.exec
+        continue-on-error: true  # 测试失败时仍尝试生成报告
+
+      # ------ SonarQube 静态分析 ------
+      # 依赖: tailor-is/sonar-project.properties + secrets.SONAR_TOKEN / SONAR_HOST_URL
+      # 质量门禁: sonar.qualitygate.wait=true, 阻断不通过的 PR
+      - name: SonarQube Scan
+        run: |
+          mvn -B -ntp \
+              -f tailor-is/pom.xml \
+              sonar:sonar \
+              -Dsonar.projectSettings=tailor-is/sonar-project.properties
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: false  # 阻断不通过质量门禁的 PR
 
       # ------ Checkstyle ------
       - name: Run Checkstyle
@@ -103,7 +131,6 @@ jobs:
               -Dcheckstyle.includes='**/src/main/java/**/*.java' \
               -Pcheckstyle \
               checkstyle:check
-        continue-on-error: true  # Phase 1 期间允许警告, Phase 2 改为 false
 
       # ------ PMD ------
       - name: Run PMD
@@ -113,7 +140,6 @@ jobs:
               -f tailor-is/pom.xml \
               -Ppmd \
               pmd:check
-        continue-on-error: true
 
       # ------ 上传测试报告 ------
       - name: Upload Surefire test reports
@@ -124,7 +150,7 @@ jobs:
           path: |
             tailor-is/**/target/surefire-reports/*.xml
             tailor-is/**/target/surefire-reports/*.txt
-          retention-days: 14
+          retention-days: 30
           if-no-files-found: warn
 
       # ------ 上传 JaCoCo 报告 ------
@@ -136,7 +162,7 @@ jobs:
           path: |
             tailor-is/**/target/site/jacoco/**/*
             tailor-is/**/target/jacoco.exec
-          retention-days: 14
+          retention-days: 30
           if-no-files-found: warn
 
       # ------ 覆盖率摘要到 PR ------
@@ -180,15 +206,80 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # 镜像仓库登录: 配置 DOCKER_REGISTRY (repository variable) +
+      # DOCKER_USERNAME / DOCKER_TOKEN (repository secrets) 后自动启用推送
+      - name: Login to Container Registry
+        if: ${{ vars.DOCKER_REGISTRY != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
       - name: Build ${{ matrix.service }} image
         uses: docker/build-push-action@v5
         with:
           context: tailor-is
           file: ${{ matrix.service }}/Dockerfile
           tags: |
-            tailor-is/${{ matrix.service }}:latest
-            tailor-is/${{ matrix.service }}:${{ github.sha }}
-          push: false
-          load: true
+            ${{ vars.DOCKER_REGISTRY && format('{0}/', vars.DOCKER_REGISTRY) || '' }}tailor-is/${{ matrix.service }}:latest
+            ${{ vars.DOCKER_REGISTRY && format('{0}/', vars.DOCKER_REGISTRY) || '' }}tailor-is/${{ matrix.service }}:${{ github.sha }}
+          # 配置 DOCKER_REGISTRY 变量后自动推送, 否则仅加载到本地
+          push: ${{ vars.DOCKER_REGISTRY != '' }}
+          load: ${{ vars.DOCKER_REGISTRY == '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # Job 3: OWASP 依赖漏洞检查
+  # 仅在 main 分支推送或每周定时任务时执行, 避免每次 CI 耗时过长 (B-M28)
+  # ---------------------------------------------------------------------------
+  owasp-dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Run OWASP Dependency-Check
+        run: |
+          mvn -B -ntp \
+              -f tailor-is/pom.xml \
+              -DskipTests \
+              -Dmaven.javadoc.skip=true \
+              dependency-check:check
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-report
+          path: tailor-is/target/dependency-check-report/*
+          retention-days: 30
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # Job 4: 密钥泄露扫描 (gitleaks)
+  # ---------------------------------------------------------------------------
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config-path: .gitleaks.toml

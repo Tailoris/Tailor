@@ -49,10 +49,15 @@ interface UploadOptions {
 }
 
 /**
+ * 🔒 F-M01修复: Loading 提示文本提取为常量
+ */
+const LOADING_TEXT = '加载中...'
+
+/**
  * 🔒 F-M03修复: 国际化文案配置 - 从appConfig读取支持多语言
  */
 const i18n = {
-  loading: '加载中...',  // 可改为从i18n模块读取
+  loading: LOADING_TEXT,  // 可改为从i18n模块读取
   systemError: '系统异常',
   paramError: '参数校验失败',
   notFound: '数据不存在',
@@ -66,11 +71,13 @@ const i18n = {
 }
 
 /**
- * 🔒 F-M03修复: 未授权状态码 - 改为配置项
+ * 🔒 F-M03修复: 未授权状态码 - 提取为模块级常量数组
  * 可在appConfig中按需扩展
  */
+const UNAUTH_CODES: number[] = [401, 402, 410000, 410001, 410002]
+
 function getUnauthCodes(): number[] {
-  return appConfig.unauthCodes || [401, 402, 410000, 410001, 410002]
+  return appConfig.unauthCodes || UNAUTH_CODES
 }
 
 /**
@@ -153,7 +160,7 @@ function enqueueOfflineRequest(url: string, method: string, data: unknown, optio
     entity,
     payload: { url, method, data } as Record<string, unknown>
   })
-  console.log(`[request] Enqueued offline request: ${method} ${url}`)
+  // 离线请求已入队（静默处理）
 }
 
 /**
@@ -172,7 +179,6 @@ async function requestWithRetry<T = unknown>(
     if (attempt > 0) {
       // 指数退避：2s, 4s, 8s...
       const delay = Math.min(2000 * Math.pow(2, attempt - 1), 15000)
-      console.log(`[request] Retry ${attempt}/${maxRetries} for ${url} after ${delay}ms`)
       await new Promise(resolve => setTimeout(resolve, delay))
     }
 

@@ -1,0 +1,219 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Tailor IS Serverless Application
+  Deploys Community and Academy services as Lambda functions
+  with API Gateway HTTP API integration.
+
+# ============================================================
+# 全局参数
+# ============================================================
+Parameters:
+  Stage:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment stage
+
+  ImageTag:
+    Type: String
+    Default: latest
+    Description: Docker image tag to deploy
+
+  VpcId:
+    Type: String
+    Description: VPC ID for Lambda
+
+  SubnetIds:
+    Type: CommaDelimitedList
+    Description: Subnet IDs for Lambda
+
+  SecurityGroupId:
+    Type: String
+    Description: Security Group ID for Lambda
+
+  MysqlHost:
+    Type: String
+    Description: MySQL host
+
+  RedisHost:
+    Type: String
+    Description: Redis host
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 1024
+    Runtime: provided.al2023
+    Architectures: [x86_64]
+    Environment:
+      Variables:
+        SPRING_PROFILES_ACTIVE: serverless
+        SERVER_PORT: "9000"
+        MYSQL_HOST: !Ref MysqlHost
+        MYSQL_PORT: "3306"
+        REDIS_HOST: !Ref RedisHost
+        REDIS_PORT: "6379"
+        JAVA_TOOL_OPTIONS: >-
+          -XX:+UseContainerSupport
+          -XX:MaxRAMPercentage=75.0
+          -XX:+UseSerialGC
+          -XX:+TieredCompilation
+          -XX:TieredStopAtLevel=1
+          -Dspring.main.lazy-initialization=true
+          -Dspring.cloud.nacos.discovery.register-enabled=false
+          -Dspring.cloud.nacos.config.import-check.enabled=false
+    VpcConfig:
+      SecurityGroupIds:
+        - !Ref SecurityGroupId
+      SubnetIds: !Ref SubnetIds
+
+# ============================================================
+# 资源定义
+# ============================================================
+Resources:
+  # ---- API Gateway ----
+  ServerlessHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+      CorsConfiguration:
+        AllowMethods: [GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS]
+        AllowHeaders: [Content-Type, Authorization, X-Requested-With]
+        AllowOrigins: ["*"]
+
+  # ---- 社区服务 Lambda (容器镜像) ----
+  CommunityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'tailor-is-community-${Stage}'
+      Description: 'Tailor IS Community Service - Lambda'
+      PackageType: Image
+      ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/tailoris/community:${ImageTag}'
+      ImageConfig:
+        Command:
+          - "java"
+          - "-Duser.timezone=Asia/Shanghai"
+          - "-Dserver.port=9000"
+          - "-Dspring.profiles.active=serverless"
+          - "-jar"
+          - "/app/app.jar"
+      Events:
+        CommunityApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ServerlessHttpApi
+            Path: /api/community/{proxy+}
+            Method: ANY
+        PostApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ServerlessHttpApi
+            Path: /api/post/{proxy+}
+            Method: ANY
+        CommentApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ServerlessHttpApi
+            Path: /api/comment/{proxy+}
+            Method: ANY
+      Environment:
+        Variables:
+          MYSQL_DATABASE: tailor_is_community
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 1
+      AutoPublishAlias: live
+
+  # ---- 学院服务 Lambda (容器镜像) ----
+  AcademyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'tailor-is-academy-${Stage}'
+      Description: 'Tailor IS Academy Service - Lambda'
+      PackageType: Image
+      ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/tailoris/academy:${ImageTag}'
+      ImageConfig:
+        Command:
+          - "java"
+          - "-Duser.timezone=Asia/Shanghai"
+          - "-Dserver.port=9000"
+          - "-Dspring.profiles.active=serverless"
+          - "-jar"
+          - "/app/app.jar"
+      Events:
+        AcademyApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ServerlessHttpApi
+            Path: /api/academy/{proxy+}
+            Method: ANY
+        CourseApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ServerlessHttpApi
+            Path: /api/course/{proxy+}
+            Method: ANY
+      Environment:
+        Variables:
+          MYSQL_DATABASE: tailor_is_academy
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrentExecutions: 1
+      AutoPublishAlias: live
+
+  # ---- 社区服务 Lambda 扩展（定时预热保活） ----
+  CommunityWarmupRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'community-warmup-${Stage}'
+      Description: 'Periodic warmup to keep Lambda containers warm'
+      ScheduleExpression: 'rate(5 minutes)'
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt CommunityFunction.Arn
+          Id: community-warmup-target
+          Input: '{"source": "aws.events", "detail-type": "Scheduled Event", "detail": {"action": "warmup"}}'
+
+  CommunityWarmupPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CommunityFunction
+      Action: 'lambda:InvokeFunction'
+      Principal: 'events.amazonaws.com'
+      SourceArn: !GetAtt CommunityWarmupRule.Arn
+
+  # ---- 学院服务 Lambda 扩展（定时预热保活） ----
+  AcademyWarmupRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'academy-warmup-${Stage}'
+      Description: 'Periodic warmup to keep Lambda containers warm'
+      ScheduleExpression: 'rate(5 minutes)'
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt AcademyFunction.Arn
+          Id: academy-warmup-target
+          Input: '{"source": "aws.events", "detail-type": "Scheduled Event", "detail": {"action": "warmup"}}'
+
+  AcademyWarmupPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AcademyFunction
+      Action: 'lambda:InvokeFunction'
+      Principal: 'events.amazonaws.com'
+      SourceArn: !GetAtt AcademyWarmupRule.Arn
+
+# ============================================================
+# 输出
+# ============================================================
+Outputs:
+  ApiGatewayUrl:
+    Description: 'API Gateway endpoint URL'
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}'
+
+  CommunityFunctionArn:
+    Description: 'Community function ARN'
+    Value: !GetAtt CommunityFunction.Arn
+
+  AcademyFunctionArn:
+    Description: 'Academy function ARN'
+    Value: !GetAtt AcademyFunction.Arn

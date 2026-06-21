@@ -107,6 +107,11 @@ export default defineConfig({
     // 构建性能
     reportCompressedSize: true,
   },
+  // esbuild 配置：生产构建时移除 console 和 debugger 调用
+  // 与 terser drop_console 互补，确保 SSR/开发模式转换阶段也能移除
+  esbuild: {
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+  },
   // CSS 预处理器
   css: {
     preprocessorOptions: {

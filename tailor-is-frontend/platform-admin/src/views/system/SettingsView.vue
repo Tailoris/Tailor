@@ -101,10 +101,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
+import { getSettings, saveBasicSettings, saveSecuritySettings, saveThirdPartySettings } from '@/api/settings'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -150,13 +151,17 @@ const thirdPartyForm = reactive({
 
 async function handleSaveBasic() {
   if (!basicFormRef.value) return
-  await basicFormRef.value.validate((valid) => {
-    if (valid) {
-      saving.value = true
-      setTimeout(() => {
-        saving.value = false
-        ElMessage.success('基本设置保存成功')
-      }, 500)
+  await basicFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    // FE-M-6: 接入真实API，替代 setTimeout 假保存
+    saving.value = true
+    try {
+      await saveBasicSettings({ ...basicForm })
+      ElMessage.success('基本设置保存成功')
+    } catch {
+      // error handled by interceptor
+    } finally {
+      saving.value = false
     }
   })
 }
@@ -166,20 +171,46 @@ function handleResetBasic() {
 }
 
 async function handleSaveSecurity() {
+  // FE-M-6: 接入真实API，替代 setTimeout 假保存
   saving.value = true
-  setTimeout(() => {
-    saving.value = false
+  try {
+    await saveSecuritySettings({ ...securityForm })
     ElMessage.success('安全设置保存成功')
-  }, 500)
+  } catch {
+    // error handled by interceptor
+  } finally {
+    saving.value = false
+  }
 }
 
 async function handleSaveThirdParty() {
+  // FE-M-6: 接入真实API，替代 setTimeout 假保存
   saving.value = true
-  setTimeout(() => {
-    saving.value = false
+  try {
+    await saveThirdPartySettings({ ...thirdPartyForm })
     ElMessage.success('第三方服务设置保存成功')
-  }, 500)
+  } catch {
+    // error handled by interceptor
+  } finally {
+    saving.value = false
+  }
 }
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    const data = await getSettings()
+    if (data) {
+      Object.assign(basicForm, data.basic)
+      Object.assign(securityForm, data.security)
+      Object.assign(thirdPartyForm, data.thirdParty)
+    }
+  } catch {
+    // 首次加载若后端未配置则使用默认值
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <style scoped>

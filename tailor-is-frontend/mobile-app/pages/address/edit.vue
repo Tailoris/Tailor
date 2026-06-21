@@ -36,7 +36,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { addAddress, updateAddress, getAddressDetail } from '@/api/user'
 

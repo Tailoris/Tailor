@@ -1,3 +1,4 @@
+// DEV ONLY - This file is excluded from production builds
 /**
  * Mock API Server for Tailor IS Backend
  * 模拟后端认证接口，用于前端开发调试
@@ -11,7 +12,8 @@ const PORT = 8080
 app.use(cors())
 app.use(express.json())
 
-// Mock user database
+// Mock user database (FE-H-5: 密码从环境变量读取，避免硬编码)
+const MOCK_PASSWORD = process.env.MOCK_ADMIN_PASSWORD || 'admin123'
 const MOCK_USERS = {
   admin: {
     id: 1,
@@ -19,7 +21,7 @@ const MOCK_USERS = {
     phone: '13800138000',
     email: 'admin@tailoris.com',
     realName: '系统管理员',
-    password: 'admin123',
+    password: MOCK_PASSWORD,
     roles: ['SUPER_ADMIN'],
     permissions: ['*:*:*']
   }
@@ -187,5 +189,5 @@ app.get('/api/admin/users', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Mock API Server running on http://localhost:${PORT}`)
-  console.log(`Default account: admin / admin123`)
+  console.log(`Default account: admin / ${MOCK_PASSWORD === 'admin123' ? '*** (set MOCK_ADMIN_PASSWORD env to override)' : '***'}`)
 })

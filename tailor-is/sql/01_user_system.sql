@@ -6,6 +6,9 @@
 -- 创建时间: 2026-05-29
 -- ============================================================
 
+-- ⚠️ 警告：此脚本仅用于初始化部署，请勿在生产环境执行 DROP TABLE 操作
+-- 生产环境数据库变更请使用 Flyway/Liquibase 版本化迁移工具管理
+
 -- 创建数据库（如不存在）
 CREATE DATABASE IF NOT EXISTS `tailor_is_user` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
@@ -14,8 +17,7 @@ USE `tailor_is_user`;
 -- ============================================================
 -- 1. 用户表 (sys_user)
 -- ============================================================
-DROP TABLE IF EXISTS `sys_user`;
-CREATE TABLE `sys_user` (
+CREATE TABLE IF NOT EXISTS `sys_user` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '用户ID（主键）',
   `username` VARCHAR(64) NOT NULL COMMENT '用户名（登录账号）',
   `password` VARCHAR(128) NOT NULL COMMENT '密码（BCrypt加密）',
@@ -43,8 +45,7 @@ CREATE TABLE `sys_user` (
 -- ============================================================
 -- 2. 角色表 (sys_role)
 -- ============================================================
-DROP TABLE IF EXISTS `sys_role`;
-CREATE TABLE `sys_role` (
+CREATE TABLE IF NOT EXISTS `sys_role` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '角色ID（主键）',
   `role_name` VARCHAR(64) NOT NULL COMMENT '角色名称',
   `role_code` VARCHAR(64) NOT NULL COMMENT '角色编码（唯一标识）',
@@ -64,8 +65,7 @@ CREATE TABLE `sys_role` (
 -- ============================================================
 -- 3. 用户角色关联表 (sys_user_role)
 -- ============================================================
-DROP TABLE IF EXISTS `sys_user_role`;
-CREATE TABLE `sys_user_role` (
+CREATE TABLE IF NOT EXISTS `sys_user_role` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `user_id` BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
   `role_id` BIGINT UNSIGNED NOT NULL COMMENT '角色ID',
@@ -73,17 +73,16 @@ CREATE TABLE `sys_user_role` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_role` (`user_id`, `role_id`),
   KEY `idx_user_id` (`user_id`),
-  KEY `idx_role_id` (`role_id`)
-  -- 外键约束（可选，根据性能需求决定是否启用）
-  -- CONSTRAINT `fk_ur_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`),
-  -- CONSTRAINT `fk_ur_role` FOREIGN KEY (`role_id`) REFERENCES `sys_role` (`id`)
+  KEY `idx_role_id` (`role_id`),
+  -- 外键约束（同库表，恢复引用完整性约束）
+  CONSTRAINT `fk_ur_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`),
+  CONSTRAINT `fk_ur_role` FOREIGN KEY (`role_id`) REFERENCES `sys_role` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户角色关联表';
 
 -- ============================================================
 -- 4. 权限表 (sys_permission)
 -- ============================================================
-DROP TABLE IF EXISTS `sys_permission`;
-CREATE TABLE `sys_permission` (
+CREATE TABLE IF NOT EXISTS `sys_permission` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '权限ID（主键）',
   `permission_name` VARCHAR(64) NOT NULL COMMENT '权限名称',
   `permission_code` VARCHAR(128) NOT NULL COMMENT '权限编码（唯一标识）',
@@ -108,8 +107,7 @@ CREATE TABLE `sys_permission` (
 -- ============================================================
 -- 5. 角色权限关联表 (sys_role_permission)
 -- ============================================================
-DROP TABLE IF EXISTS `sys_role_permission`;
-CREATE TABLE `sys_role_permission` (
+CREATE TABLE IF NOT EXISTS `sys_role_permission` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `role_id` BIGINT UNSIGNED NOT NULL COMMENT '角色ID',
   `permission_id` BIGINT UNSIGNED NOT NULL COMMENT '权限ID',
@@ -117,17 +115,16 @@ CREATE TABLE `sys_role_permission` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_role_permission` (`role_id`, `permission_id`),
   KEY `idx_role_id` (`role_id`),
-  KEY `idx_permission_id` (`permission_id`)
-  -- 外键约束（可选）
-  -- CONSTRAINT `fk_rp_role` FOREIGN KEY (`role_id`) REFERENCES `sys_role` (`id`),
-  -- CONSTRAINT `fk_rp_permission` FOREIGN KEY (`permission_id`) REFERENCES `sys_permission` (`id`)
+  KEY `idx_permission_id` (`permission_id`),
+  -- 外键约束（同库表，恢复引用完整性约束）
+  CONSTRAINT `fk_rp_role` FOREIGN KEY (`role_id`) REFERENCES `sys_role` (`id`),
+  CONSTRAINT `fk_rp_permission` FOREIGN KEY (`permission_id`) REFERENCES `sys_permission` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='角色权限关联表';
 
 -- ============================================================
 -- 6. 用户地址表 (user_address)
 -- ============================================================
-DROP TABLE IF EXISTS `user_address`;
-CREATE TABLE `user_address` (
+CREATE TABLE IF NOT EXISTS `user_address` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '地址ID（主键）',
   `user_id` BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
   `name` VARCHAR(64) NOT NULL COMMENT '收货人姓名',
@@ -148,9 +145,9 @@ CREATE TABLE `user_address` (
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
   KEY `idx_is_default` (`is_default`),
-  KEY `idx_phone` (`phone`)
-  -- 外键约束（可选）
-  -- CONSTRAINT `fk_address_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`)
+  KEY `idx_phone` (`phone`),
+  -- 外键约束（同库表，恢复引用完整性约束）
+  CONSTRAINT `fk_address_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户收货地址表';
 
 -- ============================================================

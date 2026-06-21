@@ -1,6 +1,8 @@
 import { GraphQLResolveInfo } from 'graphql'
 import axios from 'axios'
-import { getOrSet, invalidate } from './cache'
+import DataLoader from 'dataloader'
+import { getOrSetCached, invalidateEntityCache, invalidateEntityById } from './src/cache/dataLoaderFactory'
+import { shouldBypassCache } from './src/cache/cacheConfig'
 
 // Backend API base URL
 const API_BASE = process.env.API_BASE_URL || process.env.BACKEND_API_URL || 'http://localhost:8080/api'
@@ -14,6 +16,12 @@ const api = axios.create({
 function getAuth(context: unknown): string | null {
   const ctx = context as { headers?: Record<string, string> }
   return ctx?.headers?.authorization || null
+}
+
+// Helper: extract headers from context
+function getHeaders(context: unknown): Record<string, string> {
+  const ctx = context as { headers?: Record<string, string> }
+  return ctx?.headers || {}
 }
 
 // Helper: wrap API call with optional auth
@@ -43,6 +51,54 @@ function transformProduct(raw: Record<string, unknown>) {
   }
 }
 
+// Helper: recursively find a category by id in a category tree
+function findCategoryInTree(
+  cats: Array<Record<string, unknown>>,
+  categoryId: number
+): Record<string, unknown> | null {
+  for (const cat of cats) {
+    if (cat.id === categoryId) return cat
+    if (cat.children) {
+      const found = findCategoryInTree(cat.children as Array<Record<string, unknown>>, categoryId)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+// GraphQL request context type
+export interface GraphqlContext {
+  headers: Record<string, string>
+  categoryLoader: DataLoader<number, Record<string, unknown> | null>
+}
+
+/**
+ * 构建每请求的 GraphQL 上下文.
+ *
+ * <p>每个请求创建独立的 DataLoader 实例，避免分类缓存跨请求泄露。
+ * DataLoader 在同一请求内对相同 categoryId 的多次调用合并为一次后端请求，
+ * 解决 Product.category 解析器在列表查询中的 N+1 问题。
+ */
+export function createContext(headers: Record<string, string>): GraphqlContext {
+  const token = headers?.authorization || null
+  const categoryLoader = new DataLoader<number, Record<string, unknown> | null>(
+    async (categoryIds: readonly number[]) => {
+      try {
+        const categories = await request<Array<Record<string, unknown>>>(
+          '/products/categories',
+          'get',
+          undefined,
+          token
+        )
+        return categoryIds.map(id => findCategoryInTree(categories, id))
+      } catch {
+        return categoryIds.map(() => null)
+      }
+    }
+  )
+  return { headers, categoryLoader }
+}
+
 const resolvers = {
   Query: {
     product: async (
@@ -51,7 +107,15 @@ const resolvers = {
       context: unknown
     ) => {
       const token = getAuth(context)
-      return getOrSet('product', { id }, async () => {
+      const headers = getHeaders(context)
+
+      // 如果请求头指示绕过缓存，直接查询
+      if (shouldBypassCache(headers)) {
+        const raw = await request<Record<string, unknown>>(`/products/${id}`, 'get', undefined, token)
+        return transformProduct(raw)
+      }
+
+      return getOrSetCached('product', { id }, async () => {
         const raw = await request<Record<string, unknown>>(`/products/${id}`, 'get', undefined, token)
         return transformProduct(raw)
       })
@@ -71,26 +135,14 @@ const resolvers = {
       context: unknown
     ) => {
       const token = getAuth(context)
-      return getOrSet('products', args, async () => {
-        const params = new URLSearchParams()
-        if (args.categoryId) params.set('categoryId', String(args.categoryId))
-        if (args.keyword) params.set('keyword', args.keyword)
-        if (args.sort) params.set('sort', args.sort)
-        if (args.minPrice !== undefined) params.set('minPrice', String(args.minPrice))
-        if (args.maxPrice !== undefined) params.set('maxPrice', String(args.maxPrice))
-        params.set('current', String(args.current ?? 1))
-        params.set('size', String(args.size ?? 20))
+      const headers = getHeaders(context)
 
-        const raw = await request<Record<string, unknown>>(
-          `/products?${params.toString()}`,
-          'get',
-          undefined,
-          token
-        )
-        return {
-          ...raw,
-          records: (raw.records as Array<Record<string, unknown>>).map(transformProduct)
-        }
+      if (shouldBypassCache(headers)) {
+        return fetchProducts(args, token)
+      }
+
+      return getOrSetCached('products', args, async () => {
+        return fetchProducts(args, token)
       })
     },
 
@@ -135,7 +187,14 @@ const resolvers = {
       context: unknown
     ) => {
       const token = getAuth(context)
-      return getOrSet('hotProducts', { limit }, async () => {
+      const headers = getHeaders(context)
+
+      if (shouldBypassCache(headers)) {
+        const raw = await request<Array<Record<string, unknown>>>('/products/hot', 'get', undefined, token)
+        return raw.map(transformProduct)
+      }
+
+      return getOrSetCached('hotProducts', { limit }, async () => {
         const raw = await request<Array<Record<string, unknown>>>('/products/hot', 'get', undefined, token)
         return raw.map(transformProduct)
       })
@@ -147,7 +206,14 @@ const resolvers = {
       context: unknown
     ) => {
       const token = getAuth(context)
-      return getOrSet('newProducts', { limit }, async () => {
+      const headers = getHeaders(context)
+
+      if (shouldBypassCache(headers)) {
+        const raw = await request<Array<Record<string, unknown>>>('/products/new', 'get', undefined, token)
+        return raw.map(transformProduct)
+      }
+
+      return getOrSetCached('newProducts', { limit }, async () => {
         const raw = await request<Array<Record<string, unknown>>>('/products/new', 'get', undefined, token)
         return raw.map(transformProduct)
       })
@@ -159,7 +225,14 @@ const resolvers = {
       context: unknown
     ) => {
       const token = getAuth(context)
-      return getOrSet('seckillProducts', { limit }, async () => {
+      const headers = getHeaders(context)
+
+      if (shouldBypassCache(headers)) {
+        const raw = await request<Array<Record<string, unknown>>>('/products/seckill', 'get', undefined, token)
+        return raw.map(transformProduct)
+      }
+
+      return getOrSetCached('seckillProducts', { limit }, async () => {
         const raw = await request<Array<Record<string, unknown>>>('/products/seckill', 'get', undefined, token)
         return raw.map(transformProduct)
       })
@@ -171,7 +244,13 @@ const resolvers = {
       context: unknown
     ) => {
       const token = getAuth(context)
-      return getOrSet('categories', '_', async () => {
+      const headers = getHeaders(context)
+
+      if (shouldBypassCache(headers)) {
+        return request<Array<Record<string, unknown>>>('/products/categories', 'get', undefined, token)
+      }
+
+      return getOrSetCached('categories', '_', async () => {
         return request<Array<Record<string, unknown>>>('/products/categories', 'get', undefined, token)
       })
     }
@@ -225,33 +304,59 @@ const resolvers = {
       const result = await request<Record<string, unknown>>('/orders', 'post', input, token)
       // 提交订单后使相关商品缓存失效
       for (const item of input.items) {
-        invalidate('product', { id: String(item.productId) })
+        await invalidateEntityById('product', item.productId)
       }
-      invalidate('hotProducts')
+      // 使热门商品和新品列表缓存失效
+      await Promise.all([
+        invalidateEntityCache('hotProducts'),
+        invalidateEntityCache('newProducts'),
+        invalidateEntityCache('orders'),
+      ])
       return result
     }
   },
 
   Product: {
     category: async (parent: { categoryId: number }, _args: unknown, context: unknown) => {
-      const token = getAuth(context)
-      try {
-        const categories = await request<Array<Record<string, unknown>>>('/products/categories', 'get', undefined, token)
-        const findCategory = (cats: Array<Record<string, unknown>>): Record<string, unknown> | null => {
-          for (const cat of cats) {
-            if (cat.id === parent.categoryId) return cat
-            if (cat.children) {
-              const found = findCategory(cat.children as Array<Record<string, unknown>>)
-              if (found) return found
-            }
-          }
-          return null
-        }
-        return findCategory(categories)
-      } catch {
-        return null
-      }
+      const ctx = context as GraphqlContext
+      return ctx.categoryLoader.load(parent.categoryId)
     }
+  }
+}
+
+/**
+ * 获取商品列表（提取为独立函数，便于缓存和直接调用）.
+ */
+async function fetchProducts(
+  args: {
+    categoryId?: number
+    keyword?: string
+    sort?: string
+    minPrice?: number
+    maxPrice?: number
+    current?: number
+    size?: number
+  },
+  token: string | null
+): Promise<Record<string, unknown>> {
+  const params = new URLSearchParams()
+  if (args.categoryId) params.set('categoryId', String(args.categoryId))
+  if (args.keyword) params.set('keyword', args.keyword)
+  if (args.sort) params.set('sort', args.sort)
+  if (args.minPrice !== undefined) params.set('minPrice', String(args.minPrice))
+  if (args.maxPrice !== undefined) params.set('maxPrice', String(args.maxPrice))
+  params.set('current', String(args.current ?? 1))
+  params.set('size', String(args.size ?? 20))
+
+  const raw = await request<Record<string, unknown>>(
+    `/products?${params.toString()}`,
+    'get',
+    undefined,
+    token
+  )
+  return {
+    ...raw,
+    records: (raw.records as Array<Record<string, unknown>>).map(transformProduct)
   }
 }
 

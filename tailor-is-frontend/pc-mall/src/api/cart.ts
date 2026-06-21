@@ -13,14 +13,14 @@ interface UpdateCartData {
 }
 
 export function getCart() {
-  return request<any, CartItem[]>({
+  return request<Record<string, unknown>, CartItem[]>({
     url: '/cart',
     method: 'get'
   })
 }
 
 export function addToCart(data: AddCartData) {
-  return request<any, number>({
+  return request<Record<string, unknown>, number>({
     url: '/cart',
     method: 'post',
     data
@@ -28,7 +28,7 @@ export function addToCart(data: AddCartData) {
 }
 
 export function updateCart(id: number, data: UpdateCartData) {
-  return request<any, boolean>({
+  return request<Record<string, unknown>, boolean>({
     url: `/cart/${id}`,
     method: 'put',
     data
@@ -36,14 +36,14 @@ export function updateCart(id: number, data: UpdateCartData) {
 }
 
 export function deleteCart(id: number) {
-  return request<any, boolean>({
+  return request<Record<string, unknown>, boolean>({
     url: `/cart/${id}`,
     method: 'delete'
   })
 }
 
 export function checkoutCart(ids: number[]) {
-  return request<any, { items: CartItem[] }>({
+  return request<Record<string, unknown>, { items: CartItem[] }>({
     url: '/cart/checkout',
     method: 'post',
     data: { ids }
@@ -51,7 +51,7 @@ export function checkoutCart(ids: number[]) {
 }
 
 export function clearCart() {
-  return request<any, boolean>({
+  return request<Record<string, unknown>, boolean>({
     url: '/cart/clear',
     method: 'delete'
   })

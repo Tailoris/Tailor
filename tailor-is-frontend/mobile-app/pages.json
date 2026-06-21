@@ -2,7 +2,10 @@
   "easycom": {
     "autoscan": true,
     "custom": {
-      "weak-network-indicator": "@/components/weak-network-indicator.vue"
+      "weak-network-indicator": "@/components/weak-network-indicator.vue",
+      "transaction-card": "@/native-components/transaction-card/transaction-card.vue",
+      "aftersale-form": "@/native-components/aftersale-form/aftersale-form.vue",
+      "aftersale-progress": "@/native-components/aftersale-progress/aftersale-progress.vue"
     }
   },
   "pages": [
@@ -140,6 +143,41 @@
         "text": "我的",
         "iconPath": "static/tabbar/user.png",
         "selectedIconPath": "static/tabbar/user-active.png"
+      }
+    ]
+  },
+  "condition": {
+    "current": 0,
+    "list": [
+      {
+        "name": "微信小程序",
+        "path": "",
+        "query": "",
+        "platform": "mp-weixin"
+      },
+      {
+        "name": "支付宝小程序",
+        "path": "",
+        "query": "",
+        "platform": "mp-alipay"
+      },
+      {
+        "name": "百度小程序",
+        "path": "",
+        "query": "",
+        "platform": "mp-baidu"
+      },
+      {
+        "name": "抖音小程序",
+        "path": "",
+        "query": "",
+        "platform": "mp-toutiao"
+      },
+      {
+        "name": "H5 网页",
+        "path": "",
+        "query": "",
+        "platform": "h5"
       }
     ]
   }

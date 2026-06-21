@@ -82,8 +82,8 @@
             </div>
             <div class="status-item">
               <span class="label">店铺状态</span>
-              <el-tag :type="shopInfo.status === 'active' ? 'success' : 'info'" size="small">
-                {{ shopInfo.status === 'active' ? '营业中' : '已关闭' }}
+              <el-tag :type="shopInfo.status === 1 ? 'success' : 'info'" size="small">
+                {{ shopInfo.status === 1 ? '营业中' : '已关闭' }}
               </el-tag>
             </div>
             <div class="status-item">
@@ -124,7 +124,7 @@ const shopInfo = reactive<Shop>({
   description: '',
   businessHours: '',
   announcement: '',
-  status: 'active',
+  status: 1,
   merchantId: 0,
   createdAt: '',
 })

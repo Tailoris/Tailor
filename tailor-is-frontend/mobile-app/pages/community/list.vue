@@ -40,7 +40,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getPosts, likePost as likePostApi } from '@/api/community'
 

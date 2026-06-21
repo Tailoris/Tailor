@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.owasp.encoder.Encode;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -50,14 +51,9 @@ public class XssFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 仅对application/json的POST/PUT请求进行深度过滤
-        if (isJsonRequest(request)) {
-            XssRequestWrapper wrappedRequest = new XssRequestWrapper(request);
-            filterChain.doFilter(wrappedRequest, response);
-        } else {
-            // 普通参数过滤
-            filterChain.doFilter(request, response);
-        }
+        // BE-H-16: 对所有请求进行XSS过滤，不仅限于JSON请求
+        XssRequestWrapper wrappedRequest = new XssRequestWrapper(request);
+        filterChain.doFilter(wrappedRequest, response);
     }
 
     private boolean isExcluded(String path) {
@@ -107,9 +103,12 @@ public class XssFilter extends OncePerRequestFilter {
         }
 
         /**
-         * 使用 OWASP Encoder 清理XSS
+         * 使用 OWASP Encoder 清理XSS.
+         *
+         * @return 清理后的字符串，输入为 null 或空时返回原值（可能为 null）
          */
-        private String sanitize(String value) {
+        @Nullable
+        private String sanitize(@Nullable String value) {
             if (!StringUtils.hasText(value)) {
                 return value;
             }

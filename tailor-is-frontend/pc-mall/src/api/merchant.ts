@@ -13,7 +13,7 @@ interface MerchantApplyData {
 }
 
 export function applyMerchant(data: MerchantApplyData) {
-  return request<any, boolean>({
+  return request<Record<string, unknown>, boolean>({
     url: '/merchant/apply',
     method: 'post',
     data
@@ -21,7 +21,7 @@ export function applyMerchant(data: MerchantApplyData) {
 }
 
 export function getMerchantInfo() {
-  return request<any, Merchant>({
+  return request<Record<string, unknown>, Merchant>({
     url: '/merchant/info',
     method: 'get'
   })

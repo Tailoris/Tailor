@@ -1,13 +1,13 @@
 <template>
-  <div class="profile-view">
+  <div class="profile-view" role="main" aria-label="个人中心">
     <div class="profile-layout">
-      <aside class="profile-sidebar">
+      <aside class="profile-sidebar" role="navigation" aria-label="个人中心导航">
         <div class="user-card">
-          <el-avatar :size="80" :src="userStore.userInfo?.avatar || 'https://via.placeholder.com/80x80'" />
-          <h3>{{ userStore.userInfo?.nickName || userStore.userInfo?.username || '用户' }}</h3>
+          <el-avatar :size="80" :src="userStore.userInfo?.avatar || 'https://via.placeholder.com/80x80'" :alt="userStore.userInfo?.nickname || '用户' + '的头像'" />
+          <h3>{{ userStore.userInfo?.nickname || userStore.userInfo?.username || '用户' }}</h3>
           <p>普通会员</p>
         </div>
-        <el-menu :default-active="activeMenu" @select="handleMenuSelect">
+        <el-menu :default-active="activeMenu" @select="handleMenuSelect" aria-label="功能菜单">
           <el-menu-item index="profile">
             <el-icon><User /></el-icon>
             <span>个人资料</span>
@@ -35,8 +35,8 @@
         <div v-if="activeMenu === 'profile'" class="tab-content">
           <h2>个人资料</h2>
           <el-form :model="profileForm" :rules="profileRules" ref="profileFormRef" label-width="100px">
-            <el-form-item label="昵称" prop="nickName">
-              <el-input v-model="profileForm.nickName" />
+            <el-form-item label="昵称" prop="nickname">
+              <el-input v-model="profileForm.nickname" />
             </el-form-item>
             <el-form-item label="头像" prop="avatar">
               <el-input v-model="profileForm.avatar" placeholder="请输入头像URL" />
@@ -182,7 +182,7 @@ const userStore = useUserStore()
 const activeMenu = ref('profile')
 
 const profileForm = ref({
-  nickName: '',
+  nickname: '',
   avatar: '',
   gender: 0,
   birthday: '',
@@ -192,7 +192,7 @@ const profileFormRef = ref<FormInstance>()
 const updating = ref(false)
 
 const profileRules: FormRules = {
-  nickName: [{ max: 20, message: '昵称不超过20个字符', trigger: 'blur' }]
+  nickname: [{ max: 20, message: '昵称不超过20个字符', trigger: 'blur' }]
 }
 
 const passwordForm = ref({
@@ -358,7 +358,7 @@ async function loadPoints() {
 onMounted(() => {
   if (userStore.userInfo) {
     profileForm.value = {
-      nickName: userStore.userInfo.nickName || '',
+      nickname: userStore.userInfo.nickname || '',
       avatar: userStore.userInfo.avatar || '',
       gender: userStore.userInfo.gender,
       birthday: userStore.userInfo.birthday || '',

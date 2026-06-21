@@ -6,6 +6,7 @@ import com.tailoris.user.entity.SysPermission;
 import com.tailoris.user.entity.SysRolePermission;
 import com.tailoris.user.mapper.SysPermissionMapper;
 import com.tailoris.user.mapper.SysRolePermissionMapper;
+import com.tailoris.user.mapper.SysUserRoleMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,9 @@ class SysPermissionServiceImplTest {
 
     @Mock
     private SysRolePermissionMapper sysRolePermissionMapper;
+
+    @Mock
+    private SysUserRoleMapper sysUserRoleMapper;
 
     @InjectMocks
     private SysPermissionServiceImpl sysPermissionService;

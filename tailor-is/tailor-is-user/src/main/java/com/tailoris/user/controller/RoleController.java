@@ -39,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Slf4j
 @Validated
+@Tag(name = "角色管理", description = "用户角色分配、移除等管理接口")
 @RestController
 @RequestMapping("/api/user/roles")
 @RequiredArgsConstructor

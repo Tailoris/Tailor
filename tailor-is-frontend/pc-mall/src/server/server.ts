@@ -9,8 +9,30 @@ const isProduction = process.env.NODE_ENV === 'production'
 
 const port = process.env.PORT || 3000
 
+/**
+ * 安全序列化 Pinia 状态：转义 < > & 及 U+2028/U+2029，
+ * 防止状态数据破坏 <script> 标签或引发 XSS。
+ */
+function serializeState(state: unknown): string {
+  return JSON.stringify(state)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')
+}
+
 async function createServer() {
   const app = express()
+
+  // TODO(security): 安装 helmet 后启用安全响应头
+  //   npm install helmet
+  //   import helmet from 'helmet'
+  //   app.use(helmet())
+  // TODO(security): 安装 express-rate-limit 后启用速率限制
+  //   npm install express-rate-limit
+  //   import rateLimit from 'express-rate-limit'
+  //   app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }))
 
   // 生产环境：提供静态文件
   if (isProduction) {
@@ -50,7 +72,7 @@ async function createServer() {
           .replace('<!--app-html-->', appHtml)
           .replace(
             '</head>',
-            `<script>window.__PINIA_STATE__=${JSON.stringify(piniaState).replace(/</g, '\\u003c')}</script></head>`
+            `<script>window.__PINIA_STATE__=${serializeState(piniaState)}</script></head>`
           )
 
         res.status(200).set({ 'Content-Type': 'text/html' }).end(rendered)
@@ -61,7 +83,7 @@ async function createServer() {
     })
 
     app.listen(port, () => {
-      console.log(`SSR server (production) running at http://localhost:${port}`)
+      process.stdout.write(`SSR server (production) running at http://localhost:${port}\n`)
     })
     return
   }
@@ -95,7 +117,7 @@ async function createServer() {
         .replace('<!--app-html-->', appHtml)
         .replace(
           '</head>',
-          `<script>window.__PINIA_STATE__=${JSON.stringify(piniaState).replace(/</g, '\\u003c')}</script></head>`
+          `<script>window.__PINIA_STATE__=${serializeState(piniaState)}</script></head>`
         )
 
       res.status(200).set({ 'Content-Type': 'text/html' }).end(rendered)
@@ -106,7 +128,7 @@ async function createServer() {
   })
 
   app.listen(port, () => {
-    console.log(`SSR server (development) running at http://localhost:${port}`)
+    process.stdout.write(`SSR server (development) running at http://localhost:${port}\n`)
   })
 }
 

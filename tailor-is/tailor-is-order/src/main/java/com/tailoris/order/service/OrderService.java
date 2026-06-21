@@ -19,7 +19,7 @@ public interface OrderService {
 
     void cancelOrder(Long userId, String orderNo, String reason);
 
-    OrderInfo getOrderDetail(String orderNo);
+    OrderInfo getOrderDetail(Long userId, String orderNo);
 
     Page<OrderInfo> listOrders(Long userId, OrderQueryRequest request);
 

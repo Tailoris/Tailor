@@ -30,20 +30,20 @@
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="$emit('edit', row.id)">编辑</el-button>
           <el-button
-            v-if="row.status === 'on_sale'"
+            v-if="row.status === 2"
             link
             type="warning"
             size="small"
-            @click="$emit('updateStatus', row.id, 'off_sale')"
+            @click="$emit('updateStatus', row.id, 3)"
           >
             下架
           </el-button>
           <el-button
-            v-else-if="row.status === 'off_sale'"
+            v-else-if="row.status === 3"
             link
             type="success"
             size="small"
-            @click="$emit('updateStatus', row.id, 'on_sale')"
+            @click="$emit('updateStatus', row.id, 2)"
           >
             上架
           </el-button>
@@ -83,25 +83,25 @@ defineProps<{
 defineEmits<{
   edit: [id: number]
   delete: [id: number]
-  updateStatus: [id: number, status: string]
+  updateStatus: [id: number, status: number]
   pageChange: [params: { page: number; pageSize: number }]
 }>()
 
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-const statusType: Record<string, string> = {
-  draft: 'info',
-  pending: 'warning',
-  on_sale: 'success',
-  off_sale: 'danger',
+const statusType: Record<number, string> = {
+  0: 'info',
+  1: 'warning',
+  2: 'success',
+  3: 'danger',
 }
 
-const statusLabel: Record<string, string> = {
-  draft: '草稿',
-  pending: '待审核',
-  on_sale: '上架',
-  off_sale: '下架',
+const statusLabel: Record<number, string> = {
+  0: '草稿',
+  1: '待审核',
+  2: '上架',
+  3: '下架',
 }
 </script>
 

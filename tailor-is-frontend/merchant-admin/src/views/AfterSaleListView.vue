@@ -54,7 +54,7 @@
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="$router.push(`/aftersale/${row.ticketNo}`)">
-              {{ row.status === 'pending' ? '处理' : '查看' }}
+              {{ row.status === 0 ? '处理' : '查看' }}
             </el-button>
           </template>
         </el-table-column>
@@ -100,20 +100,20 @@ const typeLabel: Record<string, string> = {
   exchange: '换货',
 }
 
-const statusType: Record<string, string> = {
-  pending: 'warning',
-  processing: '',
-  approved: 'success',
-  rejected: 'danger',
-  completed: 'info',
+const statusType: Record<number, string> = {
+  0: 'warning',
+  1: '',
+  2: 'success',
+  3: 'danger',
+  4: 'info',
 }
 
-const statusLabel: Record<string, string> = {
-  pending: '待处理',
-  processing: '处理中',
-  approved: '已同意',
-  rejected: '已拒绝',
-  completed: '已完成',
+const statusLabel: Record<number, string> = {
+  0: '待处理',
+  1: '处理中',
+  2: '已同意',
+  3: '已拒绝',
+  4: '已完成',
 }
 
 async function fetchTickets() {

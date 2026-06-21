@@ -8,6 +8,7 @@ import com.tailoris.product.dto.CreateReviewRequest;
 import com.tailoris.product.entity.ProductReview;
 import com.tailoris.product.service.ProductReviewService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +38,9 @@ public class ReviewController {
     @Operation(summary = "查询商品评价列表")
     @GetMapping("/{productId}")
     public Result<Page<ProductReview>> listReviews(
-            @PathVariable Long productId,
-            @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
+            @Parameter(description = "商品ID") @PathVariable Long productId,
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer pageNum,
+            @Parameter(description = "每页条数") @RequestParam(defaultValue = "10") Integer pageSize) {
         Page<ProductReview> page = productReviewService.listReviewsByProduct(productId, pageNum, pageSize);
         return Result.success(page);
     }
@@ -59,8 +60,8 @@ public class ReviewController {
     @Operation(summary = "查询待审核评价")
     @GetMapping("/admin/pending")
     public Result<Page<ProductReview>> listPendingReviews(
-            @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") Integer pageNum,
+            @Parameter(description = "每页条数") @RequestParam(defaultValue = "10") Integer pageSize) {
         Page<ProductReview> page = productReviewService.listPendingReviews(pageNum, pageSize);
         return Result.success(page);
     }
@@ -68,8 +69,8 @@ public class ReviewController {
     @Operation(summary = "审核评价")
     @PutMapping("/{id}/audit")
     public Result<Void> auditReview(
-            @PathVariable Long id,
-            @RequestParam Integer status) {
+            @Parameter(description = "评价ID") @PathVariable Long id,
+            @Parameter(description = "审核状态") @RequestParam Integer status) {
         productReviewService.auditReview(id, status);
         return Result.success();
     }

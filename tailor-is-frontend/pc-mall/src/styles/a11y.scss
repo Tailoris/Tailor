@@ -1,0 +1,150 @@
+// ==============================================================================
+// Tailor IS PC Mall - 无障碍样式增强
+// UX-P3-01 WCAG 2.1 AA 无障碍合规
+// ==============================================================================
+
+// 继承 shared 层的基础无障碍样式
+@import '../../shared/styles/a11y.scss';
+
+// ==============================================================================
+// PC 商城特有增强样式
+// ==============================================================================
+
+// 高对比度模式增强
+@media (prefers-contrast: more) {
+  .app-header {
+    border-bottom: 2px solid currentColor;
+  }
+
+  .app-footer {
+    border-top: 2px solid currentColor;
+  }
+
+  .el-button {
+    border: 2px solid currentColor !important;
+  }
+
+  .el-input__inner {
+    border: 2px solid currentColor !important;
+  }
+
+  .product-card {
+    border: 2px solid currentColor !important;
+  }
+
+  .el-table {
+    border: 2px solid currentColor !important;
+  }
+
+  .el-tag {
+    border: 1px solid currentColor !important;
+  }
+}
+
+// 减少动画模式
+@media (prefers-reduced-motion: reduce) {
+  .el-carousel__item {
+    transition: none !important;
+  }
+
+  .el-loading-spinner {
+    animation: none !important;
+  }
+
+  .el-progress-bar__inner {
+    transition: none !important;
+  }
+
+  .banner-carousel .el-carousel__item {
+    animation: none !important;
+  }
+}
+
+// 焦点可见性增强 - 覆盖 Element Plus 默认样式
+:focus-visible {
+  outline: 3px solid #1d39c4 !important;
+  outline-offset: 2px !important;
+}
+
+.el-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(29, 57, 196, 0.3) !important;
+}
+
+.el-input__inner:focus-visible {
+  border-color: #1d39c4 !important;
+  box-shadow: 0 0 0 2px rgba(29, 57, 196, 0.15) !important;
+}
+
+.el-checkbox__input:focus-visible + .el-checkbox__label {
+  outline: 2px solid #1d39c4;
+  outline-offset: 2px;
+}
+
+// 跳过链接样式
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1d39c4;
+  color: #fff;
+  padding: 12px 24px;
+  z-index: 10001;
+  text-decoration: none;
+  border-radius: 0 0 8px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: top 0.2s ease;
+  white-space: nowrap;
+
+  &:focus,
+  &:focus-visible {
+    top: 0;
+    outline: 3px solid #fff;
+    outline-offset: -1px;
+  }
+}
+
+// 确保颜色对比度满足 WCAG AA 标准 (4.5:1 普通文本, 3:1 大文本)
+.text-muted {
+  color: #595959 !important; // 原 #999 对比度不足，加深至 #595959
+}
+
+.el-input__inner::placeholder {
+  color: #757575 !important; // 原默认色对比度不足
+}
+
+// 错误状态关联
+[aria-invalid="true"] {
+  border-color: #f5222d !important;
+}
+
+// 对话框/模态框无障碍增强
+[role="dialog"] {
+  &:focus {
+    outline: none;
+  }
+}
+
+// 确保链接在小屏幕上有足够的点击区域
+@media (max-width: 768px) {
+  a,
+  button,
+  [role="button"],
+  [role="link"],
+  [role="tab"],
+  [role="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+// 彩色表达增强 - 不使用仅依赖颜色传达信息
+[data-status] {
+  position: relative;
+}
+
+[data-status]::before {
+  content: attr(data-status);
+  @extend .sr-only;
+}

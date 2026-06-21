@@ -19,7 +19,7 @@ interface ProductFormData {
 }
 
 export const listProducts = (params: ProductListParams) => {
-  return request<any, PageResponse<Product>>({
+  return request<Record<string, unknown>, PageResponse<Product>>({
     url: '/products',
     method: 'GET',
     params,
@@ -27,14 +27,14 @@ export const listProducts = (params: ProductListParams) => {
 }
 
 export const getProductDetail = (id: number) => {
-  return request<any, Product & { skus: ProductSku[] }>({
+  return request<Record<string, unknown>, Product & { skus: ProductSku[] }>({
     url: `/products/${id}`,
     method: 'GET',
   })
 }
 
 export const createProduct = (data: ProductFormData) => {
-  return request<any, Product>({
+  return request<Record<string, unknown>, Product>({
     url: '/products',
     method: 'POST',
     data,
@@ -42,7 +42,7 @@ export const createProduct = (data: ProductFormData) => {
 }
 
 export const updateProduct = (id: number, data: ProductFormData) => {
-  return request<any, Product>({
+  return request<Record<string, unknown>, Product>({
     url: `/products/${id}`,
     method: 'PUT',
     data,
@@ -50,14 +50,14 @@ export const updateProduct = (id: number, data: ProductFormData) => {
 }
 
 export const deleteProduct = (id: number) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: `/products/${id}`,
     method: 'DELETE',
   })
 }
 
-export const updateStatus = (id: number, status: string) => {
-  return request<any, Product>({
+export const updateStatus = (id: number, status: number) => {
+  return request<Record<string, unknown>, Product>({
     url: `/products/${id}/status`,
     method: 'PUT',
     data: { status },
@@ -67,7 +67,7 @@ export const updateStatus = (id: number, status: string) => {
 export const uploadImage = (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
-  return request<any, { url: string }>({
+  return request<Record<string, unknown>, { url: string }>({
     url: '/upload/image',
     method: 'POST',
     data: formData,

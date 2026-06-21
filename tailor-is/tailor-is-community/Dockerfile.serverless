@@ -1,0 +1,104 @@
+# ============================================================
+# Tailor IS 社区服务 (community) Dockerfile - Serverless
+# - 目标平台: Alibaba Cloud FC / AWS Lambda
+# - 多阶段构建: Maven 编译 + Alpine 精简运行
+# - 优化: 冷启动加速、最小镜像体积
+# ============================================================
+
+# -------- 阶段 1: 构建
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
+LABEL maintainer="Tailor IS Team"
+WORKDIR /build
+
+COPY settings.xml /usr/share/maven/conf/settings.xml
+
+# 复制所有模块 pom.xml
+COPY pom.xml /build/pom.xml
+COPY tailor-is-common/pom.xml /build/tailor-is-common/pom.xml
+COPY tailor-is-common-web/pom.xml /build/tailor-is-common-web/pom.xml
+COPY tailor-is-api/pom.xml /build/tailor-is-api/pom.xml
+COPY tailor-is-core-gateway/pom.xml /build/tailor-is-core-gateway/pom.xml
+COPY tailor-is-lite-gateway/pom.xml /build/tailor-is-lite-gateway/pom.xml
+COPY tailor-is-user/pom.xml /build/tailor-is-user/pom.xml
+COPY tailor-is-merchant/pom.xml /build/tailor-is-merchant/pom.xml
+COPY tailor-is-product/pom.xml /build/tailor-is-product/pom.xml
+COPY tailor-is-order/pom.xml /build/tailor-is-order/pom.xml
+COPY tailor-is-payment/pom.xml /build/tailor-is-payment/pom.xml
+COPY tailor-is-marketing/pom.xml /build/tailor-is-marketing/pom.xml
+COPY tailor-is-ai/pom.xml /build/tailor-is-ai/pom.xml
+COPY tailor-is-copyright/pom.xml /build/tailor-is-copyright/pom.xml
+COPY tailor-is-community/pom.xml /build/tailor-is-community/pom.xml
+COPY tailor-is-supply/pom.xml /build/tailor-is-supply/pom.xml
+COPY tailor-is-message/pom.xml /build/tailor-is-message/pom.xml
+COPY tailor-is-message-im/pom.xml /build/tailor-is-message-im/pom.xml
+COPY tailor-is-academy/pom.xml /build/tailor-is-academy/pom.xml
+COPY tailor-is-analytics/pom.xml /build/tailor-is-analytics/pom.xml
+COPY tailor-is-pattern/pom.xml /build/tailor-is-pattern/pom.xml
+COPY tailor-is-admin/pom.xml /build/tailor-is-admin/pom.xml
+
+COPY tailor-is-common/src /build/tailor-is-common/src
+COPY tailor-is-common-web/src /build/tailor-is-common-web/src
+COPY tailor-is-community/src /build/tailor-is-community/src
+
+RUN mvn -f /build/pom.xml -pl tailor-is-community -am clean package -DskipTests -B -U
+RUN ls -la /build/tailor-is-community/target/*.jar
+
+# -------- 阶段 2: 精简运行 (Alpine + JRE)
+FROM alpine:3.19
+
+LABEL maintainer="Tailor IS Team"
+LABEL description="Tailor IS 社区服务 Serverless 镜像"
+LABEL version="1.0.0"
+
+# 安装 OpenJDK 17 JRE 和其他必要工具
+RUN apk add --no-cache \
+    openjdk17-jre-headless \
+    curl \
+    tzdata \
+    ca-certificates \
+    && rm -rf /var/cache/apk/*
+
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+WORKDIR /app
+
+# Serverless 环境变量
+ENV SPRING_PROFILES_ACTIVE=serverless
+ENV SERVER_PORT=9000
+ENV MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info
+ENV MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED=false
+
+# Serverless 精简 JVM 参数: 加速冷启动
+# - TireredCompilation + TieredStopAtLevel=1: 仅 C1 编译，减少启动耗时
+# - UseContainerSupport: 正确识别容器内存限制
+# - MaxRAMPercentage: 动态内存分配
+# - UseSerialGC: Serverless 场景下串行 GC 开销更低
+ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport \
+    -XX:MaxRAMPercentage=75.0 \
+    -XX:+UseSerialGC \
+    -XX:+TieredCompilation \
+    -XX:TieredStopAtLevel=1 \
+    -XX:InitialCodeCacheSize=32m \
+    -XX:ReservedCodeCacheSize=64m \
+    -Djava.security.egd=file:/dev/./urandom \
+    -Dspring.main.lazy-initialization=true \
+    -Dspring.main.banner-mode=off"
+
+EXPOSE 9000
+
+COPY --from=builder /build/tailor-is-community/target/*.jar /app/app.jar
+
+RUN addgroup -S tailor && adduser -S tailor -G tailor \
+    && chown -R tailor:tailor /app
+USER tailor
+
+ENTRYPOINT [ "sh", "-c", "java \
+    -Duser.timezone=${TZ} \
+    -Dserver.port=${SERVER_PORT} \
+    -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
+    -Dmanagement.endpoints.web.exposure.include=${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE} \
+    -jar /app/app.jar" ]
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=2 \
+    CMD curl -fsS http://127.0.0.1:9000/actuator/health || exit 1

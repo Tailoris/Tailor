@@ -1,6 +1,6 @@
 <template>
-  <div class="search-bar">
-    <el-select v-model="selectedCategory" placeholder="全部分类" class="category-select" clearable>
+  <div class="search-bar" role="search" aria-label="商品搜索区域">
+    <el-select v-model="selectedCategory" placeholder="全部分类" class="category-select" clearable aria-label="选择商品分类">
       <el-option label="全部分类" value="" />
       <el-option
         v-for="cat in categories"
@@ -14,14 +14,14 @@
       placeholder="搜索商品、店铺"
       class="search-input"
       clearable
-      aria-label="搜索"
+      aria-label="搜索商品、店铺"
       @keyup.enter="handleSearch"
     >
       <template #prefix>
-        <el-icon><Search /></el-icon>
+        <el-icon aria-hidden="true"><Search /></el-icon>
       </template>
     </el-input>
-    <el-button type="primary" class="search-btn" @click="handleSearch">
+    <el-button type="primary" class="search-btn" @click="handleSearch" aria-label="执行搜索">
       搜索
     </el-button>
   </div>

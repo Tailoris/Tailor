@@ -185,17 +185,14 @@ async function syncSingleItem(item: SyncQueueItem): Promise<SyncResult> {
  */
 export async function executeSync(): Promise<SyncResult[]> {
   if (isSyncing) {
-    console.log('[autoSync] Sync already in progress')
     return syncProgress.results
   }
 
   if (!isOnline.value) {
-    console.log('[autoSync] Offline, skipping sync')
     return []
   }
 
   if (isWeakNetwork.value) {
-    console.log('[autoSync] Weak network, delaying sync')
     // 弱网时延迟同步
     scheduleRetry(calculateRetryDelay(0))
     return []
@@ -222,8 +219,6 @@ export async function executeSync(): Promise<SyncResult[]> {
     notifyProgress()
     return []
   }
-
-  console.log(`[autoSync] Starting sync with ${queue.length} items`)
 
   // 分批同步（控制并发）
   const results: SyncResult[] = []
@@ -286,7 +281,6 @@ export async function executeSync(): Promise<SyncResult[]> {
   syncProgress.current = null
   notifyProgress()
 
-  console.log(`[autoSync] Sync completed: ${results.filter(r => r.success).length}/${results.length} successful`)
   return results
 }
 
@@ -389,15 +383,12 @@ export function initAutoSync(): void {
   // 监听网络变化，在线时自动触发同步
   onNetworkChange((status) => {
     if (status.online && !status.weak) {
-      console.log('[autoSync] Network recovered, triggering sync')
       // 延迟 3 秒后同步，确保网络稳定
       setTimeout(() => {
         triggerSync()
       }, 3000)
     }
   })
-
-  console.log('[autoSync] Initialized')
 }
 
 /**

@@ -22,7 +22,7 @@ export interface SeckillActivity {
   name: string
   startTime: string
   endTime: string
-  status: 'upcoming' | 'ongoing' | 'ended'
+  status: number
   products: { productId: number; seckillPrice: number; stock: number }[]
 }
 
@@ -38,7 +38,7 @@ interface CreateSeckillParams {
 }
 
 export const getCoupons = (params: CouponListParams) => {
-  return request<any, PageResponse<Coupon>>({
+  return request<Record<string, unknown>, PageResponse<Coupon>>({
     url: '/marketing/coupons',
     method: 'GET',
     params,
@@ -46,7 +46,7 @@ export const getCoupons = (params: CouponListParams) => {
 }
 
 export const createCoupon = (data: CreateCouponParams) => {
-  return request<any, Coupon>({
+  return request<Record<string, unknown>, Coupon>({
     url: '/marketing/coupons',
     method: 'POST',
     data,
@@ -54,7 +54,7 @@ export const createCoupon = (data: CreateCouponParams) => {
 }
 
 export const updateCoupon = (id: number, data: Partial<CreateCouponParams>) => {
-  return request<any, Coupon>({
+  return request<Record<string, unknown>, Coupon>({
     url: `/marketing/coupons/${id}`,
     method: 'PUT',
     data,
@@ -62,14 +62,14 @@ export const updateCoupon = (id: number, data: Partial<CreateCouponParams>) => {
 }
 
 export const deleteCoupon = (id: number) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: `/marketing/coupons/${id}`,
     method: 'DELETE',
   })
 }
 
 export const getSeckillActivities = (params?: SeckillListParams) => {
-  return request<any, PageResponse<SeckillActivity>>({
+  return request<Record<string, unknown>, PageResponse<SeckillActivity>>({
     url: '/marketing/seckill',
     method: 'GET',
     params,
@@ -77,7 +77,7 @@ export const getSeckillActivities = (params?: SeckillListParams) => {
 }
 
 export const createSeckill = (data: CreateSeckillParams) => {
-  return request<any, SeckillActivity>({
+  return request<Record<string, unknown>, SeckillActivity>({
     url: '/marketing/seckill',
     method: 'POST',
     data,
@@ -85,7 +85,7 @@ export const createSeckill = (data: CreateSeckillParams) => {
 }
 
 export const updateSeckill = (id: number, data: Partial<CreateSeckillParams>) => {
-  return request<any, SeckillActivity>({
+  return request<Record<string, unknown>, SeckillActivity>({
     url: `/marketing/seckill/${id}`,
     method: 'PUT',
     data,
@@ -93,14 +93,14 @@ export const updateSeckill = (id: number, data: Partial<CreateSeckillParams>) =>
 }
 
 export const deleteSeckill = (id: number) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: `/marketing/seckill/${id}`,
     method: 'DELETE',
   })
 }
 
 export const joinSeckill = (activityId: number, productId: number, seckillPrice: number, stock: number) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: `/marketing/seckill/${activityId}/join`,
     method: 'POST',
     data: { productId, seckillPrice, stock },

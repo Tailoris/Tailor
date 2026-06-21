@@ -1,5 +1,9 @@
 # =============================================================
-# Tailor IS 用户服务 Dockerfile
+# [DEPRECATED] Tailor IS 用户服务 Dockerfile
+# 此模块已被 microservice 版本替代: tailor-is/tailor-is-user/
+# 生产部署请使用 docker-compose.prod.yml 中的 user-service
+# 本文件保留仅用于独立测试目的
+# =============================================================
 # - 基础镜像: openjdk:17-slim（生产环境轻量 & JDK 版本与 pom.xml 对齐）
 # - 构建产物: 由 Maven 生成的 spring-boot fat jar，路径 ./target/tailor-is-user.jar
 # - 健康检查: 通过 Spring Actuator /actuator/health

@@ -14,10 +14,21 @@ export const useUserStore = defineStore('user', () => {
   const token = ref<string>(decryptSync(localStorage.getItem('token') || '') || '')
   const userInfo = ref<Merchant | null>(null)
   const shopList = ref<ShopItem[]>([])
-  const currentShopId = ref<number | null>(null)
+  const currentShopId = ref<number | null>(
+    localStorage.getItem('currentShopId') ? Number(localStorage.getItem('currentShopId')) : null
+  )
 
   const isLoggedIn = computed(() => !!token.value)
   const currentShop = computed(() => shopList.value.find(s => s.id === currentShopId.value))
+
+  function persistCurrentShopId(id: number | null) {
+    currentShopId.value = id
+    if (id !== null) {
+      localStorage.setItem('currentShopId', String(id))
+    } else {
+      localStorage.removeItem('currentShopId')
+    }
+  }
 
   async function login(shopName: string, username: string, password: string) {
     const res = await adminLogin({ shopName, username, password })
@@ -26,7 +37,7 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('token', encryptSync(res.token))
     await fetchShopList()
     if (shopList.value.length > 0 && !currentShopId.value) {
-      currentShopId.value = shopList.value[0].id
+      persistCurrentShopId(shopList.value[0].id)
     }
   }
 
@@ -46,6 +57,10 @@ export const useUserStore = defineStore('user', () => {
     } catch {
       token.value = ''
       localStorage.removeItem('token')
+      // 会话已失效，跳转登录页（硬跳转以清空运行时状态）
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
     }
   }
 
@@ -66,12 +81,12 @@ export const useUserStore = defineStore('user', () => {
     token.value = ''
     userInfo.value = null
     shopList.value = []
-    currentShopId.value = null
+    persistCurrentShopId(null)
     localStorage.removeItem('token')
   }
 
   function switchShop(shopId: number) {
-    currentShopId.value = shopId
+    persistCurrentShopId(shopId)
   }
 
   return {

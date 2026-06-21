@@ -1,6 +1,6 @@
 <template>
-  <div class="product-list-view">
-    <el-breadcrumb separator="/">
+  <div class="product-list-view" role="main" aria-label="商品列表页面">
+    <el-breadcrumb separator="/" aria-label="面包屑导航">
       <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
       <el-breadcrumb-item>商品列表</el-breadcrumb-item>
     </el-breadcrumb>
@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ProductCard from '@/components/ProductCard.vue'
 import { getProducts, getCategories } from '@/api/product'
@@ -126,29 +126,49 @@ async function loadProducts() {
   }
 }
 
+// 自定义防抖：快速点击筛选时合并为一次请求，避免竞态
+function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
+  let timer: ReturnType<typeof setTimeout>
+  return ((...args: any[]) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }) as T
+}
+
+// 筛选操作（排序/分类/价格）使用防抖加载
+const debouncedLoadProducts = debounce(loadProducts, 300)
+
 function handleCategoryClick(node: ProductCategory) {
   selectedCategoryId.value = node.id
   currentPage.value = 1
-  loadProducts()
+  debouncedLoadProducts()
 }
 
 function handleSort(value: string) {
   sort.value = value
   currentPage.value = 1
-  loadProducts()
+  debouncedLoadProducts()
 }
 
 function handlePriceFilter() {
   currentPage.value = 1
-  loadProducts()
+  debouncedLoadProducts()
 }
 
-onMounted(() => {
+// 监听路由 keyword 变化（如首页搜索框跳转），keep-alive 下也能刷新列表
+watch(
+  () => route.query.keyword,
+  () => {
+    currentPage.value = 1
+    loadProducts()
+  }
+)
+
+onMounted(async () => {
   if (route.query.categoryId) {
     selectedCategoryId.value = Number(route.query.categoryId)
   }
-  loadCategories()
-  loadProducts()
+  await Promise.all([loadCategories(), loadProducts()])
 })
 </script>
 

@@ -23,6 +23,15 @@ spec:
         prometheus.io/path: "/actuator/prometheus"
         prometheus.io/port: "8104"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
       containers:
         - name: payment
           image: ${REGISTRY}/tailor-is-payment:${IMAGE_TAG:-latest}
@@ -155,6 +164,12 @@ spec:
             preStop:
               exec:
                 command: ["sh", "-c", "sleep 10"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
       terminationGracePeriodSeconds: 30
       restartPolicy: Always
       affinity:

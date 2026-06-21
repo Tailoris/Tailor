@@ -45,13 +45,6 @@ spring:
       username: default
       password: ${REDIS_PASSWORD:}
       database: 0
-  # Redis config for Redisson starter
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    username: default
-    password: ${REDIS_PASSWORD:}
-    database: 0
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
@@ -95,7 +88,7 @@ knife4j:
 
 logging:
   level:
-    com.tailoris.user: debug
+    com.tailoris.user: info
 
 ---
 spring.config.activate.on-profile: prod

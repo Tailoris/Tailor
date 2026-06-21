@@ -1,6 +1,6 @@
 <template>
   <div class="forgot-view">
-    <div class="forgot-card">
+    <div class="forgot-card" role="main" aria-label="找回密码页面">
       <div class="forgot-header">
         <h2>找回密码</h2>
         <p>通过手机或邮箱找回账号密码</p>

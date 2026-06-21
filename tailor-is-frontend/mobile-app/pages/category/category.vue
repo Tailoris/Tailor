@@ -43,7 +43,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { getCategories, getCategoryProducts } from '@/api/product'
 

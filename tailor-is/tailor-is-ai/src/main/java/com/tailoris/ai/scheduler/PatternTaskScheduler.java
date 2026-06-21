@@ -2,20 +2,26 @@ package com.tailoris.ai.scheduler;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tailoris.ai.dto.PatternGenerateRequest;
+import com.tailoris.ai.entity.BodySizeData;
 import com.tailoris.ai.entity.PatternRecord;
+import com.tailoris.ai.mapper.BodySizeDataMapper;
 import com.tailoris.ai.mapper.PatternRecordMapper;
 import com.tailoris.common.config.CacheRouter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 纸样任务调度器。
@@ -43,6 +49,7 @@ import java.util.List;
 public class PatternTaskScheduler {
 
     private final PatternRecordMapper patternRecordMapper;
+    private final BodySizeDataMapper bodySizeDataMapper;
 
     private final CacheRouter cacheRouter;
 
@@ -88,10 +95,21 @@ public class PatternTaskScheduler {
         log.info("[PatternTaskScheduler] 开始清理过期缓存...");
         try {
             RedisTemplate<String, Object> template = cacheRouter.getCoreTemplate();
-            // 清理调度器统计中的旧数据
+            // BE-M-23: 使用 SCAN 替代空操作，清理调度器统计中的旧数据
             String statsKeyPattern = SCHEDULER_STATS_KEY + "*";
-            // Redis 没有直接的 pattern delete，依赖 TTL 自动过期
-            log.info("[PatternTaskScheduler] 过期缓存清理完成（依赖TTL自动过期）");
+            Set<String> keysToDelete = new HashSet<>();
+            ScanOptions options = ScanOptions.scanOptions().match(statsKeyPattern).count(100).build();
+            try (Cursor<String> cursor = template.scan(options)) {
+                while (cursor.hasNext()) {
+                    keysToDelete.add(cursor.next());
+                }
+            }
+            if (!keysToDelete.isEmpty()) {
+                template.delete(keysToDelete);
+                log.info("[PatternTaskScheduler] 清理过期缓存完成，删除 {} 个统计key", keysToDelete.size());
+            } else {
+                log.info("[PatternTaskScheduler] 过期缓存清理完成，无待清理key");
+            }
         } catch (Exception e) {
             log.error("[PatternTaskScheduler] 缓存清理异常: {}", e.getMessage(), e);
         }
@@ -133,24 +151,55 @@ public class PatternTaskScheduler {
 
     /**
      * 重试单个任务。
+     *
+     * <p>BE-M-23: 重新生成纸样数据，而非仅更新状态字段</p>
      */
     private void retrySingleTask(PatternRecord record) {
         try {
             log.info("[PatternTaskScheduler] 重试任务: patternId={}, name={}",
                     record.getId(), record.getPatternName());
 
-            // 更新状态为处理中
+            // 1. 更新状态为处理中
             PatternRecord update = new PatternRecord();
             update.setId(record.getId());
             update.setStatus(1);
             patternRecordMapper.updateById(update);
 
+            // 2. 重新生成纸样数据
+            BodySizeData bodySize = bodySizeDataMapper.selectById(record.getBodySizeId());
+            if (bodySize == null) {
+                log.error("[PatternTaskScheduler] 重试失败：体型数据不存在, patternId={}, bodySizeId={}",
+                        record.getId(), record.getBodySizeId());
+                incrementStat("task_retry_failed", 1);
+                return;
+            }
+
+            String newPatternData = buildPatternData(bodySize, record.getPatternType());
+
+            // 3. 更新纸样数据与状态为已完成
+            PatternRecord completedUpdate = new PatternRecord();
+            completedUpdate.setId(record.getId());
+            completedUpdate.setPatternData(newPatternData);
+            completedUpdate.setStatus(2);
+            patternRecordMapper.updateById(completedUpdate);
+
+            log.info("[PatternTaskScheduler] 重试成功: patternId={}", record.getId());
             incrementStat("task_retried", 1);
         } catch (Exception e) {
             log.error("[PatternTaskScheduler] 任务重试失败: patternId={}, error={}",
                     record.getId(), e.getMessage());
             incrementStat("task_retry_failed", 1);
         }
+    }
+
+    /**
+     * BE-M-23: 构建纸样数据 JSON（与 PatternServiceImpl.generatePatternData 逻辑一致）
+     */
+    private String buildPatternData(BodySizeData bodySize, Integer patternType) {
+        return "{\"type\":\"" + patternType + "\",\"measurements\":{\"height\":" + bodySize.getHeight() +
+               ",\"chest\":" + bodySize.getChestCircumference() +
+               ",\"waist\":" + bodySize.getWaistCircumference() +
+               ",\"hip\":" + bodySize.getHipCircumference() + "}}";
     }
 
     /**

@@ -145,11 +145,9 @@ public class SeckillServiceImpl implements SeckillService {
             throw new BusinessException("已达到购买上限");
         }
 
-        // 异步同步DB（这里用同步更新以保证后续下单可见）
+        // BE-H-13: 使用原子 UPDATE 同步DB库存，避免并发竞态
         try {
-            product.setAvailableStock(product.getAvailableStock() == null ? 0 : product.getAvailableStock() - 1);
-            product.setOrderCount(product.getOrderCount() == null ? 1 : product.getOrderCount() + 1);
-            seckillProductMapper.updateById(product);
+            seckillProductMapper.deductStock(seckillProductId);
         } catch (Exception e) {
             log.error("更新DB库存失败，需要人工对账: seckillProductId={}", seckillProductId, e);
             // 不抛异常，保证用户体验（DB 异步对账）
@@ -171,14 +169,9 @@ public class SeckillServiceImpl implements SeckillService {
         } catch (Exception e) {
             log.warn("恢复秒杀库存失败: {}", e.getMessage());
         }
-        // 恢复 DB 库存
+        // BE-H-13: 使用原子 UPDATE 恢复DB库存，避免并发竞态
         try {
-            SeckillProduct product = seckillProductMapper.selectById(seckillProductId);
-            if (product != null) {
-                product.setAvailableStock(product.getAvailableStock() == null ? 1 : product.getAvailableStock() + 1);
-                product.setOrderCount(Math.max(0, product.getOrderCount() == null ? 0 : product.getOrderCount() - 1));
-                seckillProductMapper.updateById(product);
-            }
+            seckillProductMapper.restoreStock(seckillProductId);
         } catch (Exception e) {
             log.warn("恢复DB库存失败: {}", e.getMessage());
         }

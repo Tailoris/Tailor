@@ -12,7 +12,7 @@ interface ProductListParams {
 }
 
 export function getProducts(params: ProductListParams) {
-  return request<any, PageResponse<Product>>({
+  return request<Record<string, unknown>, PageResponse<Product>>({
     url: '/products',
     method: 'get',
     params
@@ -20,21 +20,21 @@ export function getProducts(params: ProductListParams) {
 }
 
 export function getProductDetail(id: number) {
-  return request<any, Product>({
+  return request<Record<string, unknown>, Product>({
     url: `/products/${id}`,
     method: 'get'
   })
 }
 
 export function getCategories() {
-  return request<any, ProductCategory[]>({
+  return request<Record<string, unknown>, ProductCategory[]>({
     url: '/products/categories',
     method: 'get'
   })
 }
 
 export function searchProducts(keyword: string, params: ProductListParams) {
-  return request<any, PageResponse<Product>>({
+  return request<Record<string, unknown>, PageResponse<Product>>({
     url: '/products/search',
     method: 'get',
     params: { keyword, ...params }
@@ -42,21 +42,21 @@ export function searchProducts(keyword: string, params: ProductListParams) {
 }
 
 export function getHotProducts() {
-  return request<any, Product[]>({
+  return request<Record<string, unknown>, Product[]>({
     url: '/products/hot',
     method: 'get'
   })
 }
 
 export function getNewProducts() {
-  return request<any, Product[]>({
+  return request<Record<string, unknown>, Product[]>({
     url: '/products/new',
     method: 'get'
   })
 }
 
 export function getSeckillProducts() {
-  return request<any, Product[]>({
+  return request<Record<string, unknown>, Product[]>({
     url: '/products/seckill',
     method: 'get'
   })

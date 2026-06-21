@@ -1,5 +1,5 @@
 <template>
-  <div class="price-summary">
+  <div class="price-summary" aria-label="费用明细">
     <h3>费用明细</h3>
     <div class="summary-item">
       <span>商品合计</span>

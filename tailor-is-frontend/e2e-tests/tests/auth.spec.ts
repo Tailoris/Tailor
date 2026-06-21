@@ -95,6 +95,22 @@ test.describe('认证流程', () => {
   })
 })
 
+test.describe('表单验证', () => {
+  test('空手机号提交显示验证错误', async ({ page }) => {
+    await page.goto('/login')
+    await page.fill('input[name="password"]', 'Test@123456')
+    await page.click('button[type="submit"]')
+    await expect(page.locator('.el-form-item__error')).toBeVisible()
+  })
+
+  test('空密码提交显示验证错误', async ({ page }) => {
+    await page.goto('/login')
+    await page.fill('input[name="phone"]', '13800138000')
+    await page.click('button[type="submit"]')
+    await expect(page.locator('.el-form-item__error')).toBeVisible()
+  })
+})
+
 test.describe('手机验证码注册', () => {
   test('发送验证码倒计时', async ({ page }) => {
     await page.goto('/register')

@@ -16,6 +16,10 @@ import com.tailoris.ai.mapper.PatternIterationMapper;
 import com.tailoris.ai.mapper.PatternRecordMapper;
 import com.tailoris.ai.mapper.PatternVersionMapper;
 import com.tailoris.ai.service.PatternService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +36,7 @@ public class PatternServiceImpl implements PatternService {
     private final PatternVersionMapper patternVersionMapper;
     private final PatternIterationMapper patternIterationMapper;
     private final BodySizeDataMapper bodySizeDataMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -57,7 +62,7 @@ public class PatternServiceImpl implements PatternService {
         record.setVersion(1);
         patternRecordMapper.insert(record);
 
-        saveVersion(record.getId(), "初始版本", "AI自动生成");
+        saveVersion(userId, record.getId(), "初始版本", "AI自动生成");
 
         return record;
     }
@@ -103,17 +108,21 @@ public class PatternServiceImpl implements PatternService {
         record.setVersion(record.getVersion() + 1);
         patternRecordMapper.updateById(record);
 
-        saveVersion(record.getId(), "V" + record.getVersion(), request.getChangeReason());
+        saveVersion(userId, record.getId(), "V" + record.getVersion(), request.getChangeReason());
 
         return iteration;
     }
 
     @Override
     @Transactional
-    public PatternVersion saveVersion(Long patternId, String versionName, String changeDescription) {
+    public PatternVersion saveVersion(Long userId, Long patternId, String versionName, String changeDescription) {
         PatternRecord record = patternRecordMapper.selectById(patternId);
         if (record == null) {
             throw new BusinessException("版型记录不存在");
+        }
+        // BE-C-7: IDOR越权修复 - 校验版型所属权
+        if (!record.getUserId().equals(userId)) {
+            throw new BusinessException("无权操作该版型");
         }
 
         LambdaUpdateWrapper<PatternVersion> updateWrapper = new LambdaUpdateWrapper<>();
@@ -137,7 +146,12 @@ public class PatternServiceImpl implements PatternService {
     }
 
     @Override
-    public List<PatternVersion> listVersions(Long patternId) {
+    public List<PatternVersion> listVersions(Long userId, Long patternId) {
+        // BE-C-7: IDOR越权修复 - 校验版型所属权
+        PatternRecord record = patternRecordMapper.selectById(patternId);
+        if (record == null || !record.getUserId().equals(userId)) {
+            throw new BusinessException("版型记录不存在");
+        }
         LambdaQueryWrapper<PatternVersion> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PatternVersion::getPatternId, patternId);
         wrapper.orderByDesc(PatternVersion::getVersionNo);
@@ -145,17 +159,23 @@ public class PatternServiceImpl implements PatternService {
     }
 
     @Override
-    public String exportPattern(Long patternId, String format) {
+    public String exportPattern(Long userId, Long patternId, String format) {
+        // BE-C-7: IDOR越权修复 - 校验版型所属权
         PatternRecord record = patternRecordMapper.selectById(patternId);
-        if (record == null) {
+        if (record == null || !record.getUserId().equals(userId)) {
             throw new BusinessException("版型记录不存在");
         }
         return "https://pattern-export.example.com/" + patternId + "." + (format != null ? format.toLowerCase() : "svg");
     }
 
     @Override
-    public PatternRecord getPatternDetail(Long patternId) {
-        return patternRecordMapper.selectById(patternId);
+    public PatternRecord getPatternDetail(Long userId, Long patternId) {
+        // BE-C-7: IDOR越权修复 - 校验版型所属权
+        PatternRecord record = patternRecordMapper.selectById(patternId);
+        if (record == null || !record.getUserId().equals(userId)) {
+            throw new BusinessException("版型记录不存在");
+        }
+        return record;
     }
 
     @Override
@@ -167,10 +187,15 @@ public class PatternServiceImpl implements PatternService {
     }
 
     private String generatePatternData(BodySizeData bodySize, Integer patternType, String parameters) {
-        return "{\"type\":\"" + patternType + "\",\"measurements\":{\"height\":" + bodySize.getHeight() +
-               ",\"chest\":" + bodySize.getChestCircumference() +
-               ",\"waist\":" + bodySize.getWaistCircumference() +
-               ",\"hip\":" + bodySize.getHipCircumference() + "}}";
+        ObjectNode root = objectMapper.createObjectNode();
+        root.put("type", patternType == null ? null : patternType.toString());
+        ObjectNode measurements = objectMapper.createObjectNode();
+        measurements.put("height", bodySize.getHeight());
+        measurements.put("chest", bodySize.getChestCircumference());
+        measurements.put("waist", bodySize.getWaistCircumference());
+        measurements.put("hip", bodySize.getHipCircumference());
+        root.set("measurements", measurements);
+        return root.toString();
     }
 
     private String generatePatternDataByParams(Long bodySizeId, Integer patternType, String parameters) {
@@ -181,7 +206,121 @@ public class PatternServiceImpl implements PatternService {
         return generatePatternData(bodySize, patternType, parameters);
     }
 
+    /**
+     * BE-M-22: 版型结构检查 - 实现真实校验逻辑
+     *
+     * <p>校验 patternData 的结构完整性与尺寸合理性：</p>
+     * <ul>
+     *   <li>JSON 格式有效性</li>
+     *   <li>必填字段（type、measurements）存在性</li>
+     *   <li>尺寸数值合理范围（身高/胸围/腰围/臀围）</li>
+     *   <li>尺寸间逻辑关系（如腰围 < 胸围）</li>
+     * </ul>
+     */
     private String performStructureCheck(String patternData) {
-        return "{\"structure\":\"valid\",\"issues\":[],\"confidence\":0.95,\"recommendations\":[]}";
+        ObjectNode result = objectMapper.createObjectNode();
+        ArrayNode issues = objectMapper.createArrayNode();
+        ArrayNode recommendations = objectMapper.createArrayNode();
+
+        if (patternData == null || patternData.isBlank()) {
+            result.put("structure", "invalid");
+            issues.add("版型数据为空");
+            result.put("confidence", 0.0);
+            result.set("issues", issues);
+            result.set("recommendations", recommendations);
+            return result.toString();
+        }
+
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(patternData);
+        } catch (Exception e) {
+            result.put("structure", "invalid");
+            issues.add("版型数据JSON格式无效: " + e.getMessage());
+            result.put("confidence", 0.0);
+            result.set("issues", issues);
+            result.set("recommendations", recommendations);
+            return result.toString();
+        }
+
+        // 校验 type 字段
+        if (!root.has("type") || root.get("type").isNull()) {
+            issues.add("缺少版型类型(type)字段");
+        }
+
+        // 校验 measurements 字段
+        JsonNode measurements = root.get("measurements");
+        if (measurements == null || !measurements.isObject()) {
+            issues.add("缺少尺寸数据(measurements)字段");
+        } else {
+            // 校验各项尺寸范围（单位: cm）
+            validateMeasurement(measurements, "height", 100, 250, "身高", issues, recommendations);
+            validateMeasurement(measurements, "chest", 50, 200, "胸围", issues, recommendations);
+            validateMeasurement(measurements, "waist", 40, 200, "腰围", issues, recommendations);
+            validateMeasurement(measurements, "hip", 50, 200, "臀围", issues, recommendations);
+
+            // 校验尺寸间逻辑关系
+            double chest = measurementValue(measurements, "chest");
+            double waist = measurementValue(measurements, "waist");
+            double hip = measurementValue(measurements, "hip");
+            if (chest > 0 && waist > 0 && waist >= chest) {
+                issues.add("腰围(" + waist + ")不应大于等于胸围(" + chest + ")");
+            }
+            if (hip > 0 && waist > 0 && hip < waist - 30) {
+                issues.add("臀围(" + hip + ")与腰围(" + waist + ")差异过大，请核实");
+            }
+        }
+
+        // 根据问题数量计算置信度与结构判定
+        int issueCount = issues.size();
+        double confidence;
+        String structure;
+        if (issueCount == 0) {
+            structure = "valid";
+            confidence = 0.95;
+            recommendations.add("版型结构检查通过，可进入下一步生产");
+        } else if (issueCount <= 2) {
+            structure = "warning";
+            confidence = 0.70;
+            recommendations.add("存在少量问题，建议修正后使用");
+        } else {
+            structure = "invalid";
+            confidence = 0.30;
+            recommendations.add("存在多处结构问题，请重新生成版型");
+        }
+
+        result.put("structure", structure);
+        result.put("confidence", confidence);
+        result.set("issues", issues);
+        result.set("recommendations", recommendations);
+        return result.toString();
+    }
+
+    /** 校验单个尺寸字段的数值范围 */
+    private void validateMeasurement(JsonNode measurements, String field,
+                                     double min, double max, String label,
+                                     ArrayNode issues, ArrayNode recommendations) {
+        JsonNode node = measurements.get(field);
+        if (node == null || node.isNull()) {
+            issues.add("缺少" + label + "(" + field + ")数据");
+            return;
+        }
+        if (!node.isNumber()) {
+            issues.add(label + "(" + field + ")数据类型无效");
+            return;
+        }
+        double value = node.asDouble();
+        if (value <= 0) {
+            issues.add(label + "(" + value + ")必须为正数");
+        } else if (value < min || value > max) {
+            issues.add(label + "(" + value + ")超出合理范围[" + min + "-" + max + "cm]");
+            recommendations.add("请核实" + label + "数据是否正确");
+        }
+    }
+
+    /** 安全获取尺寸数值，无效时返回 -1 */
+    private double measurementValue(JsonNode measurements, String field) {
+        JsonNode node = measurements.get(field);
+        return (node != null && node.isNumber()) ? node.asDouble() : -1;
     }
 }

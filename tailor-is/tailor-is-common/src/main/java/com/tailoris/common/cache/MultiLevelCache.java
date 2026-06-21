@@ -4,7 +4,10 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -59,9 +62,10 @@ public class MultiLevelCache<K, V> {
 
     public MultiLevelCache(RedisTemplate<String, V> redisTemplate) {
         this.redisTemplate = redisTemplate;
+        // BE-H-9: 使用 @Value 注入的配置，替代硬编码值
         this.l1Cache = Caffeine.newBuilder()
-                .maximumSize(10_000)
-                .expireAfterWrite(5, TimeUnit.MINUTES)
+                .maximumSize(maximumSize > 0 ? maximumSize : 10_000)
+                .expireAfterWrite(l1ExpireMinutes > 0 ? l1ExpireMinutes : 5, TimeUnit.MINUTES)
                 .recordStats()
                 .build();
     }

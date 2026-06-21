@@ -16,7 +16,7 @@ interface ShipParams {
 }
 
 export const listOrders = (params: OrderListParams) => {
-  return request<any, PageResponse<Order>>({
+  return request<Record<string, unknown>, PageResponse<Order>>({
     url: '/orders',
     method: 'GET',
     params,
@@ -24,14 +24,14 @@ export const listOrders = (params: OrderListParams) => {
 }
 
 export const getOrderDetail = (orderNo: string) => {
-  return request<any, Order>({
+  return request<Record<string, unknown>, Order>({
     url: `/orders/${orderNo}`,
     method: 'GET',
   })
 }
 
 export const shipOrder = (orderNo: string, data: ShipParams) => {
-  return request<any, Order>({
+  return request<Record<string, unknown>, Order>({
     url: `/orders/${orderNo}/ship`,
     method: 'POST',
     data,
@@ -39,7 +39,7 @@ export const shipOrder = (orderNo: string, data: ShipParams) => {
 }
 
 export const updatePrice = (orderNo: string, price: number) => {
-  return request<any, Order>({
+  return request<Record<string, unknown>, Order>({
     url: `/orders/${orderNo}/price`,
     method: 'PUT',
     data: { price },
@@ -47,9 +47,18 @@ export const updatePrice = (orderNo: string, price: number) => {
 }
 
 export const getOrderByShop = (shopId: number, params: OrderListParams) => {
-  return request<any, PageResponse<Order>>({
+  return request<Record<string, unknown>, PageResponse<Order>>({
     url: `/shops/${shopId}/orders`,
     method: 'GET',
     params,
+  })
+}
+
+/** FE-H-4: 更新订单备注 */
+export const updateOrderRemark = (orderNo: string, remark: string) => {
+  return request<Record<string, unknown>, Order>({
+    url: `/orders/${orderNo}/remark`,
+    method: 'PUT',
+    data: { remark },
   })
 }

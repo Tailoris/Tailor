@@ -87,7 +87,7 @@ knife4j:
 
 logging:
   level:
-    com.tailoris.analytics: debug
+    com.tailoris.analytics: info
 
 ---
 spring.config.activate.on-profile: prod

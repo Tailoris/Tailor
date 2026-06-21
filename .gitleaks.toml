@@ -1,0 +1,95 @@
+# =============================================================================
+# Tailor IS Gitleaks 配置
+# 对应: SEC-P3-02 CI 集成敏感信息扫描
+# 说明: 自定义规则排除已知测试凭证和误报路径
+# =============================================================================
+
+title = "Tailor IS Gitleaks Configuration"
+
+# ------ 扫描范围 ------
+# 排除 node_modules, target, .git 等构建产物目录
+[allowlist]
+  description = "Global allowlist for known false positives"
+  paths = [
+    # OWASP 误报抑制文件
+    '''owasp-suppressions\.xml''',
+    # 测试数据中的假凭证
+    '''src/test/.*''',
+    '''test/.*''',
+    # 文档中的示例
+    '''docs/.*\.md''',
+    '''\.md$''',
+    # 构建产物
+    '''node_modules/''',
+    '''target/''',
+    '''dist/''',
+    '''build/''',
+    '''\.git/''',
+    # 依赖锁定文件
+    '''package-lock\.json''',
+    '''yarn\.lock''',
+    '''pnpm-lock\.yaml''',
+    # 图片/二进制
+    '''\.png$''',
+    '''\.jpg$''',
+    '''\.jpeg$''',
+    '''\.gif$''',
+    '''\.ico$''',
+    '''\.woff''',
+    '''\.ttf$''',
+    # 压缩文件
+    '''\.zip$''',
+    '''\.tar\.gz$''',
+    '''\.jar$''',
+    # IDE 配置
+    '''\.idea/''',
+    '''\.vscode/''',
+    '''\.trae/''',
+  ]
+
+  # 已知测试用凭证 (仅用于本地开发/CI 测试, 非生产环境)
+  stopwords = [
+    # 测试用密码占位符
+    "test_password_placeholder",
+    "test-secret-key",
+    "test-api-key-not-real",
+    "CHANGE_ME",
+    "changeit",
+    "your-secret-here",
+    "your-password-here",
+    "localhost",
+    "127.0.0.1",
+    # 示例/文档中的占位符
+    "example.com",
+    "test.example.com",
+    "my-secret-key",
+    "my-password",
+    "my-token",
+  ]
+
+# ------ 自定义规则 ------
+# 注: Gitleaks 内置规则已覆盖常见凭证类型 (AWS/GCP/Azure/GitHub Token 等)
+# 此处仅添加项目特有的自定义规则
+[[rules]]
+  id = "tailor-is-config-secret"
+  description = "Tailor IS 配置文件中的硬编码凭证"
+  regex = '''(?i)(password|secret|token|api[_-]?key)\s*[:=]\s*['"][^'"$}{\s]{8,}['"]'''
+  tags = ["secret", "tailor-is"]
+  [rules.allowlist]
+    description = "排除测试配置和模板变量"
+    paths = [
+      '''src/test/.*''',
+      '''application-(test|dev)\.(yml|yaml|properties)''',
+      '''bootstrap-(test|dev)\.(yml|yaml|properties)''',
+    ]
+    regexes = [
+      '''\$\{.*\}''',  # 模板变量
+      '''ENC\(.*\)''',  # Jasypt 加密值
+      '''\{cipher\}.*''',  # Spring Cloud Config 加密值
+    ]
+    stopwords = [
+      "test_password_placeholder",
+      "test-secret-key",
+      "CHANGE_ME",
+      "changeit",
+    ]

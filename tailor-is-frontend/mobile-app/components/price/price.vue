@@ -7,7 +7,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const props = defineProps({
   price: { type: [Number, String], default: '0.00' },
   originalPrice: { type: [Number, String], default: '' },

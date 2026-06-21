@@ -86,12 +86,10 @@ function updateNetworkStatus(status: Partial<NetworkStatus>): void {
  */
 function handleOnline(): void {
   updateNetworkStatus({ online: true })
-  console.log('[networkMonitor] Network online')
 }
 
 function handleOffline(): void {
   updateNetworkStatus({ online: false, weak: false, type: 'none', speed: 0, rtt: 0, effectiveType: 'unknown' })
-  console.log('[networkMonitor] Network offline')
 }
 
 /**
@@ -134,7 +132,6 @@ function detectNetworkInfo(): void {
       }
     } else {
       // Safari 等不支持 navigator.connection 的浏览器，使用默认值
-      console.log('[networkMonitor] navigator.connection not available, using default values')
     }
   }
   // #endif
@@ -206,8 +203,6 @@ export function initNetworkMonitor(): void {
 
   // 尝试获取详细网络信息
   detectNetworkInfo()
-
-  console.log(`[networkMonitor] Initialized, online: ${_online.value}`)
 }
 
 /**
@@ -223,7 +218,6 @@ export function destroyNetworkMonitor(): void {
 
   callbacks.clear()
   initialized = false
-  console.log('[networkMonitor] Destroyed')
 }
 
 /**

@@ -24,6 +24,9 @@ public class CartController {
 
     private final ShoppingCartService shoppingCartService;
 
+    /**
+     * 添加商品到购物车
+     */
     @Operation(summary = "添加到购物车")
     @PostMapping
     public Result<Void> addToCart(
@@ -60,6 +63,9 @@ public class CartController {
         return Result.success(carts);
     }
 
+    /**
+     * 批量结算购物车商品
+     */
     @Operation(summary = "批量结算")
     @PostMapping("/checkout")
     public Result<List<ShoppingCart>> batchCheckout(

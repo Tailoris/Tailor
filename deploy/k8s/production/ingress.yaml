@@ -1,0 +1,192 @@
+# ==============================================================================
+# Tailor IS - Nginx Ingress 配置
+# ==============================================================================
+# 前提条件:
+#   1. 集群中已安装 ingress-nginx controller
+#      kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+#   2. 已安装 cert-manager (可选，用于自动 TLS 证书管理)
+#      kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml
+#   3. 已配置 ClusterIssuer (可选)
+# ==============================================================================
+
+---
+# ==============================================================================
+# Nginx IngressClass
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: ingress
+    environment: production
+spec:
+  controller: k8s.io/ingress-nginx
+
+---
+# ==============================================================================
+# Cert-Manager ClusterIssuer - Let's Encrypt (生产环境)
+# ==============================================================================
+# 如使用 cert-manager 自动管理证书，取消下面注释
+# apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: letsencrypt-prod
+#   namespace: tailor-is-prod
+# spec:
+#   acme:
+#     server: https://acme-v02.api.letsencrypt.org/directory
+#     email: admin@tailoris.com
+#     privateKeySecretRef:
+#       name: letsencrypt-prod
+#     solvers:
+#       - http01:
+#           ingress:
+#             class: nginx
+
+---
+# ==============================================================================
+# 主 Ingress - 路由规则 + TLS 终止
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tailor-is-ingress
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: ingress
+    environment: production
+  annotations:
+    # Ingress Controller 配置
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # TLS 证书 (使用 cert-manager 自动管理)
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+    # 代理缓冲配置
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "8"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+
+    # WebSocket 支持 (IM 服务)
+    nginx.ingress.kubernetes.io/proxy-set-headers: "nginx.ingress.kubernetes.io/websocket-services: message-im-service"
+
+    # CORS 配置
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://www.tailoris.com"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/cors-max-age: "86400"
+
+    # 限流配置
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "5"
+    nginx.ingress.kubernetes.io/limit-rate-after: "50"
+    nginx.ingress.kubernetes.io/limit-rate: "100"
+
+    # 日志配置
+    nginx.ingress.kubernetes.io/enable-access-log: "true"
+    nginx.ingress.kubernetes.io/enable-rewrite-log: "true"
+
+    # 安全配置
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      # 隐藏 Nginx 版本号
+      server_tokens off;
+      # 添加安全头
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+spec:
+  tls:
+    - hosts:
+        - www.tailoris.com
+        - api.tailoris.com
+      secretName: tailor-is-tls
+  rules:
+    # ==================================================================
+    # 主域名: www.tailoris.com
+    # ==================================================================
+    - host: www.tailoris.com
+      http:
+        paths:
+          # API 路由 → Core Gateway
+          - path: /api/
+            pathType: Prefix
+            backend:
+              service:
+                name: core-gateway
+                port:
+                  number: 8080
+          # GraphQL → API Service
+          - path: /graphql
+            pathType: Prefix
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 8116
+          # WebSocket (IM) → IM Service
+          - path: /ws/
+            pathType: Prefix
+            backend:
+              service:
+                name: message-im-service
+                port:
+                  number: 8114
+          # PC Mall SSR (前端)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+
+    # ==================================================================
+    # API 子域名: api.tailoris.com
+    # ==================================================================
+    - host: api.tailoris.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: core-gateway
+                port:
+                  number: 8080
+
+---
+# ==============================================================================
+# 前端 Nginx Service (用于 SSR 前端)
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: frontend
+    environment: production
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: tailor-is
+    component: frontend

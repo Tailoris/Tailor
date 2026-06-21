@@ -30,6 +30,19 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * MerchantServiceImpl 单元测试.
+ *
+ * <p>TODO 待补充测试场景：</p>
+ * <ul>
+ *   <li>T-M04: 店铺创建/编辑/关闭测试</li>
+ *   <li>T-M04: 员工添加/移除/权限分配测试</li>
+ *   <li>T-M04: 角色模板应用测试</li>
+ *   <li>T-M04: 资质审核不通过重提测试</li>
+ *   <li>T-M04: 违规记录/处罚流程测试</li>
+ *   <li>T-M04: 商家信息变更通知测试</li>
+ * </ul>
+ */
 @DisplayName("商家服务单元测试")
 @ExtendWith(MockitoExtension.class)
 class MerchantServiceImplTest {

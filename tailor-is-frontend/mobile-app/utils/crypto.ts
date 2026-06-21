@@ -264,11 +264,7 @@ function hashString(str: string): string {
 }
 
 export function encrypt(value: string): string {
-  if (hasWebCrypto()) {
-    // 同步调用 AES-GCM（H5 环境下通常可用）
-    // 注意：crypto.subtle 是异步的，但在存储场景下我们使用同步降级
-    return fallbackEncrypt(value)
-  }
+  // FE-C-5: 同步加密使用降级方案，推荐使用 encryptAsync 进行 AES-GCM 加密
   return fallbackEncrypt(value)
 }
 

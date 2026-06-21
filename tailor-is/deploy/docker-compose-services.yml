@@ -50,3 +50,279 @@ version: '3.8'
 
 # Docker Compose 仅用于本地开发/测试
 # 生产部署请使用 Kubernetes: kubectl apply -f deploy/k8s/
+
+networks:
+  tailor-is-net:
+    name: tailor-is-net
+    driver: bridge
+
+services:
+  # ==================== 基础设施 ====================
+  # MySQL 数据库 - 启动顺序: 第1优先级
+  mysql:
+    image: mysql:8.0
+    container_name: tailor-is-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: tailor_is
+      MYSQL_USER: tailor
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-tailor123}
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../sql:/docker-entrypoint-initdb.d
+    networks:
+      - tailor-is-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # Redis 缓存 - 启动顺序: 第2优先级 (依赖 MySQL 就绪)
+  redis:
+    image: redis:7-alpine
+    container_name: tailor-is-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - tailor-is-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Nacos 注册中心 - 启动顺序: 第3优先级 (依赖 MySQL 就绪)
+  nacos:
+    image: nacos/nacos-server:v2.3.0
+    container_name: tailor-is-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_DB_NAME: tailor_is
+      MYSQL_SERVICE_USER: root
+      MYSQL_SERVICE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      NACOS_AUTH_ENABLE: "true"
+      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-SecretKey012345678901234567890123456789012345678901234567890123456789}
+      NACOS_AUTH_IDENTITY_KEY: serverIdentity
+      NACOS_AUTH_IDENTITY_VALUE: security
+    volumes:
+      - nacos-logs:/home/nacos/logs
+    networks:
+      - tailor-is-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+  # RabbitMQ 消息队列 - 启动顺序: 第2优先级
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: tailor-is-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-tailor}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-tailor123}
+    ports:
+      - "5672:5672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - tailor-is-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ==================== 核心应用服务 ====================
+  # 应用服务 - 启动顺序: 第4优先级 (依赖 MySQL + Redis + Nacos 全部就绪)
+  tailor-is-user:
+    build:
+      context: ..
+      dockerfile: ../Dockerfile
+      args:
+        MODULE: tailor-is-user
+    container_name: tailor-is-user
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+    networks:
+      - tailor-is-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  tailor-is-merchant:
+    build:
+      context: ..
+      dockerfile: ../Dockerfile
+      args:
+        MODULE: tailor-is-merchant
+    container_name: tailor-is-merchant
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+    networks:
+      - tailor-is-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  tailor-is-product:
+    build:
+      context: ..
+      dockerfile: ../Dockerfile
+      args:
+        MODULE: tailor-is-product
+    container_name: tailor-is-product
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+    networks:
+      - tailor-is-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  tailor-is-order:
+    build:
+      context: ..
+      dockerfile: ../Dockerfile
+      args:
+        MODULE: tailor-is-order
+    container_name: tailor-is-order
+    restart: unless-stopped
+    ports:
+      - "8084:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+    networks:
+      - tailor-is-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  tailor-is-payment:
+    build:
+      context: ..
+      dockerfile: ../Dockerfile
+      args:
+        MODULE: tailor-is-payment
+    container_name: tailor-is-payment
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: nacos:8848
+    networks:
+      - tailor-is-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+volumes:
+  mysql-data:
+    name: tailor-is-mysql-data
+  redis-data:
+    name: tailor-is-redis-data
+  nacos-logs:
+    name: tailor-is-nacos-logs
+  rabbitmq-data:
+    name: tailor-is-rabbitmq-data

@@ -72,34 +72,26 @@ export async function decrypt(base64Ciphertext: string): Promise<string> {
   }
 }
 
+/**
+ * 同步版本 - 使用 base64 编码（非加密）
+ *
+ * 浏览器环境无法实现同步强加密（Web Crypto API 仅有异步接口）。
+ * 此函数仅做 base64 编码以避免明文直接暴露，并非加密。
+ *
+ * TODO: Token 安全应依赖服务端 httpOnly cookie，前端不应持久化存储 token。
+ * 迁移至 httpOnly cookie 后可移除此函数。
+ */
 export function encryptSync(plaintext: string): string {
-  const keyData = localStorage.getItem(CRYPTO_KEY_STORAGE_KEY)
-  if (!keyData) return plaintext
-  return simpleEncrypt(plaintext, keyData.substring(0, 32))
-}
-
-export function decryptSync(base64Ciphertext: string): string {
-  const keyData = localStorage.getItem(CRYPTO_KEY_STORAGE_KEY)
-  if (!keyData) return base64Ciphertext
-  return simpleDecrypt(base64Ciphertext, keyData.substring(0, 32))
-}
-
-function simpleEncrypt(text: string, key: string): string {
-  let result = ''
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length))
-  }
-  return btoa(unescape(encodeURIComponent(result)))
-}
-
-function simpleDecrypt(encoded: string, key: string): string {
   try {
-    const text = decodeURIComponent(escape(atob(encoded)))
-    let result = ''
-    for (let i = 0; i < text.length; i++) {
-      result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length))
-    }
-    return result
+    return btoa(unescape(encodeURIComponent(plaintext)))
+  } catch {
+    return plaintext
+  }
+}
+
+export function decryptSync(encoded: string): string {
+  try {
+    return decodeURIComponent(escape(atob(encoded)))
   } catch {
     return ''
   }

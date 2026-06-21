@@ -103,7 +103,7 @@ tailoris:
 
 logging:
   level:
-    com.tailoris.supply: debug
+    com.tailoris.supply: info
 
 ---
 spring.config.activate.on-profile: prod

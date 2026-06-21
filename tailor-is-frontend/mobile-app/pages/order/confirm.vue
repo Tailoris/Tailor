@@ -66,10 +66,12 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { createOrder } from '@/api/order'
 import { getAddresses } from '@/api/user'
+import { getCartItems } from '@/api/cart'
+import { getProductDetail } from '@/api/product'
 
 const selectedAddress = ref(null)
 const goodsList = ref([])
@@ -92,28 +94,45 @@ async function loadAddress() {
   }
 }
 
-function loadGoods() {
+async function loadGoods() {
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1]
   const cartIds = currentPage.options.cartIds
   const productId = currentPage.options.productId
   
   if (cartIds) {
-    goodsList.value = JSON.parse(cartIds).map(item => ({
-      id: item.cartId,
-      name: '商品名称',
-      price: 99,
-      quantity: item.quantity,
-      image: 'https://via.placeholder.com/150x150'
-    }))
+    // FE-C-3: 移除硬编码，改为调用真实商品API
+    try {
+      const cartIdList = JSON.parse(cartIds)
+      const res = await getCartItems(cartIdList)
+      goodsList.value = (res.data || []).map(item => ({
+        id: item.productId,
+        cartId: item.cartId,
+        name: item.productName || '商品',
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        image: item.image || ''
+      }))
+    } catch (e) {
+      console.error('加载购物车商品失败', e)
+      uni.showToast({ title: '加载商品失败', icon: 'none' })
+    }
   } else if (productId) {
-    goodsList.value = [{
-      id: productId,
-      name: '商品名称',
-      price: 99,
-      quantity: parseInt(currentPage.options.quantity) || 1,
-      image: 'https://via.placeholder.com/150x150'
-    }]
+    // FE-C-3: 移除硬编码，改为调用真实商品API
+    try {
+      const res = await getProductDetail(productId)
+      const product = res.data || {}
+      goodsList.value = [{
+        id: productId,
+        name: product.name || '商品',
+        price: product.price || 0,
+        quantity: parseInt(currentPage.options.quantity) || 1,
+        image: product.mainImage || ''
+      }]
+    } catch (e) {
+      console.error('加载商品详情失败', e)
+      uni.showToast({ title: '加载商品失败', icon: 'none' })
+    }
   }
 }
 

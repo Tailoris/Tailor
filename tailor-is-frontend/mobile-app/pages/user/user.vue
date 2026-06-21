@@ -96,7 +96,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getUserInfo } from '@/api/auth'
 import { getOrders } from '@/api/order'

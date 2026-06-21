@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/component: service
     app.kubernetes.io/part-of: tailor-is
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: ai
@@ -23,6 +23,15 @@ spec:
         prometheus.io/path: "/actuator/prometheus"
         prometheus.io/port: "8106"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
       containers:
         - name: ai
           image: ${REGISTRY}/tailor-is-ai:${IMAGE_TAG:-latest}
@@ -130,6 +139,12 @@ spec:
             preStop:
               exec:
                 command: ["sh", "-c", "sleep 10"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
       terminationGracePeriodSeconds: 30
       restartPolicy: Always
       affinity:

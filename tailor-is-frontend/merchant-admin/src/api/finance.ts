@@ -25,7 +25,7 @@ interface CommissionInfo {
 }
 
 export const getSettlementInfo = (params: SettlementParams) => {
-  return request<any, PageResponse<SettlementRecord>>({
+  return request<Record<string, unknown>, PageResponse<SettlementRecord>>({
     url: '/finance/settlements',
     method: 'GET',
     params,
@@ -33,14 +33,14 @@ export const getSettlementInfo = (params: SettlementParams) => {
 }
 
 export const getBalance = () => {
-  return request<any, BalanceInfo>({
+  return request<Record<string, unknown>, BalanceInfo>({
     url: '/finance/balance',
     method: 'GET',
   })
 }
 
 export const withdraw = (data: WithdrawParams) => {
-  return request<any, { id: number }>({
+  return request<Record<string, unknown>, { id: number }>({
     url: '/finance/withdraw',
     method: 'POST',
     data,
@@ -48,7 +48,7 @@ export const withdraw = (data: WithdrawParams) => {
 }
 
 export const getWithdrawRecords = (params: SettlementParams) => {
-  return request<any, PageResponse<SettlementRecord>>({
+  return request<Record<string, unknown>, PageResponse<SettlementRecord>>({
     url: '/finance/withdraw-records',
     method: 'GET',
     params,
@@ -56,7 +56,7 @@ export const getWithdrawRecords = (params: SettlementParams) => {
 }
 
 export const getCommissionDetail = () => {
-  return request<any, CommissionInfo>({
+  return request<Record<string, unknown>, CommissionInfo>({
     url: '/finance/commission',
     method: 'GET',
   })

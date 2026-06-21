@@ -18,9 +18,13 @@ export const validate = {
     return /^\d{6}$/.test(value)
   },
 
-  /** 密码长度≥6位校验 */
+  /** 密码复杂度校验：长度≥8位，且至少包含大写字母、小写字母和数字 */
   isValidPwd(value: string): boolean {
-    return value.length >= 6
+    if (!value || value.length < 8) return false
+    const hasUpper = /[A-Z]/.test(value)
+    const hasLower = /[a-z]/.test(value)
+    const hasDigit = /\d/.test(value)
+    return hasUpper && hasLower && hasDigit
   },
 
   /** 两次密码一致性对比 */

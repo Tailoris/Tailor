@@ -22,7 +22,24 @@ const messages = {
       failed: '操作失败',
       confirmDelete: '确认删除？',
       yes: '是',
-      no: '否'
+      no: '否',
+      noData: '暂无数据'
+    },
+    nav: {
+      home: '首页',
+      products: '商品',
+      cart: '购物车',
+      orders: '订单',
+      settings: '设置',
+      login: '登录',
+      logout: '退出登录'
+    },
+    auth: {
+      username: '用户名',
+      password: '密码',
+      loginTitle: '登录',
+      forgotPassword: '忘记密码',
+      rememberMe: '记住我'
     },
     menu: {
       dashboard: '仪表盘',
@@ -77,7 +94,24 @@ const messages = {
       failed: 'Failed',
       confirmDelete: 'Confirm delete?',
       yes: 'Yes',
-      no: 'No'
+      no: 'No',
+      noData: 'No Data'
+    },
+    nav: {
+      home: 'Home',
+      products: 'Products',
+      cart: 'Cart',
+      orders: 'Orders',
+      settings: 'Settings',
+      login: 'Login',
+      logout: 'Logout'
+    },
+    auth: {
+      username: 'Username',
+      password: 'Password',
+      loginTitle: 'Login',
+      forgotPassword: 'Forgot Password',
+      rememberMe: 'Remember Me'
     },
     menu: {
       dashboard: 'Dashboard',

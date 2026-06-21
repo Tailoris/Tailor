@@ -139,7 +139,7 @@ async function handleDelete(id: number) {
   }
 }
 
-async function handleUpdateStatus(id: number, status: string) {
+async function handleUpdateStatus(id: number, status: number) {
   try {
     await updateStatus(id, status)
     ElMessage.success('状态更新成功')

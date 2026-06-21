@@ -85,7 +85,7 @@
       />
       <template #footer>
         <el-button @click="remarkDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmRemark">保存备注</el-button>
+        <el-button type="primary" @click="confirmRemark" :loading="remarkLoading">保存备注</el-button>
       </template>
     </el-dialog>
   </div>
@@ -94,7 +94,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { listOrders, shipOrder } from '@/api/order'
+import { listOrders, shipOrder, updateOrderRemark } from '@/api/order'
 import type { Order } from '@/types'
 import PageHeader from '@/components/PageHeader.vue'
 import OrderTable from '@/components/OrderTable.vue'
@@ -191,15 +191,33 @@ async function confirmShip() {
 
 const remarkDialogVisible = ref(false)
 const remarkContent = ref('')
+const remarkLoading = ref(false)
+const currentRemarkOrderNo = ref('')
 
 function handleRemark(order: Order) {
+  currentRemarkOrderNo.value = order.orderNo
   remarkContent.value = order.remark || ''
   remarkDialogVisible.value = true
 }
 
-function confirmRemark() {
-  ElMessage.success('备注保存成功')
-  remarkDialogVisible.value = false
+async function confirmRemark() {
+  if (!currentRemarkOrderNo.value) return
+  remarkLoading.value = true
+  try {
+    // FE-H-4: 接入真实API，替代假保存
+    await updateOrderRemark(currentRemarkOrderNo.value, remarkContent.value)
+    // 同步更新本地列表中的备注字段
+    const target = orders.value.find(o => o.orderNo === currentRemarkOrderNo.value)
+    if (target) {
+      target.remark = remarkContent.value
+    }
+    ElMessage.success('备注保存成功')
+    remarkDialogVisible.value = false
+  } catch {
+    // error handled by interceptor
+  } finally {
+    remarkLoading.value = false
+  }
 }
 
 onMounted(() => {

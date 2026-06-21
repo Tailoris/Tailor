@@ -1,10 +1,13 @@
+// 公共类型统一从 shared/types 引入，消除多处重复定义
+export type { ApiResponse, PageResponse } from '@shared/types'
+
 export interface Merchant {
   id: number
   name: string
   contactName: string
   contactPhone: string
   email: string
-  status: 'active' | 'inactive' | 'pending'
+  status: number
   createdAt: string
   updatedAt: string
 }
@@ -16,7 +19,7 @@ export interface Shop {
   description: string
   businessHours: string
   announcement: string
-  status: 'active' | 'inactive'
+  status: number
   merchantId: number
   createdAt: string
 }
@@ -28,7 +31,7 @@ export interface Product {
   type: 'physical' | 'virtual'
   description: string
   images: string[]
-  status: 'draft' | 'pending' | 'on_sale' | 'off_sale'
+  status: number
   shopId: number
   createdAt: string
   updatedAt: string
@@ -43,7 +46,7 @@ export interface ProductSku {
   originalPrice: number
   stock: number
   image: string
-  status: 'active' | 'inactive'
+  status: number
 }
 
 export interface Order {
@@ -53,7 +56,7 @@ export interface Order {
   shopName: string
   buyerName: string
   buyerPhone: string
-  status: 'pending' | 'paid' | 'shipped' | 'completed' | 'cancelled'
+  status: number
   totalAmount: number
   discountAmount: number
   payAmount: number
@@ -90,7 +93,7 @@ export interface AfterSaleTicket {
   description: string
   evidenceImages: string[]
   refundAmount: number
-  status: 'pending' | 'processing' | 'approved' | 'rejected' | 'completed'
+  status: number
   handlerRemark: string
   createdAt: string
   updatedAt: string
@@ -104,7 +107,7 @@ export interface Employee {
   role: 'admin' | 'operator' | 'viewer'
   shopId: number
   shopName: string
-  status: 'active' | 'inactive'
+  status: number
   createdAt: string
 }
 
@@ -115,7 +118,7 @@ export interface SettlementRecord {
   commissionRate: number
   commissionAmount: number
   netAmount: number
-  status: 'pending' | 'settled' | 'withdrawn'
+  status: number
   settledAt: string
   createdAt: string
 }
@@ -130,7 +133,7 @@ export interface Coupon {
   validTo: string
   totalQuantity: number
   usedQuantity: number
-  status: 'active' | 'inactive' | 'expired'
+  status: number
   shopId: number
   createdAt: string
 }
@@ -145,18 +148,4 @@ export interface DashboardStats {
   revenueTrend: { date: string; amount: number }[]
   recentOrders: Order[]
   recentAftersales: AfterSaleTicket[]
-}
-
-export interface PageResponse<T> {
-  records: T[]
-  total: number
-  pages: number
-  current: number
-  size: number
-}
-
-export interface ApiResponse<T> {
-  code: number
-  message: string
-  data?: T | null
 }

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tailoris.order.mapper.OrderInfoMapper">
+
+    <!-- ================================================================
+         OrderInfo + OrderItem + OrderLogistics 三表 JOIN resultMap
+         使用列别名前缀消歧 (oi_ / oit_ / ol_)，消除 N+1 嵌套查询
+         ================================================================ -->
+    <resultMap id="OrderDetailResultMap" type="com.tailoris.order.entity.OrderInfo">
+        <!-- OrderInfo 字段 (别名前缀 oi_) -->
+        <id column="oi_id" property="id"/>
+        <result column="oi_order_no" property="orderNo"/>
+        <result column="oi_parent_order_no" property="parentOrderNo"/>
+        <result column="oi_user_id" property="userId"/>
+        <result column="oi_shop_id" property="shopId"/>
+        <result column="oi_merchant_id" property="merchantId"/>
+        <result column="oi_product_type" property="productType"/>
+        <result column="oi_status" property="status"/>
+        <result column="oi_total_amount" property="totalAmount"/>
+        <result column="oi_discount_amount" property="discountAmount"/>
+        <result column="oi_coupon_amount" property="couponAmount"/>
+        <result column="oi_points_amount" property="pointsAmount"/>
+        <result column="oi_freight_amount" property="freightAmount"/>
+        <result column="oi_pay_amount" property="payAmount"/>
+        <result column="oi_pay_type" property="payType"/>
+        <result column="oi_pay_status" property="payStatus"/>
+        <result column="oi_pay_time" property="payTime"/>
+        <result column="oi_expire_time" property="expireTime"/>
+        <result column="oi_address_snapshot" property="addressSnapshot"/>
+        <result column="oi_remark" property="remark"/>
+        <result column="oi_seller_remark" property="sellerRemark"/>
+        <result column="oi_invoice_type" property="invoiceType"/>
+        <result column="oi_invoice_content" property="invoiceContent"/>
+        <result column="oi_coupon_id" property="couponId"/>
+        <result column="oi_points_used" property="pointsUsed"/>
+        <result column="oi_logistics_no" property="logisticsNo"/>
+        <result column="oi_ship_time" property="shipTime"/>
+        <result column="oi_cancel_reason" property="cancelReason"/>
+        <result column="oi_cancel_time" property="cancelTime"/>
+        <result column="oi_confirm_receive_time" property="confirmReceiveTime"/>
+        <result column="oi_create_time" property="createTime"/>
+        <result column="oi_update_time" property="updateTime"/>
+        <result column="oi_create_by" property="createBy"/>
+        <result column="oi_update_by" property="updateBy"/>
+        <result column="oi_deleted" property="deleted"/>
+
+        <!-- OrderItem 列表 (别名前缀 oit_) -->
+        <collection property="orderItems"
+                    ofType="com.tailoris.order.entity.OrderItem"
+                    notNullColumn="oit_id">
+            <id column="oit_id" property="id"/>
+            <result column="oit_order_id" property="orderId"/>
+            <result column="oit_order_no" property="orderNo"/>
+            <result column="oit_product_id" property="productId"/>
+            <result column="oit_sku_id" property="skuId"/>
+            <result column="oit_product_name" property="productName"/>
+            <result column="oit_product_image" property="productImage"/>
+            <result column="oit_sku_attributes" property="skuAttributes"/>
+            <result column="oit_sku_attribute_text" property="skuAttributeText"/>
+            <result column="oit_quantity" property="quantity"/>
+            <result column="oit_price" property="price"/>
+            <result column="oit_subtotal" property="subtotal"/>
+            <result column="oit_discount_amount" property="discountAmount"/>
+            <result column="oit_pay_amount" property="payAmount"/>
+            <result column="oit_is_commented" property="isCommented"/>
+            <result column="oit_after_sale_status" property="afterSaleStatus"/>
+            <result column="oit_create_time" property="createTime"/>
+            <result column="oit_update_time" property="updateTime"/>
+            <result column="oit_create_by" property="createBy"/>
+            <result column="oit_update_by" property="updateBy"/>
+            <result column="oit_deleted" property="deleted"/>
+        </collection>
+
+        <!-- OrderLogistics 一对一关联 (别名前缀 ol_) -->
+        <association property="logistics"
+                     javaType="com.tailoris.order.entity.OrderLogistics"
+                     notNullColumn="ol_id">
+            <id column="ol_id" property="id"/>
+            <result column="ol_order_id" property="orderId"/>
+            <result column="ol_order_no" property="orderNo"/>
+            <result column="ol_logistics_company" property="logisticsCompany"/>
+            <result column="ol_logistics_company_name" property="logisticsCompanyName"/>
+            <result column="ol_logistics_no" property="logisticsNo"/>
+            <result column="ol_status" property="status"/>
+            <result column="ol_shipped_at" property="shippedAt"/>
+            <result column="ol_delivered_at" property="deliveredAt"/>
+            <result column="ol_logistics_info" property="logisticsInfo"/>
+            <result column="ol_receiver_name" property="receiverName"/>
+            <result column="ol_receiver_phone" property="receiverPhone"/>
+            <result column="ol_receiver_address" property="receiverAddress"/>
+            <result column="ol_remark" property="remark"/>
+            <result column="ol_create_time" property="createTime"/>
+            <result column="ol_update_time" property="updateTime"/>
+            <result column="ol_create_by" property="createBy"/>
+            <result column="ol_update_by" property="updateBy"/>
+            <result column="ol_deleted" property="deleted"/>
+        </association>
+    </resultMap>
+
+    <!-- ================================================================
+         selectOrderDetailWithItems: 单次 JOIN 查询替代 N+1 嵌套查询
+         原实现：1 次 order_info + N 次 order_item + 1 次 order_logistics
+         现实现：1 次三表 LEFT JOIN
+         ================================================================ -->
+    <select id="selectOrderDetailWithItems" resultMap="OrderDetailResultMap">
+        SELECT
+            oi.id                  AS oi_id,
+            oi.order_no            AS oi_order_no,
+            oi.parent_order_no     AS oi_parent_order_no,
+            oi.user_id             AS oi_user_id,
+            oi.shop_id             AS oi_shop_id,
+            oi.merchant_id         AS oi_merchant_id,
+            oi.product_type        AS oi_product_type,
+            oi.status              AS oi_status,
+            oi.total_amount        AS oi_total_amount,
+            oi.discount_amount     AS oi_discount_amount,
+            oi.coupon_amount       AS oi_coupon_amount,
+            oi.points_amount       AS oi_points_amount,
+            oi.freight_amount      AS oi_freight_amount,
+            oi.pay_amount          AS oi_pay_amount,
+            oi.pay_type            AS oi_pay_type,
+            oi.pay_status          AS oi_pay_status,
+            oi.pay_time            AS oi_pay_time,
+            oi.expire_time         AS oi_expire_time,
+            oi.address_snapshot    AS oi_address_snapshot,
+            oi.remark              AS oi_remark,
+            oi.seller_remark       AS oi_seller_remark,
+            oi.invoice_type        AS oi_invoice_type,
+            oi.invoice_content     AS oi_invoice_content,
+            oi.coupon_id           AS oi_coupon_id,
+            oi.points_used         AS oi_points_used,
+            oi.logistics_no        AS oi_logistics_no,
+            oi.ship_time           AS oi_ship_time,
+            oi.cancel_reason       AS oi_cancel_reason,
+            oi.cancel_time         AS oi_cancel_time,
+            oi.confirm_receive_time AS oi_confirm_receive_time,
+            oi.created_at          AS oi_create_time,
+            oi.updated_at          AS oi_update_time,
+            oi.created_by          AS oi_create_by,
+            oi.updated_by          AS oi_update_by,
+            oi.deleted             AS oi_deleted,
+            oit.id                 AS oit_id,
+            oit.order_id           AS oit_order_id,
+            oit.order_no           AS oit_order_no,
+            oit.product_id         AS oit_product_id,
+            oit.sku_id             AS oit_sku_id,
+            oit.product_name       AS oit_product_name,
+            oit.product_image      AS oit_product_image,
+            oit.sku_attributes     AS oit_sku_attributes,
+            oit.sku_attribute_text AS oit_sku_attribute_text,
+            oit.quantity           AS oit_quantity,
+            oit.price              AS oit_price,
+            oit.subtotal           AS oit_subtotal,
+            oit.discount_amount    AS oit_discount_amount,
+            oit.pay_amount         AS oit_pay_amount,
+            oit.is_commented       AS oit_is_commented,
+            oit.after_sale_status  AS oit_after_sale_status,
+            oit.created_at         AS oit_create_time,
+            oit.updated_at         AS oit_update_time,
+            oit.created_by         AS oit_create_by,
+            oit.updated_by         AS oit_update_by,
+            oit.deleted            AS oit_deleted,
+            ol.id                  AS ol_id,
+            ol.order_id            AS ol_order_id,
+            ol.order_no            AS ol_order_no,
+            ol.logistics_company   AS ol_logistics_company,
+            ol.logistics_company_name AS ol_logistics_company_name,
+            ol.logistics_no        AS ol_logistics_no,
+            ol.status              AS ol_status,
+            ol.shipped_at          AS ol_shipped_at,
+            ol.delivered_at        AS ol_delivered_at,
+            ol.logistics_info      AS ol_logistics_info,
+            ol.receiver_name       AS ol_receiver_name,
+            ol.receiver_phone      AS ol_receiver_phone,
+            ol.receiver_address    AS ol_receiver_address,
+            ol.remark              AS ol_remark,
+            ol.created_at          AS ol_create_time,
+            ol.updated_at          AS ol_update_time,
+            ol.created_by          AS ol_create_by,
+            ol.updated_by          AS ol_update_by,
+            ol.deleted             AS ol_deleted
+        FROM order_info oi
+        LEFT JOIN order_item oit ON oi.id = oit.order_id AND oit.deleted = 0
+        LEFT JOIN order_logistics ol ON oi.id = ol.order_id AND ol.deleted = 0
+        WHERE oi.order_no = #{orderNo} AND oi.deleted = 0
+    </select>
+
+    <!-- ================================================================
+         selectOrderItemsByIds: 批量查询订单项（用于订单列表页批量填充）
+         避免 listOrders 后再逐条 N+1 查询 order_item
+         ================================================================ -->
+    <select id="selectOrderItemsByIds" resultType="com.tailoris.order.entity.OrderItem">
+        SELECT * FROM order_item
+        WHERE order_id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
+        AND deleted = 0
+    </select>
+
+    <!-- ================================================================
+         selectLogisticsByIds: 批量查询物流信息（用于订单列表页批量填充）
+         ================================================================ -->
+    <select id="selectLogisticsByIds" resultType="com.tailoris.order.entity.OrderLogistics">
+        SELECT * FROM order_logistics
+        WHERE order_id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
+        AND deleted = 0
+    </select>
+
+</mapper>

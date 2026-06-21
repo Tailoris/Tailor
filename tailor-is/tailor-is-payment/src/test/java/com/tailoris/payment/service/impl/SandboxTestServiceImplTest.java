@@ -44,7 +44,7 @@ class SandboxTestServiceImplTest {
     void testWechatPay_Success() {
         Map<String, Object> payResult = new HashMap<>();
         payResult.put("prepay_id", "wx_prepay_123");
-        when(wechatPayService.createOrder(anyString(), any(), anyString(), anyString(), anyString(), anyString()))
+        when(wechatPayService.createJsapiPayment(anyString(), any(), anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(payResult);
 
         Map<String, Object> result = sandboxTestService.testWechatPay(ORDER_NO, AMOUNT, null);
@@ -57,7 +57,7 @@ class SandboxTestServiceImplTest {
     @Test
     @DisplayName("微信支付沙箱测试 - 失败")
     void testWechatPay_Failure() {
-        when(wechatPayService.createOrder(anyString(), any(), anyString(), anyString(), anyString(), anyString()))
+        when(wechatPayService.createJsapiPayment(anyString(), any(), anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("网络异常"));
 
         Map<String, Object> result = sandboxTestService.testWechatPay(ORDER_NO, AMOUNT, null);
@@ -135,7 +135,7 @@ class SandboxTestServiceImplTest {
     void testWechatRefund_Success() {
         Map<String, Object> refundResult = new HashMap<>();
         refundResult.put("refund_id", "wx_refund_123");
-        when(wechatPayService.refund(anyString(), anyString(), any(), any())).thenReturn(refundResult);
+        when(wechatPayService.createRefund(anyString(), anyString(), any(), any(), any())).thenReturn(refundResult);
 
         Map<String, Object> result = sandboxTestService.testWechatRefund(ORDER_NO, AMOUNT);
 

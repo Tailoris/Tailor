@@ -24,8 +24,8 @@
         <el-table-column prop="shopName" label="所属店铺" width="140" />
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">
-              {{ row.status === 'active' ? '在职' : '离职' }}
+            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+              {{ row.status === 1 ? '在职' : '离职' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -148,7 +148,7 @@ async function handleAdd() {
     const shopId = userStore.currentShopId || 1
     await addEmployee(shopId, {
       userId: Number(addForm.userId),
-      role: addForm.role as any,
+      role: addForm.role as 'admin' | 'operator' | 'viewer',
     })
     ElMessage.success('添加成功')
     addDialogVisible.value = false

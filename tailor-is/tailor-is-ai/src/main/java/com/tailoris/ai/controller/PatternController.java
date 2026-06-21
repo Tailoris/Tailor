@@ -11,6 +11,8 @@ import com.tailoris.ai.dto.PatternIterationRequest;
 import com.tailoris.ai.entity.PatternIteration;
 import com.tailoris.ai.entity.PatternRecord;
 import com.tailoris.ai.entity.PatternVersion;
+import com.tailoris.ai.model.PatternRequest;
+import com.tailoris.ai.service.AiModelService;
 import com.tailoris.ai.service.PatternService;
 import com.tailoris.ai.service.impl.PatternGenerateServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,7 +22,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @SaCheckLogin
 @Tag(name = "版型管理", description = "版型生成、检查、迭代、版本管理、导出等接口")
@@ -31,6 +35,7 @@ public class PatternController {
 
     private final PatternService patternService;
     private final PatternGenerateServiceImpl patternGenerateService;
+    private final AiModelService aiModelService;
 
     @Operation(summary = "生成版型", description = "基于体型数据和参数生成服装版型")
     @PostMapping("/generate")
@@ -50,7 +55,9 @@ public class PatternController {
             throw new BusinessException("用户未登录");
         }
         Long userId = StpUtil.getLoginIdAsLong();
-        String result = patternService.checkPattern(userId, request);
+        PatternRecord record = patternService.getPatternDetail(userId, request.getPatternId());
+        String result = aiModelService.checkStructure(
+                record.getPatternData() != null ? record.getPatternData().getBytes() : new byte[0]);
         return Result.success(result);
     }
 
@@ -68,27 +75,42 @@ public class PatternController {
     @Operation(summary = "保存版本", description = "为版型创建新的版本快照")
     @PostMapping("/version/save")
     public Result<PatternVersion> saveVersion(@RequestParam Long patternId, @RequestParam String versionName, @RequestParam(required = false) String changeDescription) {
-        PatternVersion version = patternService.saveVersion(patternId, versionName, changeDescription);
+        if (!StpUtil.isLogin()) {
+            throw new BusinessException("用户未登录");
+        }
+        Long userId = StpUtil.getLoginIdAsLong();
+        PatternVersion version = patternService.saveVersion(userId, patternId, versionName, changeDescription);
         return Result.success(version);
     }
 
     @Operation(summary = "查询版本列表", description = "查询指定版型的所有版本")
     @GetMapping("/versions")
     public Result<List<PatternVersion>> listVersions(@RequestParam Long patternId) {
-        return Result.success(patternService.listVersions(patternId));
+        if (!StpUtil.isLogin()) {
+            throw new BusinessException("用户未登录");
+        }
+        Long userId = StpUtil.getLoginIdAsLong();
+        return Result.success(patternService.listVersions(userId, patternId));
     }
 
     @Operation(summary = "导出版型", description = "将版型导出为指定格式(SVG/PDF/DXF)")
     @GetMapping("/export")
     public Result<String> exportPattern(@RequestParam Long patternId, @RequestParam(required = false, defaultValue = "SVG") String format) {
-        String url = patternService.exportPattern(patternId, format);
+        if (!StpUtil.isLogin()) {
+            throw new BusinessException("用户未登录");
+        }
+        String url = aiModelService.exportPattern(patternId, format);
         return Result.success(url);
     }
 
     @Operation(summary = "查询版型详情", description = "根据ID查询版型详情")
     @GetMapping("/detail")
     public Result<PatternRecord> getPatternDetail(@RequestParam Long patternId) {
-        return Result.success(patternService.getPatternDetail(patternId));
+        if (!StpUtil.isLogin()) {
+            throw new BusinessException("用户未登录");
+        }
+        Long userId = StpUtil.getLoginIdAsLong();
+        return Result.success(patternService.getPatternDetail(userId, patternId));
     }
 
     @Operation(summary = "查询我的版型列表", description = "获取当前用户的所有版型")
@@ -101,10 +123,23 @@ public class PatternController {
         return Result.success(patternService.listUserPatterns(userId));
     }
 
-    @Operation(summary = "AI生成SVG纸样(MVP)", description = "基于参数生成SVG纸样预览，无需登录")
+    @Operation(summary = "AI生成SVG纸样", description = "基于参数调用AI模型生成SVG纸样预览")
     @PostMapping("/generate-svg")
     public Result<PatternGenerateResponse> generateSvgPattern(@Valid @RequestBody PatternGenerateRequest request) {
-        PatternGenerateResponse response = patternGenerateService.generatePattern(request);
+        Map<String, Double> measurements = new LinkedHashMap<>();
+        if (request.getWidth() != null) measurements.put("width", request.getWidth().doubleValue());
+        if (request.getHeight() != null) measurements.put("height", request.getHeight().doubleValue());
+        if (request.getShoulderWidth() != null) measurements.put("shoulder_width", request.getShoulderWidth().doubleValue());
+        if (request.getSleeveLength() != null) measurements.put("sleeve_length", request.getSleeveLength().doubleValue());
+
+        PatternRequest aiRequest = PatternRequest.builder()
+                .garmentType(request.getGarmentType())
+                .measurements(measurements)
+                .stylePreference(request.getPatternName())
+                .constraints(request.getParameters())
+                .build();
+
+        PatternGenerateResponse response = aiModelService.generatePattern(aiRequest);
         return Result.success(response);
     }
 

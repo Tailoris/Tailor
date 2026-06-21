@@ -43,6 +43,13 @@ import static org.mockito.Mockito.when;
  *   <li>B-C08: 商品创建并发控制（分布式锁+业务唯一性校验）</li>
  * </ul>
  *
+ * <p>TODO 待补充测试场景：</p>
+ * <ul>
+ *   <li>T-M03: 商品更新/删除测试</li>
+ *   <li>T-M03: 商品详情缓存读写测试</li>
+ *   <li>T-M03: 多商户商品隔离测试</li>
+ * </ul>
+ *
  * @author Tailor IS Team
  */
 @ExtendWith(MockitoExtension.class)

@@ -1,0 +1,21 @@
+# ==============================================================================
+# Tailor IS - Kubernetes 命名空间
+# ==============================================================================
+# 生产环境命名空间: tailor-is-prod
+# 所有 K8s 资源均在此命名空间下管理
+# ==============================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tailor-is-prod
+  labels:
+    name: tailor-is-prod
+    environment: production
+    app: tailor-is
+    managed-by: kubectl
+    tier: production
+  annotations:
+    description: "Tailor IS 生产环境命名空间 - 服装定制智能平台"
+    team: "tailor-is-platform"
+    contact: "devops@tailoris.com"

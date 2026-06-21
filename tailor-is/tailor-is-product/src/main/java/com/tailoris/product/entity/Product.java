@@ -13,6 +13,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 商品实体类，对应 product 表。
+ *
+ * <p>存储商品基本信息、规格、营销数据、审核信息等</p>
+ *
+ * @author TailorIS Team
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "product", autoResultMap = true)

@@ -81,7 +81,7 @@ knife4j:
     language: zh_cn
 logging:
   level:
-    com.tailoris.pattern: debug
+    com.tailoris.pattern: info
 
 ---
 spring.config.activate.on-profile: prod

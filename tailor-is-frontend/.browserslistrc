@@ -4,3 +4,9 @@ last 2 versions
 not dead
 not IE 11
 not op_mini all
+iOS >= 13
+Android >= 8
+Chrome >= 90
+Firefox >= 90
+Safari >= 14
+Edge >= 90

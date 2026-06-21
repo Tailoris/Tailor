@@ -76,8 +76,10 @@ public class CommunityCommentServiceImpl implements CommunityCommentService {
         }
 
         communityCommentMapper.insert(comment);
-        post.setCommentCount((post.getCommentCount() == null ? 0 : post.getCommentCount()) + 1);
-        communityPostMapper.updateById(post);
+        // BE-M-27: 使用 SQL 原子更新帖子评论数，避免先查后改的竞态条件
+        communityPostMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<CommunityPost>()
+                .eq(CommunityPost::getId, request.getPostId())
+                .setSql("comment_count = COALESCE(comment_count, 0) + 1"));
         log.info("创建评论: user={}, post={}, parent={}", userId, request.getPostId(), comment.getParentId());
         return comment;
     }

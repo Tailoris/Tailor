@@ -27,7 +27,7 @@
         <view class="order-footer">
           <text class="total">共{{ order.totalCount }}件商品 合计: ¥{{ order.totalAmount }}</text>
           <view class="actions" v-if="order.status === 0">
-            <button class="btn btn-cancel" @click.stop="cancelOrder(order.id)">取消订单</button>
+            <button class="btn btn-cancel" @click.stop="handleCancelOrder(order.id)">取消订单</button>
             <button class="btn btn-pay" @click.stop="payOrder(order.id)">去支付</button>
           </view>
           <view class="actions" v-else-if="order.status === 2">
@@ -48,9 +48,9 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getOrders, cancelOrder, confirmReceive, payOrder as payOrderApi } from '@/api/order'
+import { getOrders, cancelOrder as apiCancelOrder, confirmReceive, payOrder as payOrderApi } from '@/api/order'
 
 const statusTabs = [
   { label: '全部', value: '' },
@@ -111,14 +111,14 @@ function goDetail(id) {
   uni.navigateTo({ url: `/pages/order/detail?id=${id}` })
 }
 
-async function cancelOrder(id) {
+async function handleCancelOrder(id) {
   uni.showModal({
     title: '确认取消',
     content: '确定要取消该订单吗?',
     success: async (res) => {
       if (res.confirm) {
         try {
-          await cancelOrder(id)
+          await apiCancelOrder(id)
           uni.showToast({ title: '订单已取消', icon: 'success' })
           loadOrders()
         } catch (e) {

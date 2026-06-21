@@ -1,0 +1,287 @@
+// ==============================================================================
+// Tailor IS - PC 端统一响应式断点系统
+// UX-P2-02: 大屏响应式设计补充
+// ==============================================================================
+//
+// 断点定义 (遵循移动优先 Mobile-First 策略):
+//   xs:    0px      (手机竖屏)
+//   sm:    640px    (手机横屏 / 平板竖屏)
+//   md:    768px    (平板横屏)
+//   lg:    1024px   (笔记本)
+//   xl:    1280px   (标准桌面)
+//   xxl:   1536px   (大屏桌面)
+//   xxxl:  1920px   (4K / 超大屏)
+//
+// 容器最大宽度:
+//   --container-sm:   640px
+//   --container-md:   768px
+//   --container-lg:   1024px
+//   --container-xl:   1280px
+//   --container-xxl:  1536px
+//   --container-xxxl: 1920px
+// ==============================================================================
+
+// ==================== 断点变量 ====================
+
+$breakpoint-xs: 0px;
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-xxl: 1536px;
+$breakpoint-xxxl: 1920px;
+
+// 容器最大宽度变量
+$container-xs: 100%;
+$container-sm: 640px;
+$container-md: 768px;
+$container-lg: 1024px;
+$container-xl: 1280px;
+$container-xxl: 1536px;
+$container-xxxl: 1920px;
+
+// ==================== 向上断点 (min-width) ====================
+// 移动优先：从指定断点开始应用样式
+
+/// 适用于 xs 及以上 (所有设备)
+@mixin xs-up {
+  @content;
+}
+
+/// 适用于 sm 及以上 (≥ 640px)
+@mixin sm-up {
+  @media (min-width: $breakpoint-sm) {
+    @content;
+  }
+}
+
+/// 适用于 md 及以上 (≥ 768px)
+@mixin md-up {
+  @media (min-width: $breakpoint-md) {
+    @content;
+  }
+}
+
+/// 适用于 lg 及以上 (≥ 1024px)
+@mixin lg-up {
+  @media (min-width: $breakpoint-lg) {
+    @content;
+  }
+}
+
+/// 适用于 xl 及以上 (≥ 1280px)
+@mixin xl-up {
+  @media (min-width: $breakpoint-xl) {
+    @content;
+  }
+}
+
+/// 适用于 xxl 及以上 (≥ 1536px) - 大屏桌面
+@mixin xxl-up {
+  @media (min-width: $breakpoint-xxl) {
+    @content;
+  }
+}
+
+/// 适用于 xxxl 及以上 (≥ 1920px) - 4K 超大屏
+@mixin xxxl-up {
+  @media (min-width: $breakpoint-xxxl) {
+    @content;
+  }
+}
+
+// ==================== 向下断点 (max-width) ====================
+
+/// 适用于 xs 及以下 (≤ 639px)
+@mixin xs-down {
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    @content;
+  }
+}
+
+/// 适用于 sm 及以下 (≤ 767px)
+@mixin sm-down {
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    @content;
+  }
+}
+
+/// 适用于 md 及以下 (≤ 1023px)
+@mixin md-down {
+  @media (max-width: #{$breakpoint-lg - 1px}) {
+    @content;
+  }
+}
+
+/// 适用于 lg 及以下 (≤ 1279px)
+@mixin lg-down {
+  @media (max-width: #{$breakpoint-xl - 1px}) {
+    @content;
+  }
+}
+
+// ==================== 区间断点 (min-width + max-width) ====================
+
+/// 仅适用于 xs (0px - 639px)
+@mixin xs-only {
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    @content;
+  }
+}
+
+/// 仅适用于 sm (640px - 767px)
+@mixin sm-only {
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-md - 1px}) {
+    @content;
+  }
+}
+
+/// 仅适用于 md (768px - 1023px)
+@mixin md-only {
+  @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-lg - 1px}) {
+    @content;
+  }
+}
+
+/// 仅适用于 lg (1024px - 1279px)
+@mixin lg-only {
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    @content;
+  }
+}
+
+/// 仅适用于 xl (1280px - 1535px)
+@mixin xl-only {
+  @media (min-width: $breakpoint-xl) and (max-width: #{$breakpoint-xxl - 1px}) {
+    @content;
+  }
+}
+
+/// 仅适用于 xxl (1536px - 1919px)
+@mixin xxl-only {
+  @media (min-width: $breakpoint-xxl) and (max-width: #{$breakpoint-xxxl - 1px}) {
+    @content;
+  }
+}
+
+/// 仅适用于 xxxl (≥ 1920px)
+@mixin xxxl-only {
+  @media (min-width: $breakpoint-xxxl) {
+    @content;
+  }
+}
+
+// ==================== 便捷别名 Mixin ====================
+
+/// 移动端 (≤ 767px)
+@mixin mobile {
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    @content;
+  }
+}
+
+/// 平板端 (768px - 1023px)
+@mixin tablet {
+  @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-lg - 1px}) {
+    @content;
+  }
+}
+
+/// 桌面端 (≥ 1024px)
+@mixin desktop {
+  @media (min-width: $breakpoint-lg) {
+    @content;
+  }
+}
+
+/// 大屏端 (≥ 1536px)
+@mixin large-screen {
+  @media (min-width: $breakpoint-xxl) {
+    @content;
+  }
+}
+
+/// 超大屏端 (≥ 1920px)
+@mixin ultra-wide {
+  @media (min-width: $breakpoint-xxxl) {
+    @content;
+  }
+}
+
+// ==================== 容器 Mixin ====================
+
+/// 响应式容器
+/// 根据断点自动调整容器最大宽度
+@mixin container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+
+  @include sm-up {
+    padding: 0 20px;
+    max-width: $container-xl;
+  }
+
+  @include xxl-up {
+    max-width: $container-xxl;
+  }
+
+  @include xxxl-up {
+    max-width: $container-xxxl;
+  }
+}
+
+// ==================== 辅助 Mixin ====================
+
+/// 仅在支持 hover 的设备上应用
+@mixin hover {
+  @media (hover: hover) and (pointer: fine) {
+    @content;
+  }
+}
+
+/// 暗色模式
+@mixin dark {
+  @media (prefers-color-scheme: dark) {
+    @content;
+  }
+}
+
+/// 减少动画偏好
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+/// 高对比度偏好
+@mixin high-contrast {
+  @media (prefers-contrast: high) {
+    @content;
+  }
+}
+
+/// 打印样式
+@mixin print {
+  @media print {
+    @content;
+  }
+}
+
+// ==================== 导出 CSS 变量 ====================
+
+:root {
+  --breakpoint-sm: #{$breakpoint-sm};
+  --breakpoint-md: #{$breakpoint-md};
+  --breakpoint-lg: #{$breakpoint-lg};
+  --breakpoint-xl: #{$breakpoint-xl};
+  --breakpoint-xxl: #{$breakpoint-xxl};
+  --breakpoint-xxxl: #{$breakpoint-xxxl};
+
+  --container-sm: #{$container-sm};
+  --container-md: #{$container-md};
+  --container-lg: #{$container-lg};
+  --container-xl: #{$container-xl};
+  --container-xxl: #{$container-xxl};
+  --container-xxxl: #{$container-xxxl};
+}

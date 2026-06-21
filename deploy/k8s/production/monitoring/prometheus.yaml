@@ -1,0 +1,372 @@
+# ==============================================================================
+# Tailor IS - Prometheus Deployment + Service + ConfigMap
+# ==============================================================================
+# 使用 Prometheus Operator 风格配置
+# 如需使用 Prometheus Operator，可使用 ServiceMonitor 替代
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: prometheus
+    environment: production
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+  selector:
+    app: tailor-is
+    component: prometheus
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: prometheus
+    environment: production
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: tailor-is-prod
+        environment: production
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+                - alertmanager:9093
+
+    rule_files:
+      - /etc/prometheus/alert-rules.yml
+
+    scrape_configs:
+      # Kubernetes 服务发现
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+
+      # 核心网关
+      - job_name: core-gateway
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - core-gateway:8080
+            labels:
+              app: core-gateway
+
+      # 轻量网关
+      - job_name: lite-gateway
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - lite-gateway:8081
+            labels:
+              app: lite-gateway
+
+      # 用户服务
+      - job_name: user-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - user-service:8101
+            labels:
+              app: user-service
+
+      # 商品服务
+      - job_name: product-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - product-service:8102
+            labels:
+              app: product-service
+
+      # 订单服务
+      - job_name: order-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - order-service:8103
+            labels:
+              app: order-service
+
+      # 支付服务
+      - job_name: payment-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - payment-service:8104
+            labels:
+              app: payment-service
+
+      # 营销服务
+      - job_name: marketing-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - marketing-service:8105
+            labels:
+              app: marketing-service
+
+      # AI 服务
+      - job_name: ai-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - ai-service:8106
+            labels:
+              app: ai-service
+
+      # 版权服务
+      - job_name: copyright-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - copyright-service:8107
+            labels:
+              app: copyright-service
+
+      # 社区服务
+      - job_name: community-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - community-service:8108
+            labels:
+              app: community-service
+
+      # 供应链服务
+      - job_name: supply-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - supply-service:8109
+            labels:
+              app: supply-service
+
+      # 商户服务
+      - job_name: merchant-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - merchant-service:8110
+            labels:
+              app: merchant-service
+
+      # 消息服务
+      - job_name: message-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - message-service:8111
+            labels:
+              app: message-service
+
+      # IM 服务
+      - job_name: message-im-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - message-im-service:8114
+            labels:
+              app: message-im-service
+
+      # 学堂服务
+      - job_name: academy-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - academy-service:8112
+            labels:
+              app: academy-service
+
+      # 分析服务
+      - job_name: analytics-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - analytics-service:8113
+            labels:
+              app: analytics-service
+
+      # 纸样服务
+      - job_name: pattern-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - pattern-service:8115
+            labels:
+              app: pattern-service
+
+      # 管理服务
+      - job_name: admin-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - admin-service:8100
+            labels:
+              app: admin-service
+
+      # API 服务
+      - job_name: api-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - api-service:8116
+            labels:
+              app: api-service
+
+  alert-rules.yml: |
+    groups:
+      - name: tailor-is-alerts
+        rules:
+          - alert: ServiceDown
+            expr: up == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Service {{ $labels.app }} is down"
+              description: "{{ $labels.app }} has been down for more than 2 minutes."
+
+          - alert: HighCPUUsage
+            expr: rate(process_cpu_usage[5m]) * 100 > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage on {{ $labels.app }}"
+              description: "{{ $labels.app }} CPU usage is above 80% for 5 minutes."
+
+          - alert: HighMemoryUsage
+            expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} * 100 > 85
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High JVM heap memory usage on {{ $labels.app }}"
+              description: "{{ $labels.app }} heap memory usage is above 85% for 5 minutes."
+
+          - alert: HighErrorRate
+            expr: rate(http_server_requests_total{status=~"5.."}[5m]) / rate(http_server_requests_total[5m]) * 100 > 5
+            for: 3m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High error rate on {{ $labels.app }}"
+              description: "{{ $labels.app }} 5xx error rate is above 5% for 3 minutes."
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: prometheus
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: prometheus
+  template:
+    metadata:
+      labels:
+        app: tailor-is
+        component: prometheus
+        environment: production
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.54.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=15d
+            - --web.enable-lifecycle
+            - --web.console.libraries=/usr/share/prometheus/console_libraries
+            - --web.console.templates=/usr/share/prometheus/consoles
+          ports:
+            - name: http
+              containerPort: 9090
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2048Mi"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+              readOnly: true
+            - name: data
+              mountPath: /prometheus
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: prometheus-data-pvc

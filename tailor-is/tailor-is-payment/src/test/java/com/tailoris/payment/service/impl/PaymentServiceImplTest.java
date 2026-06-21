@@ -28,6 +28,20 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * PaymentServiceImpl 单元测试.
+ *
+ * <p>TODO 待补充测试场景：</p>
+ * <ul>
+ *   <li>T-M05: 支付宝/微信支付回调处理测试</li>
+ *   <li>T-M05: 退款流程完整测试（含部分退款）</li>
+ *   <li>T-M05: 支付超时关单测试</li>
+ *   <li>T-M05: 账户余额变动/冻结测试</li>
+ *   <li>T-M05: 对账差异处理测试</li>
+ *   <li>T-M05: 分布式事务一致性测试</li>
+ * </ul>
+ */
+
 @DisplayName("PaymentServiceImpl 单元测试")
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)

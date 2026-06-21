@@ -90,7 +90,7 @@ knife4j:
 
 logging:
   level:
-    com.tailoris.admin: debug
+    com.tailoris.admin: info
 
 ---
 spring.config.activate.on-profile: prod

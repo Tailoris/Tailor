@@ -14,6 +14,7 @@ alerting:
 rule_files:
   - "/etc/prometheus/rules/core-alerts.yml"
   - "/etc/prometheus/rules/lite-alerts.yml"
+  - "/etc/prometheus/rules/alert_rules.yml"
 
 # 核心服务 Scrape 配置 (高频采集, 更多指标)
 scrape_configs:
@@ -28,7 +29,7 @@ scrape_configs:
       - role: pod
         namespaces:
           names:
-            - tailor-is
+            - tailor-is-prod
         selectors:
           - role: pod
             label: "app.kubernetes.io/name=tailor-is-order"
@@ -54,7 +55,7 @@ scrape_configs:
       - role: pod
         namespaces:
           names:
-            - tailor-is
+            - tailor-is-prod
         selectors:
           - role: pod
             label: "app.kubernetes.io/name=tailor-is-payment"
@@ -80,7 +81,7 @@ scrape_configs:
       - role: pod
         namespaces:
           names:
-            - tailor-is
+            - tailor-is-prod
         selectors:
           - role: pod
             label: "app.kubernetes.io/name=tailor-is-ai"
@@ -106,7 +107,7 @@ scrape_configs:
       - role: pod
         namespaces:
           names:
-            - tailor-is
+            - tailor-is-prod
         selectors:
           - role: pod
             label: "app.kubernetes.io/name=tailor-is-copyright"
@@ -132,7 +133,7 @@ scrape_configs:
       - role: pod
         namespaces:
           names:
-            - tailor-is
+            - tailor-is-prod
         selectors:
           - role: pod
             label: "app.kubernetes.io/name=tailor-is-merchant"
@@ -158,7 +159,7 @@ scrape_configs:
       - role: pod
         namespaces:
           names:
-            - tailor-is
+            - tailor-is-prod
         selectors:
           - role: pod
             label: "app.kubernetes.io/name=tailor-is-product"
@@ -185,7 +186,7 @@ scrape_configs:
       - role: pod
         namespaces:
           names:
-            - tailor-is
+            - tailor-is-prod
         selectors:
           - role: pod
             label: "app.kubernetes.io/name=tailor-is-community"
@@ -209,7 +210,7 @@ scrape_configs:
       - role: pod
         namespaces:
           names:
-            - tailor-is
+            - tailor-is-prod
         selectors:
           - role: pod
             label: "app.kubernetes.io/name=tailor-is-academy"
@@ -233,7 +234,7 @@ scrape_configs:
       - role: pod
         namespaces:
           names:
-            - tailor-is
+            - tailor-is-prod
         selectors:
           - role: pod
             label: "app.kubernetes.io/name=tailor-is-supply"
@@ -319,7 +320,7 @@ scrape_configs:
       - role: pod
         namespaces:
           names:
-            - tailor-is
+            - tailor-is-prod
         selectors:
           - role: pod
             label: "app.kubernetes.io/name=tailor-is-gateway"
@@ -335,3 +336,34 @@ scrape_configs:
     static_configs:
       - targets:
           - "localhost:9090"
+
+  # ==================== Docker Compose 环境应用监控 ====================
+  # Spring Boot 应用 Actuator Prometheus 端点采集 (非 K8s 环境)
+  # 使用 static_configs 手动配置各服务地址，适用于 Docker Compose 本地开发/测试
+  - job_name: "spring-boot-apps"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: "/actuator/prometheus"
+    honor_labels: true
+    static_configs:
+      - targets:
+          - "tailor-is-order:8081"
+          - "tailor-is-payment:8082"
+          - "tailor-is-ai:8083"
+          - "tailor-is-copyright:8084"
+          - "tailor-is-merchant:8085"
+          - "tailor-is-product:8086"
+        labels:
+          env: "docker-compose"
+          group: "core-services"
+      - targets:
+          - "tailor-is-community:8087"
+          - "tailor-is-academy:8088"
+          - "tailor-is-supply:8089"
+        labels:
+          env: "docker-compose"
+          group: "lite-services"
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_.*|jvm_.*|hikaricp_.*|process_.*|redis_.*|tomcat_.*|system_.*|up"
+        action: keep

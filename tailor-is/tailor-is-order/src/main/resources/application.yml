@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: tailor-is-order
+  # ============================================================
+  # Profile 激活配置（按需启用）
+  # ============================================================
+  # profiles:
+  #   include: tidb      # 启用 TiDB 数据源（需部署 TiDB 集群）
+  #   include: sharding  # 启用 ShardingSphere 分库分表（需先执行分片 DDL）
+  # ============================================================
   main:
     allow-bean-definition-overriding: true
   cloud:
@@ -124,7 +131,7 @@ tailoris:
 
 logging:
   level:
-    com.tailoris.order: debug
+    com.tailoris.order: info
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -163,6 +170,30 @@ knife4j:
 # Disable Seata distributed transaction (Seata server not deployed)
 seata:
   enabled: false
+
+# ============================================================
+# TiDB 数据源配置（配合 tidb profile 使用）
+# ============================================================
+# 激活方式: 启动时添加 --spring.profiles.include=tidb
+# 或在 application.yml 中取消 spring.profiles.include: tidb 的注释
+# ============================================================
+# tidb:
+#   enabled: true
+# spring:
+#   datasource:
+#     tidb:
+#       url: jdbc:mysql://${TIDB_HOST:localhost}:${TIDB_PORT:4000}/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048
+#       username: ${TIDB_USERNAME:root}
+#       password: ${TIDB_PASSWORD:}
+#       driver-class-name: com.mysql.cj.jdbc.Driver
+
+# ============================================================
+# ShardingSphere 分库分表配置（配合 sharding profile 使用）
+# ============================================================
+# 激活方式: 启动时添加 --spring.profiles.include=sharding
+# 或在 application.yml 中取消 spring.profiles.include: sharding 的注释
+# 前置条件: 先执行 db/sharding-schema.sql 创建分片表
+# ============================================================
 
 ---
 spring.config.activate.on-profile: prod

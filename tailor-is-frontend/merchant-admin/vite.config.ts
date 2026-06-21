@@ -80,6 +80,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 500,
     reportCompressedSize: true,
   },
+  // esbuild 配置：生产构建时移除 console 和 debugger 调用
+  esbuild: {
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+  },
   optimizeDeps: {
     include: ['vue', 'vue-router', 'pinia', 'element-plus', 'axios'],
   },

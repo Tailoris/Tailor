@@ -1,9 +1,12 @@
+// 响应式断点 - 修复 F-M06
+// 使用 Bootstrap 5 标准断点值
 $breakpoints: (
   'xs': 576px,
-  'sm': 768px,
-  'md': 992px,
-  'lg': 1200px,
-  'xl': 2560px
+  'sm': 576px,
+  'md': 768px,
+  'lg': 992px,
+  'xl': 1200px,
+  'xxl': 1400px
 );
 
 @mixin respond-to($breakpoint) {
@@ -18,7 +21,7 @@ $breakpoints: (
   } @else if $breakpoint == 'xl' {
     @media (min-width: 1200px) { @content; }
   } @else if $breakpoint == 'xxl' {
-    @media (min-width: 2560px) { @content; }
+    @media (min-width: 1400px) { @content; }
   }
 }
 

@@ -13,7 +13,7 @@ interface LoginResult {
 }
 
 export const adminLogin = (data: LoginParams) => {
-  return request<any, LoginResult>({
+  return request<Record<string, unknown>, LoginResult>({
     url: '/auth/login',
     method: 'POST',
     data,
@@ -21,7 +21,7 @@ export const adminLogin = (data: LoginParams) => {
 }
 
 export const getAdminInfo = () => {
-  return request<any, Merchant>({
+  return request<Record<string, unknown>, Merchant>({
     url: '/auth/info',
     method: 'GET',
   })
@@ -43,7 +43,7 @@ export interface RegisterByEmailParams {
 }
 
 export const registerByPhone = (data: RegisterByPhoneParams) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: '/auth/register/phone',
     method: 'POST',
     data,
@@ -51,7 +51,7 @@ export const registerByPhone = (data: RegisterByPhoneParams) => {
 }
 
 export const registerByEmail = (data: RegisterByEmailParams) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: '/auth/register/email',
     method: 'POST',
     data,
@@ -59,7 +59,7 @@ export const registerByEmail = (data: RegisterByEmailParams) => {
 }
 
 export const sendSmsCode = (phone: string) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: '/auth/sms-code',
     method: 'POST',
     data: { phone },
@@ -67,7 +67,7 @@ export const sendSmsCode = (phone: string) => {
 }
 
 export const sendEmailCode = (email: string) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: '/auth/email-code',
     method: 'POST',
     data: { email },
@@ -75,7 +75,7 @@ export const sendEmailCode = (email: string) => {
 }
 
 export const loginByCode = (data: { target: string; code: string; type: 'phone' | 'email' }) => {
-  return request<any, { token: string; userInfo: Merchant }>({
+  return request<Record<string, unknown>, { token: string; userInfo: Merchant }>({
     url: '/auth/login/code',
     method: 'POST',
     data,
@@ -83,7 +83,7 @@ export const loginByCode = (data: { target: string; code: string; type: 'phone' 
 }
 
 export const logout = () => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: '/auth/logout',
     method: 'POST',
   })
@@ -91,7 +91,7 @@ export const logout = () => {
 
 // 找回密码相关接口
 export const sendResetCode = (data: { target: string; type: 'phone' | 'email' }) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: '/auth/reset/code',
     method: 'POST',
     data,
@@ -99,7 +99,7 @@ export const sendResetCode = (data: { target: string; type: 'phone' | 'email' })
 }
 
 export const resetPassword = (data: { target: string; code: string; newPassword: string; type: 'phone' | 'email'; shopName: string }) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: '/auth/reset-password',
     method: 'POST',
     data,

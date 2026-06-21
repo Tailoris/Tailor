@@ -1,6 +1,7 @@
 package com.tailoris.community.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.tailoris.common.exception.BusinessException;
 import com.tailoris.common.util.SpringSnowflakeIdGenerator;
 import com.tailoris.community.entity.CommunityFavorite;
@@ -62,11 +63,10 @@ public class CommunityInteractionServiceImpl implements CommunityInteractionServ
 
         // 1=帖子 2=评论
         if (targetType != null && targetType == 1) {
-            CommunityPost post = communityPostMapper.selectById(targetId);
-            if (post != null) {
-                post.setLikeCount(post.getLikeCount() == null ? 1 : post.getLikeCount() + 1);
-                communityPostMapper.updateById(post);
-            }
+            // BE-M-27: 使用 SQL 原子更新点赞数，避免先查后改的竞态条件
+            communityPostMapper.update(null, new LambdaUpdateWrapper<CommunityPost>()
+                    .eq(CommunityPost::getId, targetId)
+                    .setSql("like_count = COALESCE(like_count, 0) + 1"));
         }
         stringRedisTemplate.opsForValue().set(
                 LIKE_KEY + userId + ":" + targetType + ":" + targetId, "1",
@@ -83,11 +83,11 @@ public class CommunityInteractionServiceImpl implements CommunityInteractionServ
         communityLikeMapper.delete(wrapper);
 
         if (targetType != null && targetType == 1) {
-            CommunityPost post = communityPostMapper.selectById(targetId);
-            if (post != null && post.getLikeCount() != null && post.getLikeCount() > 0) {
-                post.setLikeCount(post.getLikeCount() - 1);
-                communityPostMapper.updateById(post);
-            }
+            // BE-M-27: 使用 SQL 原子更新点赞数，避免先查后改的竞态条件
+            communityPostMapper.update(null, new LambdaUpdateWrapper<CommunityPost>()
+                    .eq(CommunityPost::getId, targetId)
+                    .gt(CommunityPost::getLikeCount, 0)
+                    .setSql("like_count = like_count - 1"));
         }
         stringRedisTemplate.delete(LIKE_KEY + userId + ":" + targetType + ":" + targetId);
     }
@@ -105,11 +105,10 @@ public class CommunityInteractionServiceImpl implements CommunityInteractionServ
         favorite.setFolderName("默认收藏");
         communityFavoriteMapper.insert(favorite);
 
-        CommunityPost post = communityPostMapper.selectById(postId);
-        if (post != null) {
-            post.setCollectCount(post.getCollectCount() == null ? 1 : post.getCollectCount() + 1);
-            communityPostMapper.updateById(post);
-        }
+        // BE-M-27: 使用 SQL 原子更新收藏数，避免先查后改的竞态条件
+        communityPostMapper.update(null, new LambdaUpdateWrapper<CommunityPost>()
+                .eq(CommunityPost::getId, postId)
+                .setSql("collect_count = COALESCE(collect_count, 0) + 1"));
         stringRedisTemplate.opsForValue().set(
                 FAVORITE_KEY + userId + ":" + postId, "1",
                 CACHE_TTL_DAYS, TimeUnit.DAYS);
@@ -123,11 +122,11 @@ public class CommunityInteractionServiceImpl implements CommunityInteractionServ
                 .eq(CommunityFavorite::getPostId, postId);
         communityFavoriteMapper.delete(wrapper);
 
-        CommunityPost post = communityPostMapper.selectById(postId);
-        if (post != null && post.getCollectCount() != null && post.getCollectCount() > 0) {
-            post.setCollectCount(post.getCollectCount() - 1);
-            communityPostMapper.updateById(post);
-        }
+        // BE-M-27: 使用 SQL 原子更新收藏数，避免先查后改的竞态条件
+        communityPostMapper.update(null, new LambdaUpdateWrapper<CommunityPost>()
+                .eq(CommunityPost::getId, postId)
+                .gt(CommunityPost::getCollectCount, 0)
+                .setSql("collect_count = collect_count - 1"));
         stringRedisTemplate.delete(FAVORITE_KEY + userId + ":" + postId);
     }
 
@@ -253,8 +252,12 @@ public class CommunityInteractionServiceImpl implements CommunityInteractionServ
             throw new BusinessException("帖子不存在");
         }
 
-        post.setShareCount(post.getShareCount() == null ? 1 : post.getShareCount() + 1);
-        communityPostMapper.updateById(post);
+        // BE-M-27: 使用 SQL 原子更新分享数，避免先查后改的竞态条件
+        int updated = communityPostMapper.update(null, new LambdaUpdateWrapper<CommunityPost>()
+                .eq(CommunityPost::getId, postId)
+                .setSql("share_count = COALESCE(share_count, 0) + 1"));
+        // 计算最新分享数（原值 + 1），用于返回结果与缓存
+        long newShareCount = (post.getShareCount() == null ? 0 : post.getShareCount()) + (updated > 0 ? 1 : 0);
 
         String shareUrl = buildShareUrl(postId);
         String shortUrl = generateShortUrl(shareUrl);
@@ -264,10 +267,10 @@ public class CommunityInteractionServiceImpl implements CommunityInteractionServ
         result.put("shortUrl", shortUrl);
         result.put("shareType", shareType);
         result.put("postId", postId);
-        result.put("shareCount", post.getShareCount());
+        result.put("shareCount", newShareCount);
 
         stringRedisTemplate.opsForValue().set(
-                SHARE_KEY + postId, String.valueOf(post.getShareCount()),
+                SHARE_KEY + postId, String.valueOf(newShareCount),
                 CACHE_TTL_DAYS, TimeUnit.DAYS);
 
         log.info("用户 {} 分享帖子 {}, 分享类型: {}", userId, postId, shareType);

@@ -2,6 +2,7 @@ package com.tailoris.copyright.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tailoris.common.crypto.AesGcmCrypto;
 import com.tailoris.common.dto.PageRequest;
 import com.tailoris.common.dto.PageResponse;
 import com.tailoris.common.exception.BusinessException;
@@ -24,6 +25,8 @@ import com.tailoris.copyright.mapper.CopyrightRecordMapper;
 import com.tailoris.copyright.service.CopyrightService;
 import com.tailoris.copyright.service.SimilarityCheckService;
 import com.tailoris.copyright.service.SimilarityCheckService.SimilarityResult;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,6 +68,8 @@ public class CopyrightServiceImpl implements CopyrightService {
     private final CertificatePdfGenerator certificateGenerator;
     private final SimilarityCheckService similarityCheckService;
     private final StringRedisTemplate stringRedisTemplate;
+    private final AesGcmCrypto aesGcmCrypto;
+    private final ObjectMapper objectMapper;
 
     @Value("${copyright.aes.key:t8V4kL0mN2pR6sQ9wX3yZ7aB1cD5eF0hI4jK8lM2nO6pQ0rS4tU8vW0xY2zA4bC}")
     private String aesKey;
@@ -96,9 +101,8 @@ public class CopyrightServiceImpl implements CopyrightService {
                 request.getFileUrl(), request.getFileHash(), request.getFileType());
         // 高风险拦截
         if (simResult.getScore() >= 90) {
-            // 记录到黑名单或要求人工审核
-            log.warn("高风险作品拦截: userId={}, fileHash={}, score={}",
-                    userId, request.getFileHash(), simResult.getScore());
+            log.warn("作品相似度过高，相似度: {}，已拦截上链，需人工审核", simResult.getScore());
+            throw new RuntimeException("作品相似度过高（" + simResult.getScore() + "%），已拦截上链存证，请提交人工审核");
         }
 
         // 4. 构建版权记录（含完整证据链）
@@ -257,7 +261,10 @@ public class CopyrightServiceImpl implements CopyrightService {
     public String verifyCopyright(Long copyrightId) {
         CopyrightRecord record = copyrightRecordMapper.selectById(copyrightId);
         if (record == null) {
-            return "{\"valid\":false,\"reason\":\"记录不存在\"}";
+            ObjectNode node = objectMapper.createObjectNode();
+            node.put("valid", false);
+            node.put("reason", "记录不存在");
+            return node.toString();
         }
         // 链上二次验证
         boolean chainValid = false;
@@ -267,13 +274,15 @@ public class CopyrightServiceImpl implements CopyrightService {
         } catch (Exception e) {
             log.warn("链上验证异常: {}", e.getMessage());
         }
-        return "{\"valid\":" + (record.getStatus() != null && record.getStatus() == 1) +
-                ",\"chainValid\":" + chainValid +
-                ",\"fileHash\":\"" + record.getFileHash() +
-                "\",\"registeredAt\":\"" + record.getRegisteredAt() +
-                "\",\"blockchainTxHash\":\"" + record.getBlockchainTxHash() +
-                "\",\"blockchainCertNo\":\"" + record.getBlockchainCertNo() +
-                "\",\"platform\":\"" + record.getBlockchainPlatform() + "\"}";
+        ObjectNode node = objectMapper.createObjectNode();
+        node.put("valid", record.getStatus() != null && record.getStatus() == 1);
+        node.put("chainValid", chainValid);
+        node.put("fileHash", record.getFileHash());
+        node.put("registeredAt", record.getRegisteredAt() == null ? null : record.getRegisteredAt().toString());
+        node.put("blockchainTxHash", record.getBlockchainTxHash());
+        node.put("blockchainCertNo", record.getBlockchainCertNo());
+        node.put("platform", record.getBlockchainPlatform());
+        return node.toString();
     }
 
     @Override
@@ -319,7 +328,8 @@ public class CopyrightServiceImpl implements CopyrightService {
             stringRedisTemplate.opsForValue().set(
                     COPYRIGHT_CACHE_KEY + copyrightId, record.getFileHash(),
                     CACHE_TTL_MIN, TimeUnit.MINUTES);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            log.warn("缓存操作失败", e);
         }
         return record;
     }
@@ -378,15 +388,10 @@ public class CopyrightServiceImpl implements CopyrightService {
     private String encrypt(String data) {
         if (data == null) return null;
         try {
-            javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES");
-            javax.crypto.spec.SecretKeySpec keySpec = new javax.crypto.spec.SecretKeySpec(
-                    aesKey.substring(0, 16).getBytes(StandardCharsets.UTF_8), "AES");
-            cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, keySpec);
-            byte[] encrypted = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(encrypted);
+            return aesGcmCrypto.encrypt(data);
         } catch (Exception e) {
-            log.error("AES加密失败", e);
-            return data;
+            log.error("加密失败", e);
+            throw new RuntimeException("敏感数据加密失败", e);
         }
     }
 
@@ -394,30 +399,25 @@ public class CopyrightServiceImpl implements CopyrightService {
      * 构建完整证据链 JSON
      */
     private String buildEvidenceChain(CopyrightRegisterRequest request, SimilarityResult sim) {
-        StringBuilder sb = new StringBuilder("{");
-        sb.append("\"authorName\":\"").append(safeJson(request.getAuthorRealName())).append("\",");
-        sb.append("\"authorIdCard\":\"").append("***ENCRYPTED***").append("\",");
-        sb.append("\"workName\":\"").append(safeJson(request.getWorkName())).append("\",");
-        sb.append("\"fileHash\":\"").append(request.getFileHash()).append("\",");
-        sb.append("\"fileSize\":").append(request.getFileSize() == null ? 0 : request.getFileSize()).append(",");
-        sb.append("\"fileType\":\"").append(safeJson(request.getFileType())).append("\",");
+        ObjectNode node = objectMapper.createObjectNode();
+        node.put("authorName", request.getAuthorRealName());
+        node.put("authorIdCard", "***ENCRYPTED***");
+        node.put("workName", request.getWorkName());
+        node.put("fileHash", request.getFileHash());
+        node.put("fileSize", request.getFileSize() == null ? 0 : request.getFileSize());
+        node.put("fileType", request.getFileType());
         if (request.getCreationStartTime() != null) {
-            sb.append("\"creationStart\":\"").append(request.getCreationStartTime()).append("\",");
+            node.put("creationStart", request.getCreationStartTime().toString());
         }
         if (request.getCreationEndTime() != null) {
-            sb.append("\"creationEnd\":\"").append(request.getCreationEndTime()).append("\",");
+            node.put("creationEnd", request.getCreationEndTime().toString());
         }
-        sb.append("\"simScore\":").append(sim.getScore()).append(",");
-        sb.append("\"simMethod\":\"").append(sim.getMethod()).append("\",");
-        sb.append("\"isCommercial\":").append(request.getIsCommercial() == null ? 1 : request.getIsCommercial()).append(",");
-        sb.append("\"licenseType\":").append(request.getLicenseType() == null ? 1 : request.getLicenseType()).append(",");
-        sb.append("\"timestamp\":\"").append(LocalDateTime.now()).append("\"}");
-        return sb.toString();
-    }
-
-    private String safeJson(String s) {
-        if (s == null) return "";
-        return s.replace("\"", "\\\"").replace("\n", "\\n");
+        node.put("simScore", sim.getScore());
+        node.put("simMethod", sim.getMethod());
+        node.put("isCommercial", request.getIsCommercial() == null ? 1 : request.getIsCommercial());
+        node.put("licenseType", request.getLicenseType() == null ? 1 : request.getLicenseType());
+        node.put("timestamp", LocalDateTime.now().toString());
+        return node.toString();
     }
 
     private String generateCertificateNo() {

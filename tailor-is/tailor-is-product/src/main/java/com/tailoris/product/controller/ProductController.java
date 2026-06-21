@@ -12,6 +12,7 @@ import com.tailoris.product.service.ProductService;
 import com.tailoris.product.service.ProductSkuService;
 import com.tailoris.product.service.ProductTagService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -94,8 +95,8 @@ public class ProductController {
     @PutMapping("/{id}/status")
     public Result<Void> updateProductStatus(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @PathVariable Long id,
-            @RequestParam Integer status) {
+            @Parameter(description = "商品ID") @PathVariable Long id,
+            @Parameter(description = "商品状态") @RequestParam Integer status) {
         if (userId == null) {
             return Result.fail("用户未登录");
         }

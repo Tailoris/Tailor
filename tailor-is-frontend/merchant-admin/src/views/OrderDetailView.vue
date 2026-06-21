@@ -10,8 +10,8 @@
       <template #header>
         <div class="card-header">
           <span>订单信息</span>
-          <el-tag :type="orderStatusType[order?.status || 'pending']" size="large">
-            {{ orderStatusLabel[order?.status || 'pending'] }}
+          <el-tag :type="orderStatusType[order?.status ?? 0]" size="large">
+            {{ orderStatusLabel[order?.status ?? 0] }}
           </el-tag>
         </div>
       </template>
@@ -116,7 +116,7 @@
       />
     </el-card>
 
-    <div class="action-bar" v-if="order?.status === 'paid'">
+    <div class="action-bar" v-if="order?.status === 1">
       <el-button type="primary" @click="handleShip">发货</el-button>
       <el-button @click="$router.back()">返回</el-button>
     </div>
@@ -126,7 +126,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getOrderDetail } from '@/api/order'
+import { getOrderDetail, updateOrderRemark } from '@/api/order'
 import type { Order } from '@/types'
 import PageHeader from '@/components/PageHeader.vue'
 import { ElMessage } from 'element-plus'
@@ -142,7 +142,7 @@ const order = reactive<Order>({
   shopName: '',
   buyerName: '',
   buyerPhone: '',
-  status: 'pending',
+  status: 0,
   totalAmount: 0,
   discountAmount: 0,
   payAmount: 0,
@@ -156,20 +156,20 @@ const order = reactive<Order>({
   createdAt: '',
 })
 
-const orderStatusType: Record<string, string> = {
-  pending: 'info',
-  paid: 'warning',
-  shipped: '',
-  completed: 'success',
-  cancelled: 'danger',
+const orderStatusType: Record<number, string> = {
+  0: 'info',
+  1: 'warning',
+  2: '',
+  3: 'success',
+  4: 'danger',
 }
 
-const orderStatusLabel: Record<string, string> = {
-  pending: '待付款',
-  paid: '已付款',
-  shipped: '已发货',
-  completed: '已完成',
-  cancelled: '已取消',
+const orderStatusLabel: Record<number, string> = {
+  0: '待付款',
+  1: '已付款',
+  2: '已发货',
+  3: '已完成',
+  4: '已取消',
 }
 
 async function fetchOrderDetail() {
@@ -188,8 +188,14 @@ function handleShip() {
   router.push(`/order?ship=${order.orderNo}`)
 }
 
-function saveRemark() {
-  ElMessage.success('备注已保存')
+async function saveRemark() {
+  // FE-H-4: 接入真实API，替代假保存
+  try {
+    await updateOrderRemark(order.orderNo, order.remark)
+    ElMessage.success('备注已保存')
+  } catch {
+    ElMessage.error('备注保存失败')
+  }
 }
 
 onMounted(() => {

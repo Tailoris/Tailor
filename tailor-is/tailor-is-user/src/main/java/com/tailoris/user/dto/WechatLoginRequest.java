@@ -1,5 +1,6 @@
 package com.tailoris.user.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
@@ -21,6 +22,7 @@ public class WechatLoginRequest {
     private String type = "MP";
 
     /** 微信服务器返回的 code（必填） */
+    @NotBlank(message = "微信授权code不能为空")
     private String code;
 
     /** 加密算法的初始向量（小程序专用） */

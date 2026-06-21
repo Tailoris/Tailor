@@ -36,6 +36,19 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * ProductServiceImpl 单元测试.
+ *
+ * <p>TODO 待补充测试场景：</p>
+ * <ul>
+ *   <li>T-M03: 商品搜索/筛选/排序测试</li>
+ *   <li>T-M03: 批量上下架商品测试</li>
+ *   <li>T-M03: 商品收藏/取消收藏测试</li>
+ *   <li>T-M03: 商品评价/回复测试</li>
+ *   <li>T-M03: 缓存穿透/击穿防护测试</li>
+ *   <li>T-M03: 商品审核流程测试</li>
+ * </ul>
+ */
 @DisplayName("ProductServiceImpl 测试")
 @ExtendWith(MockitoExtension.class)
 class ProductServiceImplTest {

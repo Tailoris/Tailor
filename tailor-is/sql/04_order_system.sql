@@ -6,6 +6,9 @@
 -- 创建时间: 2026-05-29
 -- ============================================================
 
+-- ⚠️ 警告：此脚本仅用于初始化部署，请勿在生产环境执行 DROP TABLE 操作
+-- 生产环境数据库变更请使用 Flyway/Liquibase 版本化迁移工具管理
+
 -- 创建数据库（如不存在）
 CREATE DATABASE IF NOT EXISTS `tailor_is_order` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
@@ -14,8 +17,7 @@ USE `tailor_is_order`;
 -- ============================================================
 -- 1. 购物车表 (shopping_cart)
 -- ============================================================
-DROP TABLE IF EXISTS `shopping_cart`;
-CREATE TABLE `shopping_cart` (
+CREATE TABLE IF NOT EXISTS `shopping_cart` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '购物车ID（主键）',
   `user_id` BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
   `product_id` BIGINT UNSIGNED NOT NULL COMMENT '商品ID',
@@ -35,7 +37,11 @@ CREATE TABLE `shopping_cart` (
   KEY `idx_shop_id` (`shop_id`),
   KEY `idx_checked` (`checked`),
   UNIQUE KEY `uk_user_sku` (`user_id`, `sku_id`)
-  -- 外键约束（可选）
+  -- 外键约束保持禁用，原因：
+  -- 1. 跨库引用：user_id 指向 tailor_is_user.sys_user，product_id/sku_id 指向 tailor_is_product，MySQL 不支持跨库外键
+  -- 2. 分库分表：本表已按 merchant_id 取模分片（t_shopping_cart_0~3，见 10_sharding_migration.sql），
+  --    ShardingSphere 分布式环境下外键约束不被支持且性能开销大
+  -- 引用完整性由应用层（OrderService/CartService）保证
   -- CONSTRAINT `fk_cart_user` FOREIGN KEY (`user_id`) REFERENCES `tailor_is_user`.`sys_user` (`id`),
   -- CONSTRAINT `fk_cart_product` FOREIGN KEY (`product_id`) REFERENCES `tailor_is_product`.`product` (`id`),
   -- CONSTRAINT `fk_cart_sku` FOREIGN KEY (`sku_id`) REFERENCES `tailor_is_product`.`product_sku` (`id`)
@@ -44,8 +50,7 @@ CREATE TABLE `shopping_cart` (
 -- ============================================================
 -- 2. 订单表 (order_info)
 -- ============================================================
-DROP TABLE IF EXISTS `order_info`;
-CREATE TABLE `order_info` (
+CREATE TABLE IF NOT EXISTS `order_info` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '订单ID（主键）',
   `order_no` VARCHAR(64) NOT NULL COMMENT '订单编号（业务唯一）',
   `parent_order_no` VARCHAR(64) DEFAULT NULL COMMENT '父订单编号（拆单场景）',
@@ -87,15 +92,18 @@ CREATE TABLE `order_info` (
   KEY `idx_product_type` (`product_type`),
   KEY `idx_created_at` (`created_at`),
   KEY `idx_expire_time` (`expire_time`)
-  -- 外键约束（可选）
+  -- 外键约束保持禁用，原因：
+  -- 1. 跨库引用：user_id 指向 tailor_is_user.sys_user，MySQL 不支持跨库外键
+  -- 2. 分库分表：本表已按 merchant_id 取模分片（t_order_0~3，见 10_sharding_migration.sql），
+  --    ShardingSphere 分布式环境下外键约束不被支持且性能开销大
+  -- 引用完整性由应用层（OrderService）保证
   -- CONSTRAINT `fk_order_user` FOREIGN KEY (`user_id`) REFERENCES `tailor_is_user`.`sys_user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单信息表';
 
 -- ============================================================
 -- 3. 订单明细表 (order_item)
 -- ============================================================
-DROP TABLE IF EXISTS `order_item`;
-CREATE TABLE `order_item` (
+CREATE TABLE IF NOT EXISTS `order_item` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '订单明细ID（主键）',
   `order_id` BIGINT UNSIGNED NOT NULL COMMENT '订单ID',
   `order_no` VARCHAR(64) NOT NULL COMMENT '订单编号（冗余字段，方便查询）',
@@ -121,15 +129,17 @@ CREATE TABLE `order_item` (
   KEY `idx_product_id` (`product_id`),
   KEY `idx_sku_id` (`sku_id`),
   KEY `idx_after_sale_status` (`after_sale_status`)
-  -- 外键约束（可选）
+  -- 外键约束保持禁用，原因：
+  -- 分库分表：本表及 order_info 均已按 merchant_id 取模分片（t_order_item_0~3，见 10_sharding_migration.sql），
+  -- ShardingSphere 分布式环境下外键约束不被支持且性能开销大
+  -- 引用完整性由应用层（OrderService）保证
   -- CONSTRAINT `fk_item_order` FOREIGN KEY (`order_id`) REFERENCES `order_info` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单明细表';
 
 -- ============================================================
 -- 4. 物流信息表 (order_logistics)
 -- ============================================================
-DROP TABLE IF EXISTS `order_logistics`;
-CREATE TABLE `order_logistics` (
+CREATE TABLE IF NOT EXISTS `order_logistics` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '物流ID（主键）',
   `order_id` BIGINT UNSIGNED NOT NULL COMMENT '订单ID',
   `order_no` VARCHAR(64) NOT NULL COMMENT '订单编号（冗余字段）',
@@ -152,15 +162,17 @@ CREATE TABLE `order_logistics` (
   KEY `idx_order_no` (`order_no`),
   KEY `idx_logistics_no` (`logistics_no`),
   KEY `idx_status` (`status`)
-  -- 外键约束（可选）
+  -- 外键约束保持禁用，原因：
+  -- 分库分表：order_info 已按 merchant_id 取模分片（见 10_sharding_migration.sql），
+  -- ShardingSphere 分布式环境下外键约束不被支持且性能开销大
+  -- 引用完整性由应用层（OrderService）保证
   -- CONSTRAINT `fk_logistics_order` FOREIGN KEY (`order_id`) REFERENCES `order_info` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单物流信息表';
 
 -- ============================================================
 -- 5. 售后工单表 (after_sale_ticket)
 -- ============================================================
-DROP TABLE IF EXISTS `after_sale_ticket`;
-CREATE TABLE `after_sale_ticket` (
+CREATE TABLE IF NOT EXISTS `after_sale_ticket` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '售后工单ID（主键）',
   `ticket_no` VARCHAR(64) NOT NULL COMMENT '售后工单编号',
   `order_id` BIGINT UNSIGNED NOT NULL COMMENT '订单ID',
@@ -200,7 +212,11 @@ CREATE TABLE `after_sale_ticket` (
   KEY `idx_ticket_type` (`ticket_type`),
   KEY `idx_status` (`status`),
   KEY `idx_created_at` (`created_at`)
-  -- 外键约束（可选）
+  -- 外键约束保持禁用，原因：
+  -- 1. 跨库引用：user_id 指向 tailor_is_user.sys_user，MySQL 不支持跨库外键
+  -- 2. 分库分表：本表及 order_info 均已按 merchant_id 取模分片（t_after_sale_ticket_0~3，见 10_sharding_migration.sql），
+  --    ShardingSphere 分布式环境下外键约束不被支持且性能开销大
+  -- 引用完整性由应用层（AfterSaleService）保证
   -- CONSTRAINT `fk_ticket_order` FOREIGN KEY (`order_id`) REFERENCES `order_info` (`id`),
   -- CONSTRAINT `fk_ticket_user` FOREIGN KEY (`user_id`) REFERENCES `tailor_is_user`.`sys_user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='售后工单表';

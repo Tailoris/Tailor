@@ -1,5 +1,5 @@
 <template>
-  <div class="home-view">
+  <div class="home-view" role="main" aria-label="首页">
     <BannerCarousel />
 
     <CategoryNav :categories="categories" />
@@ -137,8 +137,8 @@ onMounted(async () => {
   // Critical: load first
   await Promise.all([loadCategories(), loadSeckillProducts()])
   // Non-critical: load after a tick
-  setTimeout(() => {
-    Promise.all([loadFeaturedProducts(), loadNewProducts(), loadCommunityPosts()])
+  setTimeout(async () => {
+    await Promise.all([loadFeaturedProducts(), loadNewProducts(), loadCommunityPosts()])
   }, 100)
 })
 
@@ -152,5 +152,19 @@ onUnmounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+@media (min-width: 1536px) {
+  .home-view {
+    max-width: 1536px;
+    padding: 0 40px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .home-view {
+    max-width: 1920px;
+    padding: 0 60px;
+  }
 }
 </style>

@@ -1,6 +1,7 @@
 package com.tailoris.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tailoris.common.constant.RedisKeyPrefix;
 import com.tailoris.common.dto.PageResponse;
@@ -52,7 +53,7 @@ import java.util.stream.Collectors;
  *   <li>B-C08: 商品创建幂等控制（分布式锁 + 业务唯一性校验）</li>
  *   <li>B-M17: saveProductBaseInfo使用BeanUtils.copyProperties</li>
  *   <li>B-M18: saveProductSkus使用Stream API</li>
- *   <li>B-M33: viewCount使用数据库原子更新（INCR）</li>
+ *   <li>B-M33: viewCount使用数据库原子更新（setSql）</li>
  *   <li>B-M34: 初始好评率0%（不硬编码100%）</li>
  *   <li>B-M38: 商品状态使用ProductStatusEnum</li>
  * </ul>
@@ -83,12 +84,6 @@ public class ProductServiceImpl implements ProductService {
 
     /** B-C08 商品创建幂等Key前缀（基于业务唯一标识） */
     private static final String PRODUCT_DUPLICATE_KEY = "product:create:dedup:";
-
-    /** B-M33 Redis浏览量计数器前缀 */
-    private static final String PRODUCT_VIEW_COUNT_KEY = "product:view:count:";
-
-    /** B-M33 浏览量Redis缓存最大存活时间（7天） */
-    private static final long VIEW_COUNT_TTL_DAYS = 7L;
 
     /** B-M34 初始好评率 - 没有评价时为null，新商品无评分 */
     private static final BigDecimal INITIAL_FAVORABLE_RATE = BigDecimal.ZERO;
@@ -285,7 +280,8 @@ public class ProductServiceImpl implements ProductService {
         if (existing == null) {
             throw new BusinessException("商品不存在");
         }
-        if (existing.getStatus() == 2) {
+        if (existing.getStatus() != null
+                && existing.getStatus() == ProductStatusEnum.DRAFT.getCode()) {
             throw new BusinessException("已上架商品不可直接编辑，请先下架");
         }
     }
@@ -406,7 +402,8 @@ public class ProductServiceImpl implements ProductService {
         }
 
         // 1. 检查是否允许删除
-        if (existing.getStatus() != null && existing.getStatus() == 1) {
+        if (existing.getStatus() != null
+                && existing.getStatus() == ProductStatusEnum.ON_SHELF.getCode()) {
             throw new BusinessException("上架商品不能直接删除，请先下架");
         }
 
@@ -459,20 +456,9 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private void clearProductCaches(Long productId) {
-        // 清理商品详情缓存
+        // BE-M-41: 仅清理目标商品缓存，避免使用 KEYS 通配符过度清理
+        // 删除单个商品时无需清空全部商品详情缓存
         stringRedisTemplate.delete(PRODUCT_CACHE_KEY + productId);
-        // 清理商品列表缓存（如果使用 pattern 删除）
-        // 异步清理，避免阻塞主流程
-        java.util.concurrent.CompletableFuture.runAsync(() -> {
-            try {
-                java.util.Set<String> keys = stringRedisTemplate.keys(PRODUCT_CACHE_KEY + "*");
-                if (keys != null && !keys.isEmpty()) {
-                    stringRedisTemplate.delete(keys);
-                }
-            } catch (Exception e) {
-                log.warn("清理商品列表缓存失败: productId={}", productId, e);
-            }
-        });
     }
 
     @Override
@@ -545,43 +531,17 @@ public class ProductServiceImpl implements ProductService {
     /**
      * 异步增加商品浏览量 - 修复 B-M33
      *
-     * <p>使用Redis INCR原子操作避免并发问题，定期持久化到数据库。</p>
-     *
-     * <p>流程：</p>
-     * <ol>
-     *   <li>Redis INCR原子增加计数</li>
-     *   <li>每100次访问同步一次到数据库</li>
-     *   <li>定时任务兜底持久化</li>
-     * </ol>
+     * <p>使用数据库原子更新（setSql），避免先查后改的竞态条件，
+     * 与社区模块 CommunityInteractionServiceImpl 的修复模式一致。</p>
      */
     private void asyncIncrementViewCount(Long productId) {
         try {
-            String viewKey = PRODUCT_VIEW_COUNT_KEY + productId;
-            // 原子增加浏览量
-            Long newCount = stringRedisTemplate.opsForValue().increment(viewKey);
-            // 设置过期时间
-            stringRedisTemplate.expire(viewKey, VIEW_COUNT_TTL_DAYS, TimeUnit.DAYS);
-            // 每100次同步一次到数据库（避免频繁更新）
-            if (newCount != null && newCount % 100 == 0) {
-                syncViewCountToDb(productId, newCount);
-            }
+            // B-M33: 使用 SQL 原子更新浏览量，避免并发计数不准确
+            productMapper.update(null, new LambdaUpdateWrapper<Product>()
+                    .eq(Product::getId, productId)
+                    .setSql("view_count = COALESCE(view_count, 0) + 1"));
         } catch (Exception e) {
             log.warn("商品浏览量计数失败: productId={}", productId, e);
-        }
-    }
-
-    /**
-     * 同步浏览量到数据库
-     */
-    private void syncViewCountToDb(Long productId, Long viewCount) {
-        try {
-            Product updateProduct = new Product();
-            updateProduct.setId(productId);
-            updateProduct.setViewCount(viewCount.intValue());
-            productMapper.updateById(updateProduct);
-            log.debug("商品浏览量同步到数据库: productId={}, viewCount={}", productId, viewCount);
-        } catch (Exception e) {
-            log.error("商品浏览量同步数据库失败: productId={}", productId, e);
         }
     }
 
@@ -640,12 +600,12 @@ public class ProductServiceImpl implements ProductService {
         product.setId(id);
         product.setStatus(status);
 
-        if (status == 1) {
-            product.setAuditStatus(0);
+        if (status != null && status == ProductStatusEnum.ON_SHELF.getCode()) {
+            product.setAuditStatus(AuditStatusEnum.PENDING.getCode());
             product.setAuditTime(null);
             product.setAuditRemark(null);
             product.setAuditBy(null);
-        } else if (status == 3) {
+        } else if (status != null && status == ProductStatusEnum.VIOLATED_OFF_SHELF.getCode()) {
             product.setLowerShelfReason("商家主动下架");
         }
 
@@ -674,10 +634,10 @@ public class ProductServiceImpl implements ProductService {
         product.setAuditBy(auditBy);
         product.setAuditTime(LocalDateTime.now());
 
-        if (auditStatus == 2) {
-            product.setStatus(2);
-        } else if (auditStatus == 3) {
-            product.setStatus(4);
+        if (auditStatus != null && auditStatus == AuditStatusEnum.REJECTED.getCode()) {
+            product.setStatus(ProductStatusEnum.DRAFT.getCode());
+        } else if (auditStatus != null && auditStatus == AuditStatusEnum.OVERRULED.getCode()) {
+            product.setStatus(ProductStatusEnum.AUDIT_REJECTED.getCode());
         }
 
         productMapper.updateById(product);

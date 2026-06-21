@@ -17,13 +17,13 @@ public interface PatternService {
 
     PatternIteration iteratePattern(Long userId, PatternIterationRequest request);
 
-    PatternVersion saveVersion(Long patternId, String versionName, String changeDescription);
+    PatternVersion saveVersion(Long userId, Long patternId, String versionName, String changeDescription);
 
-    List<PatternVersion> listVersions(Long patternId);
+    List<PatternVersion> listVersions(Long userId, Long patternId);
 
-    String exportPattern(Long patternId, String format);
+    String exportPattern(Long userId, Long patternId, String format);
 
-    PatternRecord getPatternDetail(Long patternId);
+    PatternRecord getPatternDetail(Long userId, Long patternId);
 
     List<PatternRecord> listUserPatterns(Long userId);
 }

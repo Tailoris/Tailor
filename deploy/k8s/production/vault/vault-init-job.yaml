@@ -1,0 +1,213 @@
+# ==============================================================================
+# Tailor IS - Vault 初始化 Job
+# ==============================================================================
+# 此 Job 在 Vault 启动后执行:
+#   1. 初始化 Vault (Operator Init)
+#   2. 解封 Vault (Unseal)
+#   3. 创建 KV Secrets Engine (v2)
+#   4. 创建 AppRole 认证
+#   5. 创建只读 Policy
+#   6. 写入所有生产 Secrets
+#
+# 注意: 生产环境应使用 Vault Operator 或外部脚本管理初始化
+# ==============================================================================
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-init
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: vault
+    environment: production
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: tailor-is
+        component: vault-init
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: vault-init
+          image: hashicorp/vault:1.18.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+
+              echo "============================================="
+              echo "Tailor IS - Vault 初始化 Job"
+              echo "============================================="
+
+              VAULT_ADDR="http://vault.tailor-is-prod.svc.cluster.local:8200"
+              export VAULT_ADDR
+
+              # 等待 Vault 就绪
+              echo "等待 Vault 服务就绪..."
+              for i in $(seq 1 60); do
+                if curl -s -o /dev/null -w "%{http_code}" "${VAULT_ADDR}/v1/sys/health" | grep -q "200\|501\|503"; then
+                  echo "Vault 已就绪"
+                  break
+                fi
+                echo "等待中... ($i/60)"
+                sleep 5
+              done
+
+              # 检查是否已初始化
+              INIT_STATUS=$(curl -s "${VAULT_ADDR}/v1/sys/init" | grep -o '"initialized":\(true\|false\)' | cut -d: -f2)
+              echo "Vault 初始化状态: ${INIT_STATUS}"
+
+              if [ "$INIT_STATUS" = "false" ]; then
+                echo "初始化 Vault..."
+                INIT_RESPONSE=$(curl -s -X PUT "${VAULT_ADDR}/v1/sys/init" \
+                  -d '{"secret_shares": 5, "secret_threshold": 3}')
+
+                echo "$INIT_RESPONSE" | tee /tmp/vault-init.json
+
+                # 提取 Unseal Keys 和 Root Token
+                UNSEAL_KEY_1=$(echo "$INIT_RESPONSE" | grep -o '"keys":\[.*\]' | grep -o '"[^"]*"' | head -1 | tr -d '"')
+                UNSEAL_KEY_2=$(echo "$INIT_RESPONSE" | grep -o '"keys":\[.*\]' | grep -o '"[^"]*"' | head -2 | tail -1 | tr -d '"')
+                UNSEAL_KEY_3=$(echo "$INIT_RESPONSE" | grep -o '"keys":\[.*\]' | grep -o '"[^"]*"' | head -3 | tail -1 | tr -d '"')
+                ROOT_TOKEN=$(echo "$INIT_RESPONSE" | grep -o '"root_token":"[^"]*"' | cut -d'"' -f4)
+
+                echo "=== 重要: 请安全保存以下信息 ==="
+                echo "Unseal Key 1: ${UNSEAL_KEY_1}"
+                echo "Unseal Key 2: ${UNSEAL_KEY_2}"
+                echo "Unseal Key 3: ${UNSEAL_KEY_3}"
+                echo "Root Token: ${ROOT_TOKEN}"
+                echo "================================"
+
+                # 解封 Vault (需要至少 3 个 key)
+                echo "解封 Vault..."
+                curl -s -X PUT "${VAULT_ADDR}/v1/sys/unseal" -d "{\"key\": \"${UNSEAL_KEY_1}\"}"
+                curl -s -X PUT "${VAULT_ADDR}/v1/sys/unseal" -d "{\"key\": \"${UNSEAL_KEY_2}\"}"
+                curl -s -X PUT "${VAULT_ADDR}/v1/sys/unseal" -d "{\"key\": \"${UNSEAL_KEY_3}\"}"
+              else
+                echo "Vault 已初始化，跳过初始化步骤"
+                # 尝试从环境变量获取 Root Token (由外部注入)
+                ROOT_TOKEN="${VAULT_ROOT_TOKEN:-}"
+                if [ -z "$ROOT_TOKEN" ]; then
+                  echo "警告: VAULT_ROOT_TOKEN 未设置，跳过后续配置"
+                  echo "请手动解封 Vault 并运行 vault-bootstrap.sh"
+                  exit 0
+                fi
+              fi
+
+              export VAULT_TOKEN="$ROOT_TOKEN"
+
+              # 创建 KV v2 Secrets Engine
+              echo "创建 KV v2 Secrets Engine..."
+              curl -s -X POST "${VAULT_ADDR}/v1/sys/mounts/tailor-is" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"type": "kv-v2", "description": "Tailor IS Secrets"}'
+
+              # 创建 AppRole
+              echo "创建 AppRole 认证..."
+              curl -s -X POST "${VAULT_ADDR}/v1/sys/auth/approle" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"type": "approle", "description": "Tailor IS AppRole Auth"}'
+
+              # 创建只读 Policy
+              echo "创建只读 Policy..."
+              curl -s -X PUT "${VAULT_ADDR}/v1/sys/policies/acl/tailor-is-readonly" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{
+                  "policy": "path \"tailor-is/data/*\" { capabilities = [\"read\"] } path \"tailor-is/metadata/*\" { capabilities = [\"list\"] }"
+                }'
+
+              # 创建 AppRole Role
+              echo "创建 AppRole Role..."
+              curl -s -X POST "${VAULT_ADDR}/v1/auth/approle/role/tailor-is" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{
+                  "token_policies": "tailor-is-readonly",
+                  "token_ttl": "1h",
+                  "token_max_ttl": "4h",
+                  "secret_id_ttl": "720h",
+                  "secret_id_num_uses": 0
+                }'
+
+              # 写入 Secrets
+              echo "写入 Secrets..."
+
+              # MySQL
+              curl -s -X POST "${VAULT_ADDR}/v1/tailor-is/data/mysql" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"data": {"password": "CHANGE_ME_STRONG_PASSWORD", "username": "root", "host": "mysql.tailor-is-prod.svc.cluster.local", "port": "3306"}}'
+
+              # Redis
+              curl -s -X POST "${VAULT_ADDR}/v1/tailor-is/data/redis" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"data": {"password": "CHANGE_ME_STRONG_PASSWORD", "host": "redis.tailor-is-prod.svc.cluster.local", "port": "6379"}}'
+
+              # RabbitMQ
+              curl -s -X POST "${VAULT_ADDR}/v1/tailor-is/data/rabbitmq" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"data": {"username": "CHANGE_ME", "password": "CHANGE_ME_STRONG_PASSWORD", "host": "rabbitmq.tailor-is-prod.svc.cluster.local", "port": "5672"}}'
+
+              # Nacos
+              curl -s -X POST "${VAULT_ADDR}/v1/tailor-is/data/nacos" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"data": {"auth_token": "CHANGE_ME_RANDOM_64_CHAR_HEX", "identity_value": "CHANGE_ME"}}'
+
+              # JWT / AES
+              curl -s -X POST "${VAULT_ADDR}/v1/tailor-is/data/security" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"data": {"jwt_secret": "CHANGE_ME_RANDOM_STRING", "aes_key": "CHANGE_ME_RANDOM_32_CHAR", "gateway_hmac_secret": "CHANGE_ME_RANDOM_BASE64_32"}}'
+
+              # AI API Key
+              curl -s -X POST "${VAULT_ADDR}/v1/tailor-is/data/ai" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"data": {"api_key": "CHANGE_ME_AI_API_KEY", "model_endpoint": "https://api.openai.com/v1"}}'
+
+              # 支付
+              curl -s -X POST "${VAULT_ADDR}/v1/tailor-is/data/payment" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"data": {"wechat_app_id": "CHANGE_ME", "wechat_mch_id": "CHANGE_ME", "wechat_api_key": "CHANGE_ME", "wechat_v3_key": "CHANGE_ME", "alipay_app_id": "CHANGE_ME", "alipay_private_key": "CHANGE_ME", "alipay_public_key": "CHANGE_ME"}}'
+
+              # 区块链
+              curl -s -X POST "${VAULT_ADDR}/v1/tailor-is/data/blockchain" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"data": {"api_key": "CHANGE_ME", "endpoint": "https://blockchain.example.com/api"}}'
+
+              # OSS
+              curl -s -X POST "${VAULT_ADDR}/v1/tailor-is/data/oss" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"data": {"access_key_id": "CHANGE_ME", "access_key_secret": "CHANGE_ME"}}'
+
+              # SMTP
+              curl -s -X POST "${VAULT_ADDR}/v1/tailor-is/data/smtp" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" \
+                -d '{"data": {"username": "CHANGE_ME", "password": "CHANGE_ME", "host": "smtp.tailoris.com", "port": "587"}}'
+
+              echo ""
+              echo "============================================="
+              echo "Vault 初始化完成!"
+              echo "============================================="
+              echo "AppRole Role ID (需要获取):"
+              curl -s "${VAULT_ADDR}/v1/auth/approle/role/tailor-is/role-id" \
+                -H "X-Vault-Token: ${VAULT_TOKEN}" | grep -o '"role_id":"[^"]*"'
+              echo ""
+              echo "请运行以下命令获取 Secret ID:"
+              echo "curl -X POST ${VAULT_ADDR}/v1/auth/approle/role/tailor-is/secret-id \\"
+              echo "  -H \"X-Vault-Token: ${VAULT_TOKEN}\""
+              echo "============================================="
+          env:
+            - name: VAULT_ROOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secrets
+                  key: GRAFANA_PASSWORD
+                  optional: true
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"

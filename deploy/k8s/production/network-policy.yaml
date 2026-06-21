@@ -1,0 +1,252 @@
+# ==============================================================================
+# Tailor IS - NetworkPolicy (网络策略)
+# ==============================================================================
+# 仅允许必要通信，遵循最小权限原则
+# 前提条件: 集群 CNI 插件支持 NetworkPolicy (Calico, Cilium, Weave 等)
+# ==============================================================================
+
+---
+# ==============================================================================
+# 1. 默认拒绝所有入站流量 (deny-all by default)
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-ingress
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: network-policy
+    environment: production
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+---
+# ==============================================================================
+# 2. 允许同命名空间内所有 Pod 之间的通信
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: network-policy
+    environment: production
+spec:
+  podSelector: {}
+  ingress:
+    - from:
+        - podSelector: {}
+  policyTypes:
+    - Ingress
+
+---
+# ==============================================================================
+# 3. 允许 Ingress Controller 流量进入网关
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-gateways
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: network-policy
+    environment: production
+spec:
+  podSelector:
+    matchLabels:
+      component: core-gateway
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8080
+          protocol: TCP
+  policyTypes:
+    - Ingress
+
+---
+# ==============================================================================
+# 4. 允许网关访问所有微服务
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-to-services
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: network-policy
+    environment: production
+spec:
+  podSelector:
+    matchExpressions:
+      - key: component
+        operator: In
+        values:
+          - user-service
+          - product-service
+          - order-service
+          - payment-service
+          - marketing-service
+          - ai-service
+          - copyright-service
+          - community-service
+          - supply-service
+          - merchant-service
+          - message-service
+          - message-im-service
+          - academy-service
+          - analytics-service
+          - pattern-service
+          - admin-service
+          - api-service
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              component: core-gateway
+    - from:
+        - podSelector:
+            matchLabels:
+              component: lite-gateway
+  policyTypes:
+    - Ingress
+
+---
+# ==============================================================================
+# 5. 允许微服务访问基础设施 (MySQL, Redis, RabbitMQ)
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-services-to-infra
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: network-policy
+    environment: production
+spec:
+  podSelector:
+    matchLabels:
+      component: mysql
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: tailor-is
+      ports:
+        - port: 3306
+          protocol: TCP
+  policyTypes:
+    - Ingress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-services-to-redis
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: network-policy
+    environment: production
+spec:
+  podSelector:
+    matchLabels:
+      component: redis
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: tailor-is
+      ports:
+        - port: 6379
+          protocol: TCP
+  policyTypes:
+    - Ingress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-services-to-rabbitmq
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: network-policy
+    environment: production
+spec:
+  podSelector:
+    matchLabels:
+      component: rabbitmq
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: tailor-is
+      ports:
+        - port: 5672
+          protocol: TCP
+  policyTypes:
+    - Ingress
+
+---
+# ==============================================================================
+# 6. 允许 Prometheus 抓取所有微服务指标
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scraping
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: network-policy
+    environment: production
+spec:
+  podSelector:
+    matchLabels:
+      app: tailor-is
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              component: prometheus
+  policyTypes:
+    - Ingress
+
+---
+# ==============================================================================
+# 7. 允许外部 DNS 查询 (UDP 53)
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: network-policy
+    environment: production
+spec:
+  podSelector: {}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+  policyTypes:
+    - Egress

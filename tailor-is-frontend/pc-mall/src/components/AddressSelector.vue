@@ -1,12 +1,17 @@
 <template>
-  <section class="section">
+  <section class="section" aria-label="选择收货地址">
     <h3>收货地址</h3>
-    <div class="address-list">
+    <div class="address-list" role="radiogroup" aria-label="收货地址列表">
       <div
         v-for="addr in addresses"
         :key="addr.id"
         :class="['address-card', { active: modelValue === addr.id }]"
+        role="radio"
+        :aria-checked="modelValue === addr.id"
+        tabindex="0"
         @click="$emit('update:modelValue', addr.id)"
+        @keydown.enter="$emit('update:modelValue', addr.id)"
+        @keydown.space.prevent="$emit('update:modelValue', addr.id)"
       >
         <el-radio :model-value="modelValue" :label="addr.id" />
         <div class="address-info">

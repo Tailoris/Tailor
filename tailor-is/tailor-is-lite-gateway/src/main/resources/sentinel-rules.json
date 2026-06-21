@@ -1,0 +1,81 @@
+[
+  {
+    "resource": "public_api",
+    "grade": 1,
+    "count": 100,
+    "limitApp": "default",
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false,
+    "enable": true
+  },
+  {
+    "resource": "community_api",
+    "grade": 1,
+    "count": 50,
+    "limitApp": "default",
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false,
+    "enable": true
+  },
+  {
+    "resource": "academy_api",
+    "grade": 1,
+    "count": 30,
+    "limitApp": "default",
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false,
+    "enable": true
+  },
+  {
+    "resource": "message_api",
+    "grade": 1,
+    "count": 80,
+    "limitApp": "default",
+    "strategy": 0,
+    "controlBehavior": 0,
+    "clusterMode": false,
+    "enable": true
+  },
+  {
+    "resource": "community_api",
+    "grade": 2,
+    "count": 0.5,
+    "timeWindow": 30,
+    "minRequestAmount": 10,
+    "statIntervalMs": 10000,
+    "slowRatioThreshold": 0.5,
+    "enable": true
+  },
+  {
+    "resource": "academy_api",
+    "grade": 2,
+    "count": 0.5,
+    "timeWindow": 30,
+    "minRequestAmount": 10,
+    "statIntervalMs": 10000,
+    "slowRatioThreshold": 0.5,
+    "enable": true
+  },
+  {
+    "resource": "message_api",
+    "grade": 2,
+    "count": 0.5,
+    "timeWindow": 30,
+    "minRequestAmount": 10,
+    "statIntervalMs": 10000,
+    "slowRatioThreshold": 0.5,
+    "enable": true
+  },
+  {
+    "highestCpuUsage": 0.8,
+    "highestSystemLoad": -1.0,
+    "avgRt": 1000,
+    "maxThread": -1,
+    "qps": 5000,
+    "highestMemoryUsage": 0.85,
+    "enable": true
+  }
+]

@@ -1,36 +1,36 @@
 <template>
-  <header class="app-header" :class="{ scrolled: isScrolled }">
+  <header class="app-header" :class="{ scrolled: isScrolled }" role="banner">
     <div class="header-container">
       <div class="header-left">
-        <router-link to="/" class="logo">
-          <span class="logo-icon">✂️</span>
+        <router-link to="/" class="logo" aria-label="裁智云 Tailor IS 首页">
+          <span class="logo-icon" aria-hidden="true">✂️</span>
           <span class="logo-text">裁智云 Tailor IS</span>
         </router-link>
-        <nav class="nav-links">
-          <router-link to="/">首页</router-link>
-          <router-link to="/products">商品</router-link>
-          <router-link to="/community">社区</router-link>
-          <router-link to="/merchant-apply">商家入驻</router-link>
+        <nav class="nav-links" role="navigation" aria-label="主导航">
+          <router-link to="/" data-testid="main-nav-item">首页</router-link>
+          <router-link to="/products" data-testid="main-nav-item">商品</router-link>
+          <router-link to="/community" data-testid="main-nav-item">社区</router-link>
+          <router-link to="/merchant-apply" data-testid="main-nav-item">商家入驻</router-link>
         </nav>
       </div>
       <div class="header-center">
-        <div class="search-box">
-          <input v-model="searchKeyword" type="text" placeholder="搜索商品、店铺" aria-label="搜索" @keyup.enter="handleSearch" />
-          <button class="search-btn" @click="handleSearch">
+        <div class="search-box" role="search" aria-label="商品搜索">
+          <input v-model="searchKeyword" type="text" placeholder="搜索商品、店铺" aria-label="搜索商品、店铺" @keyup.enter="handleSearch" />
+          <button class="search-btn" @click="handleSearch" aria-label="执行搜索" data-testid="search-button">
             <el-icon><Search /></el-icon>
           </button>
         </div>
       </div>
       <div class="header-right">
-        <router-link to="/cart" class="cart-icon">
+        <router-link to="/cart" class="cart-icon" aria-label="购物车，共{{ cartStore.totalCount }}件商品">
           <el-icon :size="24"><ShoppingCart /></el-icon>
-          <span v-if="cartStore.totalCount > 0" class="cart-badge">{{ cartStore.totalCount > 99 ? '99+' : cartStore.totalCount }}</span>
+          <span v-if="cartStore.totalCount > 0" class="cart-badge" aria-hidden="true">{{ cartStore.totalCount > 99 ? '99+' : cartStore.totalCount }}</span>
         </router-link>
         <template v-if="userStore.token">
           <el-dropdown trigger="click" @command="handleUserCommand">
             <span class="user-info">
               <el-avatar :size="32" :src="userStore.userInfo?.avatar || 'https://via.placeholder.com/32x32'" />
-              <span class="username">{{ userStore.userInfo?.nickName || userStore.userInfo?.username }}</span>
+              <span class="username">{{ userStore.userInfo?.nickname || userStore.userInfo?.username }}</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
             <template #dropdown>

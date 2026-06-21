@@ -1,0 +1,127 @@
+# ==============================================================================
+# Tailor IS - Lite Gateway Deployment + Service
+# ==============================================================================
+# 轻量网关 - 社区/学院等轻量业务
+# 端口: 8081 | 副本: 2
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: lite-gateway
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: lite-gateway
+    environment: production
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+      protocol: TCP
+  selector:
+    app: tailor-is
+    component: lite-gateway
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lite-gateway
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: lite-gateway
+    environment: production
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: lite-gateway
+  template:
+    metadata:
+      labels:
+        app: tailor-is
+        component: lite-gateway
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: lite-gateway
+          image: tailor-is/lite-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          env:
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: LITE_GATEWAY_PORT
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+          envFrom:
+            - configMapRef:
+                name: tailor-is-config
+            - secretRef:
+                name: tailor-is-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+      volumes:
+        - name: logs
+          emptyDir: {}
+      terminationGracePeriodSeconds: 30

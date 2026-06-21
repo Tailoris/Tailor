@@ -1,0 +1,207 @@
+# ==============================================================================
+# Tailor IS - ServiceMonitor (Prometheus Operator 自动发现)
+# ==============================================================================
+# 前提条件: 集群中已安装 Prometheus Operator
+#   kubectl apply -f https://github.com/prometheus-operator/prometheus-operator/releases/latest/download/bundle.yaml
+#
+# ServiceMonitor 会自动发现带 prometheus.io/scrape: "true" 注解的 Service
+# 并自动配置 Prometheus 抓取目标
+# ==============================================================================
+
+---
+# ==============================================================================
+# 核心网关 ServiceMonitor
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: core-gateway-monitor
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: core-gateway
+    release: prometheus
+    environment: production
+spec:
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: core-gateway
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - tailor-is-prod
+
+---
+# ==============================================================================
+# 用户服务 ServiceMonitor
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: user-service-monitor
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: user-service
+    release: prometheus
+    environment: production
+spec:
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: user-service
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - tailor-is-prod
+
+---
+# ==============================================================================
+# 商品服务 ServiceMonitor
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: product-service-monitor
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: product-service
+    release: prometheus
+    environment: production
+spec:
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: product-service
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - tailor-is-prod
+
+---
+# ==============================================================================
+# 订单服务 ServiceMonitor
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: order-service-monitor
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: order-service
+    release: prometheus
+    environment: production
+spec:
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: order-service
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - tailor-is-prod
+
+---
+# ==============================================================================
+# 支付服务 ServiceMonitor
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: payment-service-monitor
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: payment-service
+    release: prometheus
+    environment: production
+spec:
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: payment-service
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - tailor-is-prod
+
+---
+# ==============================================================================
+# AI 服务 ServiceMonitor
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ai-service-monitor
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: ai-service
+    release: prometheus
+    environment: production
+spec:
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: ai-service
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 15s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - tailor-is-prod
+
+---
+# ==============================================================================
+# 通用 ServiceMonitor - 自动发现所有带注解的微服务
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tailor-is-all-services
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    release: prometheus
+    environment: production
+spec:
+  selector:
+    matchLabels:
+      app: tailor-is
+      environment: production
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_service_label_component]
+          targetLabel: component
+  namespaceSelector:
+    matchNames:
+      - tailor-is-prod

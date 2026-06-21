@@ -6,9 +6,13 @@
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "test:a11y": "playwright test wcag-compliance.spec.ts",
+    "test:cross-browser": "playwright test cross-browser.spec.ts",
+    "test:mobile": "playwright test mobile-compatibility.spec.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
     "@playwright/test": "^1.52.0",
     "typescript": "^5.3.0"
   }

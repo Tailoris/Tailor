@@ -11,6 +11,13 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 订单信息实体类，对应 order_info 表。
+ *
+ * <p>存储订单的基本信息、金额信息、支付信息、物流信息等</p>
+ *
+ * @author TailorIS Team
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("order_info")

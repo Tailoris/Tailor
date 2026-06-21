@@ -25,16 +25,21 @@ import com.tailoris.user.security.LoginSecurityService.SmsVerifyResult;
 import com.tailoris.user.service.SysPermissionService;
 import com.tailoris.user.service.SysRoleService;
 import com.tailoris.user.service.SysUserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -69,6 +74,9 @@ public class SysUserServiceImpl implements SysUserService {
     /** 用户不存在错误消息（B-M03修复：提取重复字符串） */
     private static final String USER_NOT_FOUND_MSG = "用户不存在";
 
+    /** BE-M-29: 密码学安全的随机数生成器，用于验证码等安全场景 */
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     /** 登录失败最大次数（与B-C05锁定策略配合） */
     private static final int MAX_LOGIN_FAILURES = 5;
 
@@ -99,6 +107,7 @@ public class SysUserServiceImpl implements SysUserService {
     private final SpringSnowflakeIdGenerator snowflakeIdGenerator;
     private final SysRoleService sysRoleService;
     private final SysPermissionService sysPermissionService;
+    private final ObjectMapper objectMapper;
 
     // 静态属性定义顺序：实例属性在后（B-M08修复）
     @Override
@@ -221,12 +230,11 @@ public class SysUserServiceImpl implements SysUserService {
     }
 
     /**
-     * 发送短信验证码（供注册/找回密码使用）
+     * 发送短信验证码（供注册/找回密码使用）.
      */
     public void sendSmsCode(String phone) {
-        // 实际生产应调用短信服务API
-        // 此处使用固定6位随机数（仅用于演示）
-        String code = String.valueOf((int) ((Math.random() * 9 + 1) * 100000));
+        // BE-M-29: 使用 SecureRandom 替代 Math.random() 生成密码学安全的验证码
+        String code = String.valueOf(100000 + SECURE_RANDOM.nextInt(900000));
         loginSecurityService.storeSmsCode(phone, code);
         log.info("短信验证码已发送: phone={}", phone);
         // 注意：实际生产不应将code写入日志
@@ -234,12 +242,34 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Override
     public LoginResponse.UserInfo getUserInfo(Long userId) {
+        // BE-M-30: 启用用户信息缓存，避免每次查询数据库
         String cacheKey = USER_CACHE_KEY + userId;
+        try {
+            String cached = stringRedisTemplate.opsForValue().get(cacheKey);
+            if (cached != null && !cached.isEmpty()) {
+                return objectMapper.readValue(cached, LoginResponse.UserInfo.class);
+            }
+        } catch (Exception e) {
+            log.warn("读取用户信息缓存失败: userId={}", userId, e);
+        }
+
         SysUser user = sysUserMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(USER_NOT_FOUND_MSG);
         }
-        return buildUserInfo(user);
+        LoginResponse.UserInfo userInfo = buildUserInfo(user);
+
+        // 写入缓存
+        try {
+            stringRedisTemplate.opsForValue().set(
+                    cacheKey,
+                    objectMapper.writeValueAsString(userInfo),
+                    CACHE_TTL_HOURS,
+                    TimeUnit.HOURS);
+        } catch (Exception e) {
+            log.warn("写入用户信息缓存失败: userId={}", userId, e);
+        }
+        return userInfo;
     }
 
     @Override
@@ -312,8 +342,12 @@ public class SysUserServiceImpl implements SysUserService {
     }
 
     /**
-     * 解密身份证号（仅授权场景使用）
+     * 解密身份证号（仅授权场景使用）.
+     *
+     * @param userId 用户ID
+     * @return 解密后的身份证号，用户不存在或未认证时返回 null
      */
+    @Nullable
     public String getDecryptedIdCard(Long userId) {
         SysUser user = sysUserMapper.selectById(userId);
         if (user == null || user.getIdCard() == null) {
@@ -373,9 +407,9 @@ public class SysUserServiceImpl implements SysUserService {
     public LoginResponse refresh(Long userId) {
         SysUser user = sysUserMapper.selectById(userId);
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(USER_NOT_FOUND_MSG);
         }
-        if (user.getStatus() == 0) {
+        if (Integer.valueOf(USER_STATUS_DISABLED).equals(user.getStatus())) {
             throw new BusinessException("用户已被禁用，无法刷新Token");
         }
 
@@ -389,28 +423,55 @@ public class SysUserServiceImpl implements SysUserService {
     }
 
     private LoginResponse.UserInfo buildUserInfo(SysUser user) {
-        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo();
-        userInfo.setId(user.getId());
-        userInfo.setUsername(user.getUsername());
-        userInfo.setPhone(user.getPhone());
-        userInfo.setEmail(user.getEmail());
-        userInfo.setAvatar(user.getAvatar());
-        userInfo.setNickName(user.getNickName());
-        userInfo.setRealName(user.getRealName());
-        userInfo.setGender(user.getGender());
-        userInfo.setStatus(user.getStatus());
+        // 委托给批量方法，避免逐用户查询角色/权限（修复 N+1）
+        return buildUserInfoList(List.of(user)).get(0);
+    }
 
-        List<SysRole> roles = sysRoleService.listRolesByUserId(user.getId());
-        userInfo.setRoles(roles.stream()
-                .map(SysRole::getRoleCode)
-                .collect(Collectors.toList()));
+    /**
+     * 批量构建用户信息（修复 N+1：原 buildUserInfo 每次调用分别查询角色和权限，
+     * 在分页等批量场景下 N 条记录产生 2N 次查询。现改为先批量查询所有用户的
+     * 角色和权限，再在内存中组装，固定 4 次 SQL）。
+     *
+     * @param users 用户列表
+     * @return 用户信息列表，顺序与入参一致
+     */
+    private List<LoginResponse.UserInfo> buildUserInfoList(List<SysUser> users) {
+        if (users == null || users.isEmpty()) {
+            return List.of();
+        }
+        List<Long> userIds = users.stream()
+                .map(SysUser::getId)
+                .collect(Collectors.toList());
+        // 批量查询角色和权限（各 1~2 次 SQL，与用户数量无关）
+        Map<Long, List<SysRole>> rolesMap = sysRoleService.listRolesByUserIds(userIds);
+        Map<Long, List<SysPermission>> permissionsMap = sysPermissionService.getPermissionsByUserIds(userIds);
 
-        List<SysPermission> permissions = sysPermissionService.getPermissionsByUserId(user.getId());
-        userInfo.setPermissions(permissions.stream()
-                .map(SysPermission::getPermissionCode)
-                .collect(Collectors.toList()));
+        List<LoginResponse.UserInfo> result = new ArrayList<>(users.size());
+        for (SysUser user : users) {
+            LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo();
+            userInfo.setId(user.getId());
+            userInfo.setUsername(user.getUsername());
+            userInfo.setPhone(user.getPhone());
+            userInfo.setEmail(user.getEmail());
+            userInfo.setAvatar(user.getAvatar());
+            userInfo.setNickName(user.getNickName());
+            userInfo.setRealName(user.getRealName());
+            userInfo.setGender(user.getGender());
+            userInfo.setStatus(user.getStatus());
 
-        return userInfo;
+            List<SysRole> roles = rolesMap.getOrDefault(user.getId(), List.of());
+            userInfo.setRoles(roles.stream()
+                    .map(SysRole::getRoleCode)
+                    .collect(Collectors.toList()));
+
+            List<SysPermission> permissions = permissionsMap.getOrDefault(user.getId(), List.of());
+            userInfo.setPermissions(permissions.stream()
+                    .map(SysPermission::getPermissionCode)
+                    .collect(Collectors.toList()));
+
+            result.add(userInfo);
+        }
+        return result;
     }
 
     @Override

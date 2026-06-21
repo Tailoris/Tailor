@@ -32,6 +32,19 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * OrderServiceImpl 单元测试.
+ *
+ * <p>TODO 待补充测试场景：</p>
+ * <ul>
+ *   <li>T-M02: 订单超时自动取消测试</li>
+ *   <li>T-M02: 售后申请/审核/退款流程测试</li>
+ *   <li>T-M02: 批量订单操作测试</li>
+ *   <li>T-M02: 订单搜索/筛选/分页查询测试</li>
+ *   <li>T-M02: 分布式锁获取失败降级测试</li>
+ *   <li>T-M02: 库存扣减回滚测试</li>
+ * </ul>
+ */
 @DisplayName("OrderServiceImpl 测试")
 @ExtendWith(MockitoExtension.class)
 class OrderServiceImplTest {
@@ -190,13 +203,18 @@ class OrderServiceImplTest {
         when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
         when(orderInfoMapper.updateById(any(OrderInfo.class))).thenReturn(1);
 
-        assertDoesNotThrow(() -> orderService.cancelOrder(userId, orderNo, reason));
+        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any(TransactionSynchronization.class)))
+                    .thenAnswer(inv -> null);
 
-        verify(orderInfoMapper).updateById((OrderInfo) argThat(o -> {
-                OrderInfo oi = (OrderInfo) o;
-                return oi.getStatus() == OrderConstants.ORDER_STATUS_CANCELLED
-                        && reason.equals(oi.getCancelReason());
-        }));
+            assertDoesNotThrow(() -> orderService.cancelOrder(userId, orderNo, reason));
+
+            verify(orderInfoMapper).updateById((OrderInfo) argThat(o -> {
+                    OrderInfo oi = (OrderInfo) o;
+                    return oi.getStatus() == OrderConstants.ORDER_STATUS_CANCELLED
+                            && reason.equals(oi.getCancelReason());
+            }));
+        }
     }
 
     @Test

@@ -1,0 +1,161 @@
+# ==============================================================================
+# Tailor IS - HashiCorp Vault Deployment + Service
+# ==============================================================================
+# Vault 用于集中管理所有敏感配置 (Secrets Management)
+# 模式: 开发模式 (单节点), 生产环境建议使用 HA 模式 + Consul 后端
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: vault
+    environment: production
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8200
+      targetPort: 8200
+      protocol: TCP
+  selector:
+    app: tailor-is
+    component: vault
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault-internal
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: vault
+    environment: production
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http
+      port: 8200
+      targetPort: 8200
+      protocol: TCP
+    - name: cluster
+      port: 8201
+      targetPort: 8201
+      protocol: TCP
+  selector:
+    app: tailor-is
+    component: vault
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: vault
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: vault
+  template:
+    metadata:
+      labels:
+        app: tailor-is
+        component: vault
+        environment: production
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        fsGroup: 1000
+      containers:
+        - name: vault
+          image: hashicorp/vault:1.18.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8200
+              protocol: TCP
+            - name: cluster
+              containerPort: 8201
+              protocol: TCP
+          env:
+            - name: VAULT_ADDR
+              value: "http://127.0.0.1:8200"
+            - name: VAULT_API_ADDR
+              value: "http://vault.tailor-is-prod.svc.cluster.local:8200"
+            - name: VAULT_CLUSTER_ADDR
+              value: "http://vault-internal.tailor-is-prod.svc.cluster.local:8201"
+          args:
+            - server
+          securityContext:
+            capabilities:
+              add:
+                - IPC_LOCK
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: vault-config
+              mountPath: /vault/config
+              readOnly: true
+            - name: vault-data
+              mountPath: /vault/data
+          livenessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true
+              port: 8200
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204
+              port: 8200
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: vault-config
+          configMap:
+            name: vault-config
+        - name: vault-data
+          persistentVolumeClaim:
+            claimName: vault-data-pvc
+
+---
+# ==============================================================================
+# Vault 数据持久化 (10Gi)
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vault-data-pvc
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: vault
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: tailor-is-storage
+  resources:
+    requests:
+      storage: 10Gi

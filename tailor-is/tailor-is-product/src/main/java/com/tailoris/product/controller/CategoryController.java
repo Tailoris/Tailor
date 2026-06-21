@@ -7,6 +7,7 @@ import com.tailoris.product.dto.CategoryRequest;
 import com.tailoris.product.entity.ProductCategory;
 import com.tailoris.product.service.ProductCategoryService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,8 +57,8 @@ public class CategoryController {
     @Operation(summary = "更新分类状态")
     @PutMapping("/{id}/status")
     public Result<Void> updateCategoryStatus(
-            @PathVariable Long id,
-            @RequestParam Integer status) {
+            @Parameter(description = "分类ID") @PathVariable Long id,
+            @Parameter(description = "分类状态") @RequestParam Integer status) {
         productCategoryService.updateCategoryStatus(id, status);
         return Result.success();
     }

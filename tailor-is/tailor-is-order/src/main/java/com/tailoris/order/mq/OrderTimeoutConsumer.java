@@ -39,7 +39,7 @@ public class OrderTimeoutConsumer {
             return;
         }
 
-        if (order.getStatus() != OrderConstants.ORDER_STATUS_PENDING_PAY) {
+        if (!Integer.valueOf(OrderConstants.ORDER_STATUS_PENDING_PAY).equals(order.getStatus())) {
             log.info("订单状态已变更，无需取消, orderNo: {}, status: {}", orderNo, order.getStatus());
             return;
         }

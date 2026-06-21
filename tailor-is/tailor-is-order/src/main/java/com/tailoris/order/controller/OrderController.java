@@ -37,7 +37,7 @@ public class OrderController {
     public Result<OrderInfo> getOrderDetail(
             @RequestHeader("X-User-Id") Long userId,
             @PathVariable String orderNo) {
-        OrderInfo order = orderService.getOrderDetail(orderNo);
+        OrderInfo order = orderService.getOrderDetail(userId, orderNo);
         return Result.success(order);
     }
 

@@ -166,7 +166,7 @@ function addSku() {
     originalPrice: 0,
     stock: 0,
     image: '',
-    status: 'active',
+    status: 1,
   })
 }
 

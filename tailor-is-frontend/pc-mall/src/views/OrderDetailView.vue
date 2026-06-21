@@ -1,6 +1,6 @@
 <template>
-  <div class="order-detail-view" v-loading="loading">
-    <el-breadcrumb separator="/">
+  <div class="order-detail-view" v-loading="loading" role="main" aria-label="订单详情页面">
+    <el-breadcrumb separator="/" aria-label="面包屑导航">
       <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
       <el-breadcrumb-item :to="{ path: '/orders' }">我的订单</el-breadcrumb-item>
       <el-breadcrumb-item>订单详情</el-breadcrumb-item>
@@ -70,7 +70,7 @@
             </el-timeline-item>
             <el-timeline-item timestamp="2024-01-02 09:00" placement="top" v-if="order.status >= 2">
               <h4>已发货</h4>
-              <p>快递公司: 顺丰快递, 运单号: SF1234567890</p>
+              <p>快递公司: {{ LOGISTICS_COMPANY }}, 运单号: {{ TRACKING_NUMBER }}</p>
             </el-timeline-item>
             <el-timeline-item timestamp="2024-01-03 14:00" placement="top" v-if="order.status >= 3">
               <h4>已签收</h4>
@@ -128,6 +128,10 @@ const props = defineProps<{
 
 const order = ref<Order | null>(null)
 const loading = ref(true)
+
+// FE-M-3修复: 物流信息提取为常量配置
+const LOGISTICS_COMPANY = '顺丰快递'
+const TRACKING_NUMBER = 'SF1234567890'
 
 async function loadOrder() {
   try {

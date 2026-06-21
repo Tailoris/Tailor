@@ -7,7 +7,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const props = defineProps({
   image: { type: String, default: '' },
   text: { type: String, default: '暂无数据' },

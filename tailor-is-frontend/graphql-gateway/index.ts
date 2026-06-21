@@ -2,8 +2,9 @@ import { createServer } from 'http'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { createYoga } from 'graphql-yoga'
-import resolvers from './resolvers'
+import resolvers, { createContext } from './resolvers'
 import { warmupCache } from './cache'
+import { getOrSetCached } from './src/cache/dataLoaderFactory'
 import axios from 'axios'
 
 const PORT = Number(process.env.PORT || process.env.GRAPHQL_PORT || 4000)
@@ -32,10 +33,8 @@ const yoga = createYoga({
   },
   // Enable GraphiQL for development
   graphiql: process.env.NODE_ENV !== 'production',
-  // Context: pass request headers for auth
-  context: ({ request }) => ({
-    headers: Object.fromEntries(request.headers.entries())
-  })
+  // Context: pass request headers for auth, and create per-request DataLoader
+  context: ({ request }) => createContext(Object.fromEntries(request.headers.entries()))
 })
 
 // Create HTTP server with /health endpoint support
@@ -49,8 +48,8 @@ const server = createServer((req, res) => {
 })
 
 server.listen(PORT, () => {
-  console.log(`GraphQL Gateway running at http://localhost:${PORT}/graphql`)
-  console.log(`GraphiQL playground: http://localhost:${PORT}/graphql`)
+  process.stdout.write(`GraphQL Gateway running at http://localhost:${PORT}/graphql\n`)
+  process.stdout.write(`GraphiQL playground: http://localhost:${PORT}/graphql\n`)
 
   // 缓存预热：服务启动后异步预热高频查询
   warmupCache({

@@ -1,0 +1,47 @@
+# Dependabot 配置 - tailor-is 后端依赖自动更新
+# 自动扫描 Maven 依赖更新, 每周一汇总 PR
+version: 2
+updates:
+  # Maven 依赖更新
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "backend"
+    groups:
+      spring:
+        patterns:
+          - "org.springframework:*"
+          - "org.springframework.boot:*"
+          - "org.springframework.cloud:*"
+      alibaba:
+        patterns:
+          - "com.alibaba.cloud:*"
+          - "com.alibaba:*"
+      database:
+        patterns:
+          - "com.baomidou:*"
+          - "mysql:*"
+          - "org.apache.shardingsphere:*"
+    ignore:
+      - dependency-name: "org.springframework.boot:spring-boot-dependencies"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.springframework.cloud:spring-cloud-dependencies"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions 工作流更新
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci"

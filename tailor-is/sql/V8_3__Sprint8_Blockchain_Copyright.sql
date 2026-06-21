@@ -4,6 +4,9 @@
 -- 关联模块: tailor-is-copyright
 -- ============================================================
 
+-- ⚠️ 警告：此脚本仅用于初始化部署，请勿在生产环境执行 DROP TABLE 操作
+-- 生产环境数据库变更请使用 Flyway/Liquibase 版本化迁移工具管理
+
 -- 1. 扩展版权记录表
 ALTER TABLE `copyright_record`
     ADD COLUMN `author_real_name` VARCHAR(64) DEFAULT NULL COMMENT '作者真实姓名' AFTER `user_id`,
@@ -31,8 +34,7 @@ ALTER TABLE `copyright_record`
     ADD KEY `idx_commercial` (`is_commercial`, `license_type`);
 
 -- 2. 区块链事件表（链上回调）
-DROP TABLE IF EXISTS `cr_blockchain_event`;
-CREATE TABLE `cr_blockchain_event` (
+CREATE TABLE IF NOT EXISTS `cr_blockchain_event` (
     `id` BIGINT NOT NULL COMMENT '主键ID',
     `record_id` BIGINT DEFAULT NULL COMMENT '版权记录ID',
     `event_type` VARCHAR(32) NOT NULL COMMENT '事件类型:STORAGE_SUCCESS/CERT_ISSUED/REVOKE',
@@ -56,8 +58,7 @@ CREATE TABLE `cr_blockchain_event` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='区块链事件表';
 
 -- 3. 巡检任务表
-DROP TABLE IF EXISTS `cr_inspection_task`;
-CREATE TABLE `cr_inspection_task` (
+CREATE TABLE IF NOT EXISTS `cr_inspection_task` (
     `id` BIGINT NOT NULL COMMENT '主键ID',
     `task_type` INT NOT NULL COMMENT '任务类型:1机器日检 2人工月检 3专项',
     `task_name` VARCHAR(100) NOT NULL COMMENT '任务名称',
@@ -86,8 +87,7 @@ CREATE TABLE `cr_inspection_task` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='巡检任务表';
 
 -- 4. 违规处置记录表
-DROP TABLE IF EXISTS `cr_violation_handling`;
-CREATE TABLE `cr_violation_handling` (
+CREATE TABLE IF NOT EXISTS `cr_violation_handling` (
     `id` BIGINT NOT NULL COMMENT '主键ID',
     `record_id` BIGINT DEFAULT NULL COMMENT '版权记录ID',
     `inspection_id` BIGINT DEFAULT NULL COMMENT '巡检任务ID',
@@ -111,8 +111,7 @@ CREATE TABLE `cr_violation_handling` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='违规处置表';
 
 -- 5. 侵权检测与维权表
-DROP TABLE IF EXISTS `cr_infringement_case`;
-CREATE TABLE `cr_infringement_case` (
+CREATE TABLE IF NOT EXISTS `cr_infringement_case` (
     `id` BIGINT NOT NULL COMMENT '主键ID',
     `case_no` VARCHAR(64) NOT NULL COMMENT '案件编号',
     `record_id` BIGINT NOT NULL COMMENT '版权记录ID',
@@ -150,8 +149,7 @@ CREATE TABLE `cr_infringement_case` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='侵权案件表';
 
 -- 6. 侵权案件流转日志
-DROP TABLE IF EXISTS `cr_infringement_log`;
-CREATE TABLE `cr_infringement_log` (
+CREATE TABLE IF NOT EXISTS `cr_infringement_log` (
     `id` BIGINT NOT NULL COMMENT '主键ID',
     `case_id` BIGINT NOT NULL COMMENT '案件ID',
     `from_status` INT DEFAULT NULL COMMENT '原状态',
@@ -170,8 +168,7 @@ CREATE TABLE `cr_infringement_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='侵权案件流转日志';
 
 -- 7. 相似度检测记录
-DROP TABLE IF EXISTS `cr_similarity_check`;
-CREATE TABLE `cr_similarity_check` (
+CREATE TABLE IF NOT EXISTS `cr_similarity_check` (
     `id` BIGINT NOT NULL COMMENT '主键ID',
     `source_record_id` BIGINT NOT NULL COMMENT '源版权ID',
     `target_record_id` BIGINT DEFAULT NULL COMMENT '目标版权ID(库内比对)',
@@ -195,8 +192,7 @@ CREATE TABLE `cr_similarity_check` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='相似度检测记录';
 
 -- 8. 黑白名单库
-DROP TABLE IF EXISTS `cr_ip_blacklist`;
-CREATE TABLE `cr_ip_blacklist` (
+CREATE TABLE IF NOT EXISTS `cr_ip_blacklist` (
     `id` BIGINT NOT NULL COMMENT '主键ID',
     `list_type` INT NOT NULL COMMENT '1黑名单 2白名单 3灰名单',
     `target_type` INT NOT NULL COMMENT '1用户 2IP 3文件Hash 4内容关键词',
@@ -214,8 +210,7 @@ CREATE TABLE `cr_ip_blacklist` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='黑白名单库';
 
 -- 9. 通知消息表
-DROP TABLE IF EXISTS `cr_notification`;
-CREATE TABLE `cr_notification` (
+CREATE TABLE IF NOT EXISTS `cr_notification` (
     `id` BIGINT NOT NULL COMMENT '主键ID',
     `user_id` BIGINT NOT NULL COMMENT '接收人',
     `biz_type` VARCHAR(32) NOT NULL COMMENT '业务类型:VIOLATION/INFRINGEMENT/INSPECTION',
@@ -236,8 +231,7 @@ CREATE TABLE `cr_notification` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知消息表';
 
 -- 10. 存证证书文件表
-DROP TABLE IF EXISTS `cr_certificate_file`;
-CREATE TABLE `cr_certificate_file` (
+CREATE TABLE IF NOT EXISTS `cr_certificate_file` (
     `id` BIGINT NOT NULL COMMENT '主键ID',
     `record_id` BIGINT NOT NULL COMMENT '版权记录ID',
     `cert_no` VARCHAR(64) NOT NULL COMMENT '证书编号',
@@ -260,8 +254,7 @@ CREATE TABLE `cr_certificate_file` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='证书文件表';
 
 -- 11. 区块链平台配置
-DROP TABLE IF EXISTS `cr_blockchain_config`;
-CREATE TABLE `cr_blockchain_config` (
+CREATE TABLE IF NOT EXISTS `cr_blockchain_config` (
     `id` BIGINT NOT NULL COMMENT '主键ID',
     `platform_code` VARCHAR(32) NOT NULL COMMENT '平台编码:ANTCHAIN/ZHIXIN/BSN',
     `platform_name` VARCHAR(64) NOT NULL COMMENT '平台名称',

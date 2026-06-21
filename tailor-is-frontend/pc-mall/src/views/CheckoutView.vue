@@ -1,5 +1,5 @@
 <template>
-  <div class="checkout-view" v-loading="loading">
+  <div class="checkout-view" v-loading="loading" role="main" aria-label="结算页面">
     <!-- Error state (M-011) -->
     <div v-if="error" class="error-container">
       <el-result icon="error" :title="error" sub-title="请返回上一页重试">

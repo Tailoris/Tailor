@@ -27,7 +27,7 @@
             查看
           </el-button>
           <el-button
-            v-if="row.status === 'paid'"
+            v-if="row.status === 1"
             link
             type="success"
             size="small"
@@ -80,20 +80,20 @@ defineEmits<{
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-const statusType: Record<string, string> = {
-  pending: 'info',
-  paid: 'warning',
-  shipped: '',
-  completed: 'success',
-  cancelled: 'danger',
+const statusType: Record<number, string> = {
+  0: 'info',
+  1: 'warning',
+  2: '',
+  3: 'success',
+  4: 'danger',
 }
 
-const statusLabel: Record<string, string> = {
-  pending: '待付款',
-  paid: '已付款',
-  shipped: '已发货',
-  completed: '已完成',
-  cancelled: '已取消',
+const statusLabel: Record<number, string> = {
+  0: '待付款',
+  1: '已付款',
+  2: '已发货',
+  3: '已完成',
+  4: '已取消',
 }
 </script>
 

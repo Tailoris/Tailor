@@ -8,7 +8,7 @@ public interface PaymentService {
 
     PaymentRecord createPayment(Long userId, PayRequest request);
 
-    void payCallback(String paymentNo, String transactionId, String channelResponse, Long merchantId);
+    void payCallback(String paymentNo, String transactionId, String channelResponse, String sign, String signType);
 
     RefundRecord refund(Long userId, Long ticketId, Long orderId, java.math.BigDecimal amount, Integer refundChannel, String remark);
 

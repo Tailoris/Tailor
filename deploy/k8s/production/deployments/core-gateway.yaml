@@ -1,0 +1,148 @@
+# ==============================================================================
+# Tailor IS - Core Gateway Deployment + Service
+# ==============================================================================
+# 核心网关 - 所有业务 API 统一入口
+# 端口: 8080 | 副本: 2
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: core-gateway
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: core-gateway
+    environment: production
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: tailor-is
+    component: core-gateway
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: core-gateway
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: core-gateway
+    environment: production
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: core-gateway
+  template:
+    metadata:
+      labels:
+        app: tailor-is
+        component: core-gateway
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+        # Vault Agent Injector 注解
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-init-first: "true"
+        vault.hashicorp.com/role: "tailor-is"
+        vault.hashicorp.com/agent-inject-secret-mysql-password: "tailor-is/data/mysql"
+        vault.hashicorp.com/agent-inject-template-mysql-password: |
+          {{- with secret "tailor-is/data/mysql" -}}
+          export MYSQL_PASSWORD="{{ .Data.data.password }}"
+          {{- end -}}
+        vault.hashicorp.com/agent-inject-secret-redis-password: "tailor-is/data/redis"
+        vault.hashicorp.com/agent-inject-template-redis-password: |
+          {{- with secret "tailor-is/data/redis" -}}
+          export REDIS_PASSWORD="{{ .Data.data.password }}"
+          {{- end -}}
+        vault.hashicorp.com/agent-inject-secret-jwt: "tailor-is/data/security"
+        vault.hashicorp.com/agent-inject-template-jwt: |
+          {{- with secret "tailor-is/data/security" -}}
+          export JWT_SECRET="{{ .Data.data.jwt_secret }}"
+          export AES_KEY="{{ .Data.data.aes_key }}"
+          export GATEWAY_HMAC_SECRET="{{ .Data.data.gateway_hmac_secret }}"
+          {{- end -}}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: core-gateway
+          image: tailor-is/core-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: CORE_GATEWAY_PORT
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+          envFrom:
+            - configMapRef:
+                name: tailor-is-config
+            - secretRef:
+                name: tailor-is-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2048Mi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+      volumes:
+        - name: logs
+          emptyDir: {}
+      terminationGracePeriodSeconds: 30

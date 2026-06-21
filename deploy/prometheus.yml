@@ -36,27 +36,39 @@ scrape_configs:
     scrape_interval: 15s
     scrape_timeout: 10s
     static_configs:
-      - targets: ['localhost:8080']
-        labels: {service: 'tailor-is-gateway',  port: '8080', env: 'production'}
+      - targets: ['localhost:9000']
+        labels: {service: 'tailor-is-core-gateway', port: '9000', env: 'production'}
+      - targets: ['localhost:8081']
+        labels: {service: 'tailor-is-lite-gateway', port: '8081', env: 'production'}
       - targets: ['localhost:8101']
-        labels: {service: 'tailor-is-user',     port: '8101', env: 'production'}
+        labels: {service: 'tailor-is-user',       port: '8101', env: 'production'}
       - targets: ['localhost:8102']
-        labels: {service: 'tailor-is-merchant', port: '8102', env: 'production'}
+        labels: {service: 'tailor-is-product',    port: '8102', env: 'production'}
       - targets: ['localhost:8103']
-        labels: {service: 'tailor-is-product',  port: '8103', env: 'production'}
+        labels: {service: 'tailor-is-order',      port: '8103', env: 'production'}
       - targets: ['localhost:8104']
-        labels: {service: 'tailor-is-order',    port: '8104', env: 'production'}
+        labels: {service: 'tailor-is-payment',    port: '8104', env: 'production'}
       - targets: ['localhost:8105']
-        labels: {service: 'tailor-is-payment',  port: '8105', env: 'production'}
+        labels: {service: 'tailor-is-marketing',  port: '8105', env: 'production'}
       - targets: ['localhost:8106']
-        labels: {service: 'tailor-is-marketing',port: '8106', env: 'production'}
+        labels: {service: 'tailor-is-ai',         port: '8106', env: 'production'}
       - targets: ['localhost:8107']
-        labels: {service: 'tailor-is-ai',       port: '8107', env: 'production'}
+        labels: {service: 'tailor-is-copyright',  port: '8107', env: 'production'}
       - targets: ['localhost:8108']
-        labels: {service: 'tailor-is-copyright',port: '8108', env: 'production'}
+        labels: {service: 'tailor-is-community',  port: '8108', env: 'production'}
       - targets: ['localhost:8109']
-        labels: {service: 'tailor-is-community',port: '8109', env: 'production'}
+        labels: {service: 'tailor-is-supply',     port: '8109', env: 'production'}
       - targets: ['localhost:8110']
-        labels: {service: 'tailor-is-supply',   port: '8110', env: 'production'}
+        labels: {service: 'tailor-is-merchant',   port: '8110', env: 'production'}
       - targets: ['localhost:8111']
-        labels: {service: 'tailor-is-message',  port: '8111', env: 'production'}
+        labels: {service: 'tailor-is-message',    port: '8111', env: 'production'}
+      - targets: ['localhost:8100']
+        labels: {service: 'tailor-is-admin',      port: '8100', env: 'production'}
+      - targets: ['localhost:8112']
+        labels: {service: 'tailor-is-academy',    port: '8112', env: 'production'}
+      - targets: ['localhost:8113']
+        labels: {service: 'tailor-is-analytics',  port: '8113', env: 'production'}
+      - targets: ['localhost:8114']
+        labels: {service: 'tailor-is-message-im', port: '8114', env: 'production'}
+      - targets: ['localhost:8115']
+        labels: {service: 'tailor-is-pattern',    port: '8115', env: 'production'}

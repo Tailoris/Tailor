@@ -32,8 +32,8 @@ spec:
                   echo "缩容 ai 到 1 副本..."
                   kubectl scale deployment ai --replicas=1 -n tailor-is-prod
 
-                  echo "缩容 payment 到 1 副本..."
-                  kubectl scale deployment payment --replicas=1 -n tailor-is-prod
+                  echo "缩容 payment 到 2 副本..."
+                  kubectl scale deployment payment --replicas=2 -n tailor-is-prod
 
                   # 注意: core-gateway 和 order 保持 HPA 自动管理, 不手动缩容
                   # 如果 HPA 的 minReplicas 也需调整, 可以:

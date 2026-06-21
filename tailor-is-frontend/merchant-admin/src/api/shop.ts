@@ -15,7 +15,7 @@ interface AddEmployeeParams {
 }
 
 export const getShopInfo = (shopId: number) => {
-  return request<any, Shop>({
+  return request<Record<string, unknown>, Shop>({
     url: `/shops/${shopId}`,
     method: 'GET',
   })
@@ -27,14 +27,14 @@ export interface ShopItem {
 }
 
 export const getMerchantShops = () => {
-  return request<any, ShopItem[]>({
+  return request<Record<string, unknown>, ShopItem[]>({
     url: '/shops/my',
     method: 'GET',
   })
 }
 
 export const updateShopInfo = (shopId: number, data: ShopUpdateData) => {
-  return request<any, Shop>({
+  return request<Record<string, unknown>, Shop>({
     url: `/shops/${shopId}`,
     method: 'PUT',
     data,
@@ -42,7 +42,7 @@ export const updateShopInfo = (shopId: number, data: ShopUpdateData) => {
 }
 
 export const listEmployees = (shopId: number, current?: number, size?: number) => {
-  return request<any, PageResponse<Employee>>({
+  return request<Record<string, unknown>, PageResponse<Employee>>({
     url: `/shops/${shopId}/employees`,
     method: 'GET',
     params: { current, size },
@@ -50,7 +50,7 @@ export const listEmployees = (shopId: number, current?: number, size?: number) =
 }
 
 export const addEmployee = (shopId: number, data: AddEmployeeParams) => {
-  return request<any, Employee>({
+  return request<Record<string, unknown>, Employee>({
     url: `/shops/${shopId}/employees`,
     method: 'POST',
     data,
@@ -58,14 +58,14 @@ export const addEmployee = (shopId: number, data: AddEmployeeParams) => {
 }
 
 export const removeEmployee = (shopId: number, employeeId: number) => {
-  return request<any, void>({
+  return request<Record<string, unknown>, void>({
     url: `/shops/${shopId}/employees/${employeeId}`,
     method: 'DELETE',
   })
 }
 
 export const updateEmployeeRole = (shopId: number, employeeId: number, role: string) => {
-  return request<any, Employee>({
+  return request<Record<string, unknown>, Employee>({
     url: `/shops/${shopId}/employees/${employeeId}/role`,
     method: 'PUT',
     data: { role },

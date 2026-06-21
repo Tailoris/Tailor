@@ -17,7 +17,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const props = defineProps({
   list: { type: Array, default: () => [] },
   column: { type: Number, default: 2 },

@@ -65,6 +65,16 @@ import static org.mockito.Mockito.when;
  *   <li>缓存预热与清理（USR-005）</li>
  * </ul>
  *
+ * <p>TODO 待补充测试场景：</p>
+ * <ul>
+ *   <li>T-M01: 密码修改/重置流程测试</li>
+ *   <li>T-M01: 账号注销/删除流程测试</li>
+ *   <li>T-M01: 批量用户操作测试（批量禁用/启用）</li>
+ *   <li>T-M01: 微信登录/绑定/解绑完整流程测试</li>
+ *   <li>T-M01: 用户地址管理（CRUD）测试</li>
+ *   <li>T-M01: 权限变更后的缓存失效验证</li>
+ * </ul>
+ *
  * @author Tailor IS Team
  * @since 1.0.0
  */
@@ -383,8 +393,10 @@ class SysUserServiceImplTest {
         when(loginSecurityService.isAccountLocked("alice")).thenReturn(false);
         when(sysUserMapper.selectOne(any())).thenReturn(dbUser);
         when(passwordEncoder.matches("correct", "$2a$10$encoded")).thenReturn(true);
-        when(sysRoleService.listRolesByUserId(1L)).thenReturn(List.of());
-        when(sysPermissionService.getPermissionsByUserId(1L)).thenReturn(List.of());
+        when(sysRoleService.listRolesByUserIds(any()))
+                .thenReturn(java.util.Collections.singletonMap(1L, List.of()));
+        when(sysPermissionService.getPermissionsByUserIds(any()))
+                .thenReturn(java.util.Collections.singletonMap(1L, List.of()));
 
         try (MockedStatic<StpUtil> stpUtilMock = org.mockito.Mockito.mockStatic(StpUtil.class)) {
             stpUtilMock.when(() -> StpUtil.login(1L)).thenAnswer(inv -> null);
@@ -440,8 +452,10 @@ class SysUserServiceImplTest {
         user.setPhone("13800138000");
 
         when(sysUserMapper.selectById(userId)).thenReturn(user);
-        when(sysRoleService.listRolesByUserId(userId)).thenReturn(List.of());
-        when(sysPermissionService.getPermissionsByUserId(userId)).thenReturn(List.of());
+        when(sysRoleService.listRolesByUserIds(any()))
+                .thenReturn(java.util.Collections.singletonMap(userId, List.of()));
+        when(sysPermissionService.getPermissionsByUserIds(any()))
+                .thenReturn(java.util.Collections.singletonMap(userId, List.of()));
 
         LoginResponse.UserInfo userInfo = sysUserService.getUserInfo(userId);
 
@@ -549,8 +563,10 @@ class SysUserServiceImplTest {
         user.setStatus(1); // status != 0 才能通过 refresh 的校验
 
         when(sysUserMapper.selectById(userId)).thenReturn(user);
-        when(sysRoleService.listRolesByUserId(userId)).thenReturn(List.of());
-        when(sysPermissionService.getPermissionsByUserId(userId)).thenReturn(List.of());
+        when(sysRoleService.listRolesByUserIds(any()))
+                .thenReturn(java.util.Collections.singletonMap(userId, List.of()));
+        when(sysPermissionService.getPermissionsByUserIds(any()))
+                .thenReturn(java.util.Collections.singletonMap(userId, List.of()));
 
         try (MockedStatic<StpUtil> stpUtilMock = org.mockito.Mockito.mockStatic(StpUtil.class)) {
             stpUtilMock.when(() -> StpUtil.login(userId)).thenAnswer(inv -> null);

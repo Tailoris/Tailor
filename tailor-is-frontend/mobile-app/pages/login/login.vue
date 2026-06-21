@@ -62,9 +62,10 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { login, sendSmsCode } from '@/api/auth'
+import { encryptAsync } from '@/utils/crypto'
 
 const activeTab = ref('password')
 const loading = ref(false)
@@ -130,8 +131,10 @@ function handleLogin() {
     : { phone: form.value.phone, code: form.value.code }
   
   login(loginData)
-    .then(res => {
-      uni.setStorageSync('token', res.data.token)
+    .then(async (res) => {
+      // FE-H-2: 使用 AES-GCM 加密存储 Token
+      const encryptedToken = await encryptAsync(res.data.token)
+      uni.setStorageSync('token', encryptedToken)
       uni.setStorageSync('userInfo', res.data.user)
       uni.showToast({ title: '登录成功', icon: 'success' })
       setTimeout(() => {

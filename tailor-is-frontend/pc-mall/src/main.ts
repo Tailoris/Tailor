@@ -9,6 +9,7 @@ import router from './router'
 import App from './App.vue'
 import { installA11yDirectives } from '@shared/plugins/a11y-directive'
 import './style.css'
+import './styles/responsive.scss'
 import '@shared/styles/a11y.scss'
 
 const app = createApp(App)

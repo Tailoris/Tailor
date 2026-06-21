@@ -27,13 +27,13 @@ public class SandboxTestServiceImpl implements SandboxTestService {
         
         Map<String, Object> result = new HashMap<>();
         try {
-            Map<String, Object> payResult = wechatPayService.createOrder(
+            Map<String, Object> payResult = wechatPayService.createJsapiPayment(
                     orderNo,
                     amount,
                     openId != null ? openId : "oSandboxTestOpenId",
+                    "沙箱测试商品",
                     "192.168.1.1",
-                    "https://sandbox.tailoris.com/api/v1/payment/wechat/callback",
-                    "沙箱测试商品"
+                    "https://sandbox.tailoris.com/api/v1/payment/wechat/callback"
             );
             
             result.put("success", true);
@@ -84,11 +84,12 @@ public class SandboxTestServiceImpl implements SandboxTestService {
         Map<String, Object> result = new HashMap<>();
         try {
             String outRefundNo = "REF" + System.currentTimeMillis();
-            Map<String, Object> refundResult = wechatPayService.refund(
+            Map<String, Object> refundResult = wechatPayService.createRefund(
                     outTradeNo,
                     outRefundNo,
                     refundAmount,
-                    refundAmount
+                    refundAmount,
+                    "沙箱测试退款"
             );
             
             result.put("success", true);

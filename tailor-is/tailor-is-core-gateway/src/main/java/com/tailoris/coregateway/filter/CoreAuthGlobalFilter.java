@@ -16,14 +16,18 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.lang.Nullable;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Core Gateway 全局认证过滤器.
@@ -54,7 +58,7 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
             "/api/auth/refresh",
             "/api/auth/reset-password",
             "/api/public/**",
-            "/actuator/**",
+            "/actuator/health",
             "/doc.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",
@@ -66,6 +70,10 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
 
     @Value("${tailoris.gateway.auth.excluded-paths:}")
     private List<String> customExcludedPaths;
+
+    /** 网关 HMAC 签名密钥，用于对 X-User-Id 头签名，防止下游服务被直接访问时伪造该头 */
+    @Value("${GATEWAY_HMAC_SECRET:}")
+    private String hmacSecret;
 
     public CoreAuthGlobalFilter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -102,11 +110,23 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
                 return unauthorizedResponse(exchange, "Token无效或已过期，请重新登录");
             }
 
-            // 5. 透传用户信息到下游
+            // 5. 透传用户信息到下游（BE-H-18: 先删除客户端传入的 X-User-Id 防止伪造）
+            //    并对 X-User-Id 计算 HMAC-SHA256 签名，下游服务可据此校验请求确实来自网关
+            String userIdStr = String.valueOf(loginId);
+            String signature = signUserId(userIdStr);
             ServerHttpRequest mutatedRequest = request.mutate()
-                    .header("X-User-Id", String.valueOf(loginId))
-                    .header("X-Token-Validated", "true")
+                    .headers(headers -> {
+                        headers.remove("X-User-Id");
+                        headers.remove("X-User-Id-Signature");
+                        headers.add("X-User-Id", userIdStr);
+                        if (signature != null) {
+                            headers.add("X-User-Id-Signature", signature);
+                        }
+                        headers.add("X-Token-Validated", "true");
+                    })
                     .build();
+            // TODO[安全]: 下游服务需校验 X-User-Id-Signature = HMAC-SHA256(X-User-Id, GATEWAY_HMAC_SECRET)，
+            // 拒绝签名缺失或不匹配的请求，防止绕过网关直接伪造 X-User-Id 头。
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
         } catch (Exception e) {
             log.warn("Core Gateway - Token验证异常: path={}, error={}", path, e.getMessage());
@@ -114,6 +134,7 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
         }
     }
 
+    @Nullable
     private String extractToken(ServerHttpRequest request) {
         // 优先从 Authorization Header 提取
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
@@ -169,6 +190,28 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
             return "***";
         }
         return token.substring(0, 4) + "***" + token.substring(token.length() - 4);
+    }
+
+    /**
+     * 对 userId 计算 HMAC-SHA256 签名，防止下游服务被直接访问时伪造 X-User-Id 头.
+     *
+     * @param userId 用户ID字符串
+     * @return Base64 编码的签名，未配置密钥时返回 null（不签名）
+     */
+    @Nullable
+    private String signUserId(String userId) {
+        if (hmacSecret == null || hmacSecret.isBlank()) {
+            return null;
+        }
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(hmacSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] hash = mac.doFinal(userId.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            log.warn("Core Gateway - X-User-Id HMAC签名失败: {}", e.getMessage());
+            return null;
+        }
     }
 
     private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, String message) {

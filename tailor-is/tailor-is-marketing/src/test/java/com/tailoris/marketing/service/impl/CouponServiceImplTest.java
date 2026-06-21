@@ -26,6 +26,19 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * CouponServiceImpl 单元测试.
+ *
+ * <p>TODO 待补充测试场景：</p>
+ * <ul>
+ *   <li>T-M06: 优惠券超发/超领防护测试</li>
+ *   <li>T-M06: 优惠券使用/核销/退回测试</li>
+ *   <li>T-M06: 多优惠券叠加计算测试</li>
+ *   <li>T-M06: 秒杀活动库存扣减测试</li>
+ *   <li>T-M06: 会员等级/积分变动测试</li>
+ *   <li>T-M06: 营销活动时间窗口边界测试</li>
+ * </ul>
+ */
 @DisplayName("CouponServiceImpl 单元测试 - 分布式锁与领券")
 @ExtendWith(MockitoExtension.class)
 class CouponServiceImplTest {

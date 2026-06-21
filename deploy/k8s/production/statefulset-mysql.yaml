@@ -1,0 +1,191 @@
+# ==============================================================================
+# Tailor IS - MySQL 8.0 StatefulSet
+# ==============================================================================
+# 单节点部署，后续可扩展为 MySQL Group Replication 集群
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: mysql
+    environment: production
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless Service for StatefulSet
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: 3306
+      protocol: TCP
+  selector:
+    app: tailor-is
+    component: mysql
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: mysql
+    environment: production
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailor-is
+      component: mysql
+  template:
+    metadata:
+      labels:
+        app: tailor-is
+        component: mysql
+        environment: production
+    spec:
+      securityContext:
+        fsGroup: 999  # mysql user
+      containers:
+        - name: mysql
+          image: mysql:8.0.35
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: tailor-is-config
+                  key: TZ
+          args:
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
+            - --default-authentication-plugin=mysql_native_password
+            - --max-connections=500
+            - --innodb-buffer-pool-size=2G
+            - --innodb-log-file-size=256M
+            - --slow-query-log=1
+            - --slow-query-log-file=/var/log/mysql/slow.log
+            - --long-query-time=2
+          resources:
+            requests:
+              cpu: "2000m"
+              memory: "4Gi"
+            limits:
+              cpu: "4000m"
+              memory: "8Gi"
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+                - -u
+                - root
+                - -p$(MYSQL_ROOT_PASSWORD)
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+                - -u
+                - root
+                - -p$(MYSQL_ROOT_PASSWORD)
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+                - -u
+                - root
+                - -p$(MYSQL_ROOT_PASSWORD)
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+      volumes:
+        - name: mysql-init
+          configMap:
+            name: mysql-init-sql
+            optional: true
+      terminationGracePeriodSeconds: 60
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+        labels:
+          app: tailor-is
+          component: mysql
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: tailor-is-storage
+        resources:
+          requests:
+            storage: 50Gi
+
+---
+# ==============================================================================
+# MySQL 初始化 SQL ConfigMap
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-sql
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: mysql
+    environment: production
+data:
+  000_init_database.sql: |
+    -- ============================================================
+    -- Tailor IS 数据库初始化脚本
+    -- ============================================================
+    CREATE DATABASE IF NOT EXISTS tailor_is_user CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_product CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_order CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_payment CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_marketing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_ai CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_copyright CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_merchant CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_admin CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_pattern CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_community CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_supply CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_message CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_im CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_academy CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS tailor_is_analytics CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

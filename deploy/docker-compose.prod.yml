@@ -60,8 +60,6 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=15d
       - --web.enable-lifecycle
-    ports:
-      - "9090:9090"
     networks: [tailor-is-network, monitor-network]
     <<: *restart-policy
     logging: *default-logging
@@ -83,13 +81,11 @@ services:
     hostname: grafana
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_INSTALL_PLUGINS: "grafana-piechart-panel,grafana-clock-panel"
     volumes:
       - grafana-data:/var/lib/grafana
-    ports:
-      - "3001:3000"
     networks: [monitor-network]
     depends_on: [prometheus]
     <<: *restart-policy
@@ -106,36 +102,36 @@ services:
       start_period: 30s
 
 # ==============================================================================
-# 认证/用户独立服务 (Auth/User Service Standalone)
+# 认证/用户服务 (微服务模块)
 # ==============================================================================
-  tailor-is-user:
-    image: tailor-is/user:1.0.0
-    container_name: tailor-is-user
-    hostname: tailor-is-user
+  user-service:
+    image: tailor-is/user-service:latest
+    container_name: tailor-is-user-service
+    hostname: user-service
     build:
-      context: ./tailor-is-user
-      dockerfile: Dockerfile
+      context: ./tailor-is
+      dockerfile: ./tailor-is-user/Dockerfile
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      SERVER_PORT: "18080"
-      JVM_XMX: 512m
-      JVM_XMS: 256m
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      JVM_XMX: 1024m
+      JVM_XMS: 512m
+      SERVER_PORT: "8101"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailoris?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_user?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
-      SPRING_RABBITMQ_HOST: 127.0.0.1
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: host.docker.internal
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rabbitmq}
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
-      - "18080:18080"
+      - "8101:8101"
     networks: [tailor-is-network, monitor-network]
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -143,14 +139,14 @@ services:
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '1.0', memory: 1024M }
+        limits: { cpus: '1.5', memory: 1024M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:18080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8101/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 60s
 
 # ==============================================================================
 # API 网关层 (API Gateway)
@@ -168,11 +164,11 @@ services:
       JVM_XMX: 2048m
       JVM_XMS: 1024m
       SERVER_PORT: "8080"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
     ports:
-      - "8080:8080"
+      - "9000:8080"
     networks: [tailor-is-network, monitor-network]
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -183,7 +179,7 @@ services:
         limits: { cpus: '2.0', memory: 1536M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8080/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -202,9 +198,9 @@ services:
       JVM_XMX: 512m
       JVM_XMS: 256m
       SERVER_PORT: "8081"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
     ports:
       - "8081:8081"
     networks: [tailor-is-network, monitor-network]
@@ -217,7 +213,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8081/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8081/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -236,15 +232,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8100"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_admin?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_admin?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8100:8100"
     networks: [tailor-is-network, monitor-network]
@@ -257,7 +253,7 @@ services:
         limits: { cpus: '1.5', memory: 1024M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8100/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8100/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -276,15 +272,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8102"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_product?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_product?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8102:8102"
     networks: [tailor-is-network, monitor-network]
@@ -297,7 +293,7 @@ services:
         limits: { cpus: '1.5', memory: 1024M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8102/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8102/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -316,19 +312,19 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8103"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_order?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_order?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
-      SPRING_RABBITMQ_HOST: 127.0.0.1
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: host.docker.internal
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rabbitmq}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "8103:8103"
     networks: [tailor-is-network, monitor-network]
@@ -341,7 +337,7 @@ services:
         limits: { cpus: '1.5', memory: 1024M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8103/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8103/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -360,19 +356,19 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8104"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_payment?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_payment?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
-      SPRING_RABBITMQ_HOST: 127.0.0.1
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: host.docker.internal
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rabbitmq}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       WECHAT_PAY_APP_ID: ${WECHAT_PAY_APP_ID:-}
       WECHAT_PAY_MCH_ID: ${WECHAT_PAY_MCH_ID:-}
       WECHAT_PAY_API_KEY: ${WECHAT_PAY_API_KEY:-}
@@ -391,7 +387,7 @@ services:
         limits: { cpus: '1.5', memory: 1024M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8104/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8104/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -410,15 +406,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8105"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_marketing?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_marketing?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8105:8105"
     networks: [tailor-is-network, monitor-network]
@@ -431,7 +427,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8105/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8105/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -450,15 +446,15 @@ services:
       JVM_XMX: 2048m
       JVM_XMS: 1024m
       SERVER_PORT: "8106"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_ai?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_ai?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8106:8106"
     networks: [tailor-is-network, monitor-network]
@@ -471,7 +467,7 @@ services:
         limits: { cpus: '2.0', memory: 1536M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8106/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8106/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -490,15 +486,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8107"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_copyright?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_copyright?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8107:8107"
     networks: [tailor-is-network, monitor-network]
@@ -511,7 +507,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8107/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8107/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -530,19 +526,19 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8108"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_community?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_community?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
-      SPRING_RABBITMQ_HOST: 127.0.0.1
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: host.docker.internal
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-rabbitmq}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
     ports:
       - "8108:8108"
     networks: [tailor-is-network, monitor-network]
@@ -555,7 +551,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8108/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8108/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -574,15 +570,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8109"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_supply?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_supply?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8109:8109"
     networks: [tailor-is-network, monitor-network]
@@ -595,7 +591,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8109/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8109/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -614,15 +610,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8110"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_merchant?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_merchant?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8110:8110"
     networks: [tailor-is-network, monitor-network]
@@ -635,7 +631,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8110/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8110/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -654,15 +650,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8111"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_message?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_message?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8111:8111"
     networks: [tailor-is-network, monitor-network]
@@ -675,7 +671,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8111/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8111/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -694,15 +690,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8112"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_academy?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_academy?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8112:8112"
     networks: [tailor-is-network, monitor-network]
@@ -715,7 +711,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8112/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8112/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -734,15 +730,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8113"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_analytics?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_analytics?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8113:8113"
     networks: [tailor-is-network, monitor-network]
@@ -755,7 +751,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8113/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8113/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -774,15 +770,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8114"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_message_im?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_message_im?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8114:8114"
     networks: [tailor-is-network, monitor-network]
@@ -795,7 +791,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8114/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8114/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -814,15 +810,15 @@ services:
       JVM_XMX: 1024m
       JVM_XMS: 512m
       SERVER_PORT: "8115"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: 127.0.0.1:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/tailor_is_pattern?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: host.docker.internal:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/tailor_is_pattern?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-mysql_ZmY2sr}
-      SPRING_DATA_REDIS_HOST: 127.0.0.1
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: host.docker.internal
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_jD2N8n}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "8115:8115"
     networks: [tailor-is-network, monitor-network]
@@ -835,7 +831,7 @@ services:
         limits: { cpus: '1.0', memory: 768M }
         reservations: { cpus: '0.2', memory: 256M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8115/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8115/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -872,7 +868,7 @@ services:
         limits: { cpus: '0.5', memory: 256M }
         reservations: { cpus: '0.1', memory: 64M }
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:8080/health"]
       interval: 30s
       timeout: 5s
       retries: 3

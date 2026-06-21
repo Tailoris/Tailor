@@ -142,24 +142,15 @@ public class SettlementServiceImpl implements SettlementService {
     }
 
     private void updateMerchantPendingAmount(Long merchantId, BigDecimal amount) {
-        LambdaQueryWrapper<MerchantAccount> query = new LambdaQueryWrapper<>();
-        query.eq(MerchantAccount::getMerchantId, merchantId);
-        MerchantAccount account = merchantAccountMapper.selectOne(query);
-        if (account != null) {
-            account.setPendingAmount(account.getPendingAmount().add(amount));
-            merchantAccountMapper.updateById(account);
-        }
+        // BE-H-12: 使用原子 UPDATE 避免竞态条件
+        merchantAccountMapper.addPendingAmountAtomic(merchantId, amount);
     }
 
     private void updateMerchantWithdrawableBalance(Long merchantId, BigDecimal amount) {
-        LambdaQueryWrapper<MerchantAccount> query = new LambdaQueryWrapper<>();
-        query.eq(MerchantAccount::getMerchantId, merchantId);
-        MerchantAccount account = merchantAccountMapper.selectOne(query);
-        if (account != null) {
-            account.setPendingAmount(account.getPendingAmount().subtract(amount));
-            account.setWithdrawableBalance(account.getWithdrawableBalance().add(amount));
-            account.setTotalSettlement(account.getTotalSettlement().add(amount));
-            merchantAccountMapper.updateById(account);
+        // BE-H-12: 使用原子结算转账，避免竞态条件
+        int rows = merchantAccountMapper.settleAtomic(merchantId, amount);
+        if (rows == 0) {
+            log.error("商家结算失败，待结算金额不足: merchantId={}, amount={}", merchantId, amount);
         }
     }
 }

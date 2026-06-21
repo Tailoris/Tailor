@@ -1,0 +1,154 @@
+# ==============================================================================
+# Tailor IS - PersistentVolumeClaims (持久化存储声明)
+# ==============================================================================
+# 前提条件: 集群中需预先配置 StorageClass (如 nfs-client, local-path, ebs-csi 等)
+#   - 默认使用 "tailor-is-storage" StorageClass
+#   - 如使用不同 StorageClass，请修改 storageClassName 字段
+# ==============================================================================
+
+---
+# ==============================================================================
+# MySQL 数据卷 (50Gi)
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-data-pvc
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: mysql
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: tailor-is-storage
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+# ==============================================================================
+# 文件存储卷 (100Gi) - 纸样文件、商品图片、用户头像等
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: file-storage-pvc
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: file-storage
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: tailor-is-storage
+  resources:
+    requests:
+      storage: 100Gi
+
+---
+# ==============================================================================
+# 日志卷 (20Gi) - 集中日志存储
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: log-storage-pvc
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: log-storage
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: tailor-is-storage
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+# ==============================================================================
+# Redis 数据卷 (20Gi) - AOF 持久化
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data-pvc
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: redis
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: tailor-is-storage
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+# ==============================================================================
+# RabbitMQ 数据卷 (20Gi)
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rabbitmq-data-pvc
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: rabbitmq
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: tailor-is-storage
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+# ==============================================================================
+# Prometheus 数据卷 (50Gi)
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data-pvc
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: prometheus
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: tailor-is-storage
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+# ==============================================================================
+# Grafana 数据卷 (10Gi)
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data-pvc
+  namespace: tailor-is-prod
+  labels:
+    app: tailor-is
+    component: grafana
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: tailor-is-storage
+  resources:
+    requests:
+      storage: 10Gi

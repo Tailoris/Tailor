@@ -24,7 +24,7 @@ export interface DashboardStats {
 }
 
 export function getDashboardStats(params?: { range?: 'week' | 'month' }) {
-  return request<DashboardStats>({
+  return request<any, DashboardStats>({
     url: '/admin/dashboard/stats',
     method: 'get',
     params

@@ -1,0 +1,111 @@
+groups:
+  # ==================== JVM 告警规则 ====================
+  - name: jvm-alerts
+    interval: 30s
+    rules:
+      # JVM CPU 使用率 > 80%
+      - alert: HighCpuUsage
+        expr: system_cpu_usage > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "服务 {{ $labels.job }} CPU 使用率过高"
+          description: "CPU 使用率: {{ $value | humanizePercentage }} (阈值: 80%)"
+
+      # JVM 内存使用率 > 90%
+      - alert: HighMemoryUsage
+        expr: >
+          jvm_memory_used_bytes{area="heap"}
+          /
+          jvm_memory_max_bytes{area="heap"}
+          > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          category: resource
+        annotations:
+          summary: "服务 {{ $labels.job }} 堆内存使用率超过 90%"
+          description: "堆内存使用率: {{ $value | humanizePercentage }} (阈值: 90%)"
+
+      # JVM GC 频繁
+      - alert: FrequentGC
+        expr: rate(jvm_gc_pause_seconds_count[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "服务 {{ $labels.job }} GC 过于频繁"
+          description: "GC 频率: {{ $value }}/s (阈值: 5次/s)"
+
+      # JVM 线程数过高
+      - alert: HighThreadCount
+        expr: jvm_threads_live_threads > 500
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "服务 {{ $labels.job }} 线程数过高"
+          description: "当前线程数: {{ $value }} (阈值: 500)"
+
+  # ==================== HTTP 告警规则 ====================
+  - name: http-alerts
+    interval: 30s
+    rules:
+      # HTTP 5xx 错误率 > 5%
+      - alert: HighHttpErrorRate
+        expr: >
+          sum by (job) (rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+          /
+          sum by (job) (rate(http_server_requests_seconds_count[5m]))
+          > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          category: reliability
+        annotations:
+          summary: "服务 {{ $labels.job }} HTTP 5xx 错误率超过 5%"
+          description: "5xx 错误率: {{ $value | humanizePercentage }} (阈值: 5%)"
+
+      # HTTP 4xx 错误率 > 10%
+      - alert: HighHttp4xxRate
+        expr: >
+          sum by (job) (rate(http_server_requests_seconds_count{status=~"4.."}[5m]))
+          /
+          sum by (job) (rate(http_server_requests_seconds_count[5m]))
+          > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "服务 {{ $labels.job }} HTTP 4xx 错误率超过 10%"
+          description: "4xx 错误率: {{ $value | humanizePercentage }} (阈值: 10%)"
+
+      # HTTP P99 响应时间 > 1s
+      - alert: HighResponseTime
+        expr: >
+          histogram_quantile(0.99,
+            sum(rate(http_server_requests_seconds_bucket[5m])) by (le, job)
+          ) > 1.0
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "服务 {{ $labels.job }} P99 响应时间超过 1 秒"
+          description: "P99 响应时间: {{ $value }}s (阈值: 1s)"
+
+      # 服务不可用
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "服务 {{ $labels.job }} 已宕机"
+          description: "实例 {{ $labels.instance }} 已停止响应超过 1 分钟"

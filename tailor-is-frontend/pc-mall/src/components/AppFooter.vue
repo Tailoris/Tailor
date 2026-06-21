@@ -1,7 +1,7 @@
 <template>
-  <footer class="app-footer">
+  <footer class="app-footer" role="contentinfo" aria-label="页脚">
     <div class="footer-container">
-      <div class="footer-content">
+      <div class="footer-content" role="navigation" aria-label="页脚导航">
         <div class="footer-column">
           <h4>品牌介绍</h4>
           <ul>

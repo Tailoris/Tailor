@@ -1,19 +1,20 @@
 # Pull Request 模板
 
-## 变更说明
+## PR 描述
 
-<!-- 简要描述本次 PR 的目的和主要变更点 -->
+<!-- 简要描述本 PR 的目的和主要变更点 -->
 
 ### 关联 Issue
 <!-- 关联的 Issue ID, 例如: Closes #H-01, Refs #C-05 -->
 
-### 变更类型
-- [ ] Bug 修复 (P0 / P1)
-- [ ] 新功能 (P2)
-- [ ] 重构 / 优化
+## 变更类型
+- [ ] 新功能
+- [ ] Bug 修复
+- [ ] 重构
 - [ ] 文档更新
-- [ ] 依赖升级
-- [ ] CI / 工具链
+- [ ] 安全修复
+- [ ] 性能优化
+- [ ] Breaking Change
 
 ## 实施细节
 
@@ -40,6 +41,22 @@
 - [ ] 前端 (pc-mall / merchant-admin / platform-admin / mobile-app)
 - [ ] 部署 / 运维
 - [ ] 文档
+
+## 提交者自查清单
+- [ ] 代码已通过本地单元测试
+- [ ] 代码已通过静态分析（Checkstyle/PMD/ESLint）
+- [ ] 未引入新的 `any` 类型（前端）/未引入新的魔法数字（后端）
+- [ ] 未硬编码任何密码、密钥、Token
+- [ ] 新增功能已编写单元测试
+- [ ] Breaking Change 已标注
+- [ ] 相关文档已更新
+
+## 审查者检查清单
+- [ ] **安全审查**: 输入校验、认证授权、数据加密
+- [ ] **性能审查**: N+1 查询、缓存使用
+- [ ] **逻辑审查**: 边界条件、异常处理、事务边界
+- [ ] **规范审查**: 命名、结构、重复代码
+- [ ] **测试审查**: 覆盖充分、边界场景
 
 ## 测试
 
@@ -76,19 +93,18 @@
 
 <!-- 如适用, 附上关键截图或日志输出 -->
 
-## Checklist
+## 规范遵循
 
-- [ ] 代码遵循 [CODING_STANDARDS.md](./tailor-is/docs/CODING_STANDARDS.md)
-- [ ] 通过 Checkstyle 检查
-- [ ] 通过 PMD 检查
-- [ ] 单元测试覆盖新增/修改代码
-- [ ] 更新了相关文档
-- [ ] 已与相关模块负责人 Review
+- 代码遵循 [CODING_STANDARDS.md](./tailor-is/docs/CODING_STANDARDS.md)
+- 通过 Checkstyle 检查
+- 通过 PMD 检查
+- 单元测试覆盖新增/修改代码
+- 已与相关模块负责人 Review
 
 ---
 
 ## Reviewer
 
-<!-- @ 至少 1 名 Reviewer -->
+<!-- @ 至少 1 名 Reviewer; 核心模块(user/order/payment/copyright) 需 2 名 -->
 @reviewer1
 @reviewer2

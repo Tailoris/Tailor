@@ -1,8 +1,8 @@
 <template>
-  <section class="section">
+  <section class="section" aria-label="商品列表区域">
     <div class="section-header">
       <h2 class="section-title">{{ title }}</h2>
-      <router-link :to="moreLink" class="view-more">查看更多 →</router-link>
+      <router-link :to="moreLink" class="view-more" v-if="moreLink" aria-label="查看更多商品">查看更多 →</router-link>
     </div>
     <el-skeleton :loading="loading" animated :rows="2">
       <div class="product-grid">

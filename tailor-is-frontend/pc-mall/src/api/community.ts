@@ -21,7 +21,7 @@ interface CommentData {
 }
 
 export function getPosts(params: PostListParams) {
-  return request<any, PageResponse<Post>>({
+  return request<Record<string, unknown>, PageResponse<Post>>({
     url: '/community/posts',
     method: 'get',
     params
@@ -29,14 +29,14 @@ export function getPosts(params: PostListParams) {
 }
 
 export function getPostDetail(id: number) {
-  return request<any, Post>({
+  return request<Record<string, unknown>, Post>({
     url: `/community/posts/${id}`,
     method: 'get'
   })
 }
 
 export function createPost(data: CreatePostData) {
-  return request<any, number>({
+  return request<Record<string, unknown>, number>({
     url: '/community/posts',
     method: 'post',
     data
@@ -44,21 +44,21 @@ export function createPost(data: CreatePostData) {
 }
 
 export function likePost(id: number) {
-  return request<any, boolean>({
+  return request<Record<string, unknown>, boolean>({
     url: `/community/posts/${id}/like`,
     method: 'post'
   })
 }
 
 export function getPostComments(postId: number) {
-  return request<any, Comment[]>({
+  return request<Record<string, unknown>, Comment[]>({
     url: `/community/posts/${postId}/comments`,
     method: 'get'
   })
 }
 
 export function commentPost(postId: number, data: CommentData) {
-  return request<any, boolean>({
+  return request<Record<string, unknown>, boolean>({
     url: `/community/posts/${postId}/comments`,
     method: 'post',
     data

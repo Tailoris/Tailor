@@ -15,7 +15,7 @@ interface OrderListParams {
 }
 
 export function createOrder(data: CreateOrderData) {
-  return request<any, { orderNo: string }>({
+  return request<Record<string, unknown>, { orderNo: string }>({
     url: '/orders',
     method: 'post',
     data
@@ -23,7 +23,7 @@ export function createOrder(data: CreateOrderData) {
 }
 
 export function getOrders(params: OrderListParams) {
-  return request<any, PageResponse<Order>>({
+  return request<Record<string, unknown>, PageResponse<Order>>({
     url: '/orders',
     method: 'get',
     params
@@ -31,28 +31,28 @@ export function getOrders(params: OrderListParams) {
 }
 
 export function getOrderDetail(orderNo: string) {
-  return request<any, Order>({
+  return request<Record<string, unknown>, Order>({
     url: `/orders/${orderNo}`,
     method: 'get'
   })
 }
 
 export function payOrder(orderNo: string) {
-  return request<any, boolean>({
+  return request<Record<string, unknown>, boolean>({
     url: `/orders/${orderNo}/pay`,
     method: 'post'
   })
 }
 
 export function confirmOrder(orderNo: string) {
-  return request<any, boolean>({
+  return request<Record<string, unknown>, boolean>({
     url: `/orders/${orderNo}/confirm`,
     method: 'post'
   })
 }
 
 export function cancelOrder(orderNo: string) {
-  return request<any, boolean>({
+  return request<Record<string, unknown>, boolean>({
     url: `/orders/${orderNo}/cancel`,
     method: 'post'
   })

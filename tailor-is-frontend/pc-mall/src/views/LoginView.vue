@@ -1,15 +1,15 @@
 <template>
   <div class="login-view">
-    <div class="login-card">
+    <div class="login-card" role="main" aria-label="登录页面">
       <div class="login-header">
         <h2>欢迎登录</h2>
         <p>裁智云 Tailor IS</p>
       </div>
 
-      <el-tabs v-model="activeTab" class="login-tabs">
+      <el-tabs v-model="activeTab" class="login-tabs" aria-label="登录方式选择">
         <!-- 密码登录 Tab -->
         <el-tab-pane label="密码登录" name="password">
-          <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef">
+          <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" aria-label="密码登录表单">
             <el-form-item prop="account">
               <el-input
                 v-model="passwordForm.account"
@@ -17,8 +17,11 @@
                 size="large"
                 :prefix-icon="User"
                 @input="onAccountInput"
+                aria-required="true"
+                data-testid="username-input"
+                :aria-describedby="accountType ? 'account-type-hint' : undefined"
               />
-              <span v-if="accountType" class="account-type-hint">
+              <span v-if="accountType" class="account-type-hint" id="account-type-hint">
                 {{ accountTypeHint }}
               </span>
             </el-form-item>
@@ -30,6 +33,8 @@
                 size="large"
                 :prefix-icon="Lock"
                 show-password
+                aria-required="true"
+                data-testid="password-input"
                 @keyup.enter="handlePasswordLogin"
               />
             </el-form-item>
@@ -47,6 +52,8 @@
                 @click="handlePasswordLogin"
                 :loading="loading"
                 :disabled="!canPasswordLogin"
+                aria-label="密码登录"
+                data-testid="login-button"
               >
                 登录
               </el-button>

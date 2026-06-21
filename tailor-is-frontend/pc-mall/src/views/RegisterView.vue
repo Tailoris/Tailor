@@ -1,24 +1,34 @@
 <template>
   <div class="register-view">
-    <div class="register-card">
+    <div class="register-card" role="main" aria-label="注册页面">
       <div class="register-header">
         <h2>注册账号</h2>
         <p>加入裁智云 Tailor IS</p>
       </div>
 
       <!-- Tab 切换 -->
-      <div class="register-tabs">
+      <div class="register-tabs" role="tablist" aria-label="注册方式选择">
         <div
           class="tab-item"
           :class="{ active: activeRegisterTab === 'phone' }"
+          role="tab"
+          :aria-selected="activeRegisterTab === 'phone'"
+          tabindex="0"
           @click="switchRegisterTab('phone')"
+          @keydown.enter="switchRegisterTab('phone')"
+          @keydown.space.prevent="switchRegisterTab('phone')"
         >
           手机号注册
         </div>
         <div
           class="tab-item"
           :class="{ active: activeRegisterTab === 'email' }"
+          role="tab"
+          :aria-selected="activeRegisterTab === 'email'"
+          tabindex="0"
           @click="switchRegisterTab('email')"
+          @keydown.enter="switchRegisterTab('email')"
+          @keydown.space.prevent="switchRegisterTab('email')"
         >
           邮箱注册
         </div>
@@ -189,7 +199,13 @@
       v-model="agreementVisible"
       :title="agreementTitle"
       width="600px"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="'agreement-dialog-title'"
     >
+      <template #header>
+        <span :id="'agreement-dialog-title'">{{ agreementTitle }}</span>
+      </template>
       <div class="agreement-content">
         <p v-if="agreementType === 'user'">
           《用户协议》内容展示区域...
@@ -206,7 +222,13 @@
       title="提示"
       width="400px"
       :close-on-click-modal="false"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="switch-dialog-title"
     >
+      <template #header>
+        <span id="switch-dialog-title">提示</span>
+      </template>
       <p>切换注册方式将清空当前已填内容，是否继续？</p>
       <template #footer>
         <el-button @click="cancelSwitch">取消</el-button>

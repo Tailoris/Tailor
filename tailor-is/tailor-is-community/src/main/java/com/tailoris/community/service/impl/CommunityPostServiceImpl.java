@@ -257,9 +257,8 @@ public class CommunityPostServiceImpl implements CommunityPostService {
             Long count = stringRedisTemplate.opsForValue().increment(key);
             stringRedisTemplate.expire(key, VIEW_CACHE_TTL, TimeUnit.HOURS);
             if (count != null && count % VIEW_SYNC_THRESHOLD == 0) {
-                communityPostMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<CommunityPost>()
-                        .eq(CommunityPost::getId, postId)
-                        .setSql("view_count = view_count + " + count));
+                // BE-M-26: 使用参数化 Mapper 方法，避免 SQL 字符串拼接
+                communityPostMapper.incrementViewCount(postId, count);
                 stringRedisTemplate.delete(key);
             }
         } catch (Exception e) {

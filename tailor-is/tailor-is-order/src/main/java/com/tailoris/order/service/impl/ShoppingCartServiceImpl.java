@@ -41,6 +41,10 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
 
         if (existingCart != null) {
             existingCart.setQuantity(existingCart.getQuantity() + request.getQuantity());
+            // BE-M-33: 更新价格快照（以最新加购价格为准）
+            if (request.getPriceSnapshot() != null) {
+                existingCart.setPriceSnapshot(request.getPriceSnapshot());
+            }
             shoppingCartMapper.updateById(existingCart);
             log.info("更新购物车商品数量, userId: {}, skuId: {}, newQuantity: {}",
                     userId, request.getSkuId(), existingCart.getQuantity());
@@ -51,7 +55,8 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             cart.setSkuId(request.getSkuId());
             cart.setQuantity(request.getQuantity());
             cart.setChecked(1);
-            cart.setPriceSnapshot(null);
+            // BE-M-33: 保存价格快照，下单时使用，避免价格为 null 导致金额为 0
+            cart.setPriceSnapshot(request.getPriceSnapshot());
             shoppingCartMapper.insert(cart);
             log.info("添加商品到购物车, userId: {}, skuId: {}, quantity: {}",
                     userId, request.getSkuId(), request.getQuantity());

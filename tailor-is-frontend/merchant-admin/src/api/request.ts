@@ -8,9 +8,9 @@ import { ElMessage } from 'element-plus'
 import type { ApiResponse } from '@/types'
 import { decryptSync } from '@/utils/crypto'
 
-// 简单日志工具
+// 简单日志工具（生产环境由 terser/esbuild 移除 console 调用）
 const log = {
-  info: (msg: string) => console.log(`[INFO] ${msg}`),
+  info: (_msg: string) => {},
   warn: (msg: string) => console.warn(`[WARN] ${msg}`),
   error: (msg: string) => console.error(`[ERROR] ${msg}`)
 }

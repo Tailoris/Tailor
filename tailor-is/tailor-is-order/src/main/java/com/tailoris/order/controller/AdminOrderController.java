@@ -9,6 +9,7 @@ import com.tailoris.order.entity.OrderInfo;
 import com.tailoris.order.mapper.AfterSaleTicketMapper;
 import com.tailoris.order.mapper.OrderInfoMapper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -27,15 +28,20 @@ public class AdminOrderController {
     private final OrderInfoMapper orderInfoMapper;
     private final AfterSaleTicketMapper afterSaleTicketMapper;
 
+    /**
+     * 后台查询订单列表
+     *
+     * <p>支持按状态、商品类型、关键词、商家ID等条件筛选订单</p>
+     */
     @Operation(summary = "后台查询订单列表")
     @GetMapping("/order/list")
     public Result<Page<OrderInfo>> listOrders(
-            @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) Integer productType,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long merchantId,
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
+            @Parameter(description = "订单状态") @RequestParam(required = false) Integer status,
+            @Parameter(description = "商品类型") @RequestParam(required = false) Integer productType,
+            @Parameter(description = "搜索关键词") @RequestParam(required = false) String keyword,
+            @Parameter(description = "商家ID") @RequestParam(required = false) Long merchantId,
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") int pageNum,
+            @Parameter(description = "每页条数") @RequestParam(defaultValue = "10") int pageSize) {
         LambdaQueryWrapper<OrderInfo> queryWrapper = new LambdaQueryWrapper<>();
 
         if (status != null) {
@@ -95,8 +101,8 @@ public class AdminOrderController {
     @Operation(summary = "待处理售后工单")
     @GetMapping("/after-sale/pending")
     public Result<Page<AfterSaleTicket>> listPendingTickets(
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
+            @Parameter(description = "页码") @RequestParam(defaultValue = "1") int pageNum,
+            @Parameter(description = "每页条数") @RequestParam(defaultValue = "10") int pageSize) {
         LambdaQueryWrapper<AfterSaleTicket> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(AfterSaleTicket::getStatus, 0)
                 .orderByAsc(AfterSaleTicket::getCreateTime);
@@ -106,12 +112,17 @@ public class AdminOrderController {
         return Result.success(result);
     }
 
+    /**
+     * 平台仲裁售后工单
+     *
+     * <p>管理员对售后工单进行仲裁处理</p>
+     */
     @Operation(summary = "平台仲裁售后工单")
     @PutMapping("/after-sale/arbitrate")
     public Result<Void> arbitrateTicket(
-            @RequestParam Long ticketId,
-            @RequestParam Integer result,
-            @RequestParam(required = false) String remark) {
+            @Parameter(description = "售后工单ID") @RequestParam Long ticketId,
+            @Parameter(description = "仲裁结果(1=同意, 2=驳回)") @RequestParam Integer result,
+            @Parameter(description = "仲裁备注") @RequestParam(required = false) String remark) {
         AfterSaleTicket ticket = afterSaleTicketMapper.selectById(ticketId);
         if (ticket == null) {
             return Result.fail("售后工单不存在");

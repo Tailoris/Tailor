@@ -1,6 +1,6 @@
 <template>
-  <div class="order-list-view">
-    <el-breadcrumb separator="/">
+  <div class="order-list-view" role="main" aria-label="我的订单页面">
+    <el-breadcrumb separator="/" aria-label="面包屑导航">
       <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
       <el-breadcrumb-item>我的订单</el-breadcrumb-item>
     </el-breadcrumb>

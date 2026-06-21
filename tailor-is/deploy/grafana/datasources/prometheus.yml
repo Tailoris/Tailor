@@ -1,0 +1,35 @@
+# ==============================================================================
+# Grafana Prometheus 数据源配置
+# ==============================================================================
+# 认证说明:
+#   - 内部 Prometheus 实例默认无需认证 (basicAuth / tlsClientAuth)
+#   - 若 Prometheus 通过反向代理 (如 nginx) 暴露并启用了 basic_auth，
+#     则取消下方 basicAuth 配置注释并填入凭据
+#   - 生产环境建议启用 Prometheus 基础认证或通过网络策略限制访问
+# ==============================================================================
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    # 内部 Prometheus 通常无需认证，保留注释供生产环境启用
+    # basicAuth: true
+    # basicAuthUser: admin
+    # secureJsonData:
+    #   basicAuthPassword: ""
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "POST"
+      manageAlerts: true
+      prometheusType: "Prometheus"
+      prometheusVersion: "2.45.0"
+      # 若 Prometheus 启用了 TLS，取消注释以下配置
+      # tlsAuth: true
+      # tlsSkipVerify: false
+      # serverName: "prometheus.tailoris.local"

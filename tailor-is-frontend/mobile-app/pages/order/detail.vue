@@ -89,7 +89,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { getOrderDetail, cancelOrder as cancelOrderApi, confirmReceive as confirmReceiveApi, payOrder as payOrderApi, deleteOrder as deleteOrderApi } from '@/api/order'
 

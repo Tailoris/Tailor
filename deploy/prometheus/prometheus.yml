@@ -9,11 +9,11 @@ global:
     cluster: tailor-is-prod
     environment: production
 
-# ========== 告警管理器 (可选) ==========
+# ========== 告警管理器 ==========
 alerting:
   alertmanagers:
     - static_configs:
-      - targets: []
+      - targets: ['alertmanager:9093']
 
 # ========== 规则文件 ==========
 rule_files:
@@ -32,7 +32,7 @@ scrape_configs:
   # ----- 节点/主机监控 (如启用node-exporter) -----
   - job_name: 'node-exporter'
     static_configs:
-      - targets: ['localhost:9100']
+      - targets: ['node-exporter:9100']
         labels: { service: node-exporter, tier: monitoring }
 
   # ----- MySQL (如启用mysqld_exporter) -----
@@ -75,6 +75,23 @@ scrape_configs:
       - targets:
         - tailor-is-user:18080
         labels: { service: tailor-is-user, tier: auth }
+
+  # ----- Tailor IS 业务服务 (订单/支付/AI/商户/商品) -----
+  - job_name: 'tailor-is-business'
+    metrics_path: /actuator/prometheus
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['tailor-is-order:18080']
+        labels: { service: tailor-is-order, tier: order }
+      - targets: ['tailor-is-payment:18080']
+        labels: { service: tailor-is-payment, tier: payment }
+      - targets: ['tailor-is-ai:18080']
+        labels: { service: tailor-is-ai, tier: ai }
+      - targets: ['tailor-is-merchant:18080']
+        labels: { service: tailor-is-merchant, tier: merchant }
+      - targets: ['tailor-is-product:18080']
+        labels: { service: tailor-is-product, tier: product }
 
   # ----- Nginx -----
   - job_name: 'nginx'

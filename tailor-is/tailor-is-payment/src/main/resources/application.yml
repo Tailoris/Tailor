@@ -124,8 +124,8 @@ tailoris:
 
 logging:
   level:
-    com.tailoris.payment: debug
-    com.tailoris.payment.mq: debug
+    com.tailoris.payment: info
+    com.tailoris.payment.mq: info
 
 ---
 spring.config.activate.on-profile: prod

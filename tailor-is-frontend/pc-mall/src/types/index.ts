@@ -1,17 +1,5 @@
-export interface User {
-  id: number
-  username: string
-  phone: string
-  nickname?: string
-  nickName?: string
-  email?: string
-  avatar?: string
-  realName?: string
-  gender?: number
-  birthday?: string
-  status?: number
-  createdAt?: string
-}
+// 公共类型统一从 shared/types 引入，消除多处重复定义
+export type { ApiResponse, PageResponse, User } from '@shared/types'
 
 export interface Product {
   id: number
@@ -167,20 +155,6 @@ export interface Merchant {
   auditStatus: number
   depositAmount: number
   joinTime: string
-}
-
-export interface PageResponse<T> {
-  records: T[]
-  total: number
-  pages: number
-  current: number
-  size: number
-}
-
-export interface ApiResponse<T> {
-  code: number
-  message: string
-  data?: T | null
 }
 
 export interface ProductReview {

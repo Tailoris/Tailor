@@ -263,6 +263,16 @@ async function handlePasswordLogin() {
           username: passwordForm.value.account,
           password: passwordForm.value.password
         })
+        if (res.token) {
+          // FE-H-1: 加密存储Token，避免明文泄露
+          try {
+            const { encryptSync } = await import('@/utils/crypto')
+            const encryptedToken = encryptSync(res.token)
+            localStorage.setItem('token', encryptedToken)
+          } catch {
+            localStorage.setItem('token', res.token)
+          }
+        }
         if (rememberMe.value) {
           storage.saveAccount(passwordForm.value.account)
         } else {

@@ -136,20 +136,20 @@ const stats = reactive<DashboardStats>({
   recentAftersales: [],
 })
 
-const orderStatusType: Record<string, string> = {
-  pending: 'info',
-  paid: 'warning',
-  shipped: '',
-  completed: 'success',
-  cancelled: 'danger',
+const orderStatusType: Record<number, string> = {
+  0: 'info',
+  1: 'warning',
+  2: '',
+  3: 'success',
+  4: 'danger',
 }
 
-const orderStatusLabel: Record<string, string> = {
-  pending: '待付款',
-  paid: '已付款',
-  shipped: '已发货',
-  completed: '已完成',
-  cancelled: '已取消',
+const orderStatusLabel: Record<number, string> = {
+  0: '待付款',
+  1: '已付款',
+  2: '已发货',
+  3: '已完成',
+  4: '已取消',
 }
 
 const aftersaleTypeLabel: Record<string, string> = {
@@ -158,20 +158,20 @@ const aftersaleTypeLabel: Record<string, string> = {
   exchange: '换货',
 }
 
-const aftersaleStatusType: Record<string, string> = {
-  pending: 'warning',
-  processing: '',
-  approved: 'success',
-  rejected: 'danger',
-  completed: 'info',
+const aftersaleStatusType: Record<number, string> = {
+  0: 'warning',
+  1: '',
+  2: 'success',
+  3: 'danger',
+  4: 'info',
 }
 
-const aftersaleStatusLabel: Record<string, string> = {
-  pending: '待处理',
-  processing: '处理中',
-  approved: '已同意',
-  rejected: '已拒绝',
-  completed: '已完成',
+const aftersaleStatusLabel: Record<number, string> = {
+  0: '待处理',
+  1: '处理中',
+  2: '已同意',
+  3: '已拒绝',
+  4: '已完成',
 }
 
 function formatDate(dateStr: string) {
