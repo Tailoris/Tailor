@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
-    "@vitejs/plugin-vue": "^5.2.0",
+    "@vitejs/plugin-vue": "^6.0.7",
     "terser": "^5.48.0",
     "typescript": "^5.4.3",
     "vite": "^6.0.0",
