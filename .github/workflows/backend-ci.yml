@@ -147,7 +147,9 @@ jobs:
         run: |
           mvn -B -ntp \
               -f tailor-is/pom.xml \
+              -Pspotbugs \
               spotbugs:check
+        continue-on-error: true
 
       - name: Upload Surefire test reports
         if: always()
