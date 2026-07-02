@@ -281,7 +281,7 @@ jobs:
           echo "tags=${{ env.IMAGE_REGISTRY }}/${{ matrix.module.name }}:${VERSION},${{ env.IMAGE_REGISTRY }}/${{ matrix.module.name }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
 
       - name: Build ${{ matrix.module.name }} Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: tailor-is
           file: tailor-is/${{ matrix.module.dir }}/Dockerfile.prod
