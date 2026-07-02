@@ -18,10 +18,8 @@ on:
       - 'tailor-is/**'
       - '.github/workflows/backend-ci.yml'
   schedule:
-    # 每周一凌晨 3:00 UTC (北京时间 11:00) 执行 OWASP 依赖检查
     - cron: '0 3 * * 1'
 
-# 取消正在运行的同分支 CI(节省资源)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -30,11 +28,9 @@ env:
   MAVEN_OPTS: -Xmx2g -XX:+HeapDumpOnOutOfMemoryError
   JAVA_VERSION: 17
   MAVEN_VERSION: 3.9.9
+  COVERAGE_THRESHOLD: 60
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # Job 1: 编译 + 单元测试 + 静态分析 + 覆盖率
-  # ---------------------------------------------------------------------------
   build:
     name: Build & Test
     runs-on: ubuntu-latest
@@ -44,7 +40,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 完整历史, SonarQube blame 需要
+          fetch-depth: 0
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
@@ -73,7 +69,6 @@ jobs:
             echo "settings.xml configured"
           fi
 
-      # ------ 编译(不运行测试) ------
       - name: Compile all modules
         run: |
           mvn -B -ntp -T 4 \
@@ -82,7 +77,6 @@ jobs:
               -Dmaven.javadoc.skip=true \
               clean install
 
-      # ------ 单元测试 + 覆盖率 ------
       - name: Run unit tests
         run: |
           mvn -B -ntp -T 4 \
@@ -93,9 +87,6 @@ jobs:
               -DjacocoArgLine="-javaagent:$HOME/.m2/repository/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.12-runtime.jar=destfile=$GITHUB_WORKSPACE/tailor-is/target/jacoco.exec" \
               test
 
-      # ------ 生成 JaCoCo 覆盖率报告 ------
-      # pom.xml 已配置 jacoco-maven-plugin (prepare-agent / report / check)
-      # 此处显式调用 report 目标, 确保即使 test 阶段被跳过/过滤也能生成报告
       - name: Generate JaCoCo Report
         if: always()
         run: |
@@ -103,11 +94,23 @@ jobs:
               -f tailor-is/pom.xml \
               jacoco:report \
               -Djacoco.dataFile=tailor-is/target/jacoco.exec
-        continue-on-error: true  # 测试失败时仍尝试生成报告
+        continue-on-error: true
 
-      # ------ SonarQube 静态分析 ------
-      # 依赖: tailor-is/sonar-project.properties + secrets.SONAR_TOKEN / SONAR_HOST_URL
-      # 质量门禁: sonar.qualitygate.wait=true, 阻断不通过的 PR
+      - name: Check Coverage Threshold
+        run: |
+          if [ -f tailor-is/target/site/jacoco/index.html ]; then
+            pct=$(grep -oE 'Total[^<]*<td>[0-9]+%' tailor-is/target/site/jacoco/index.html | head -1 | grep -oE '[0-9]+' || echo "0")
+            echo "Current coverage: $pct%"
+            echo "Required threshold: ${{ env.COVERAGE_THRESHOLD }}%"
+            if [ "$pct" -lt "${{ env.COVERAGE_THRESHOLD }}" ]; then
+              echo "::error::Coverage $pct% is below threshold (${{ env.COVERAGE_THRESHOLD }}%)"
+              exit 1
+            fi
+          else
+            echo "::error::JaCoCo report not found"
+            exit 1
+          fi
+
       - name: SonarQube Scan
         run: |
           mvn -B -ntp \
@@ -118,9 +121,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: false  # 阻断不通过质量门禁的 PR
+        continue-on-error: false
 
-      # ------ Checkstyle ------
       - name: Run Checkstyle
         if: always()
         run: |
@@ -132,7 +134,6 @@ jobs:
               -Pcheckstyle \
               checkstyle:check
 
-      # ------ PMD ------
       - name: Run PMD
         if: always()
         run: |
@@ -141,7 +142,13 @@ jobs:
               -Ppmd \
               pmd:check
 
-      # ------ 上传测试报告 ------
+      - name: Run SpotBugs
+        if: always()
+        run: |
+          mvn -B -ntp \
+              -f tailor-is/pom.xml \
+              spotbugs:check
+
       - name: Upload Surefire test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -153,7 +160,6 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # ------ 上传 JaCoCo 报告 ------
       - name: Upload JaCoCo coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -165,22 +171,17 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      # ------ 覆盖率摘要到 PR ------
       - name: Generate coverage summary
         if: github.event_name == 'pull_request' && always()
         run: |
           echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f tailor-is/target/site/jacoco/index.html ]; then
-            # 简单提取覆盖率百分比
             pct=$(grep -oE 'Total[^<]*<td>[0-9]+%' tailor-is/target/site/jacoco/index.html | head -1 | grep -oE '[0-9]+%' || echo "N/A")
             echo "- **Overall JaCoCo Coverage**: $pct" >> $GITHUB_STEP_SUMMARY
           fi
           echo "- **Build Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
 
-  # ---------------------------------------------------------------------------
-  # Job 2: Docker 镜像构建(仅 main 分支触发, 节省 PR 资源)
-  # ---------------------------------------------------------------------------
   docker:
     name: Build Docker Images
     runs-on: ubuntu-latest
@@ -199,6 +200,14 @@ jobs:
           - tailor-is-marketing
           - tailor-is-community
           - tailor-is-ai
+          - tailor-is-copyright
+          - tailor-is-supply
+          - tailor-is-message
+          - tailor-is-admin
+          - tailor-is-academy
+          - tailor-is-analytics
+          - tailor-is-message-im
+          - tailor-is-pattern
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -206,8 +215,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 镜像仓库登录: 配置 DOCKER_REGISTRY (repository variable) +
-      # DOCKER_USERNAME / DOCKER_TOKEN (repository secrets) 后自动启用推送
       - name: Login to Container Registry
         if: ${{ vars.DOCKER_REGISTRY != '' }}
         uses: docker/login-action@v3
@@ -220,20 +227,63 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: tailor-is
-          file: ${{ matrix.service }}/Dockerfile
+          file: ${{ matrix.service }}/Dockerfile.prod
           tags: |
             ${{ vars.DOCKER_REGISTRY && format('{0}/', vars.DOCKER_REGISTRY) || '' }}tailor-is/${{ matrix.service }}:latest
             ${{ vars.DOCKER_REGISTRY && format('{0}/', vars.DOCKER_REGISTRY) || '' }}tailor-is/${{ matrix.service }}:${{ github.sha }}
-          # 配置 DOCKER_REGISTRY 变量后自动推送, 否则仅加载到本地
           push: ${{ vars.DOCKER_REGISTRY != '' }}
           load: ${{ vars.DOCKER_REGISTRY == '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ---------------------------------------------------------------------------
-  # Job 3: OWASP 依赖漏洞检查
-  # 仅在 main 分支推送或每周定时任务时执行, 避免每次 CI 耗时过长 (B-M28)
-  # ---------------------------------------------------------------------------
+  deploy-secrets:
+    name: Deploy Secrets
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy Kubernetes Secrets
+        run: |
+          bash deploy/scripts/deploy-secrets.sh
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_USERNAME: ${{ secrets.MYSQL_USERNAME }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          RABBITMQ_USERNAME: ${{ secrets.RABBITMQ_USERNAME }}
+          RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          RABBITMQ_ERLANG_COOKIE: ${{ secrets.RABBITMQ_ERLANG_COOKIE }}
+          NACOS_AUTH_TOKEN: ${{ secrets.NACOS_AUTH_TOKEN }}
+          NACOS_AUTH_IDENTITY_VALUE: ${{ secrets.NACOS_AUTH_IDENTITY_VALUE }}
+          GATEWAY_HMAC_SECRET: ${{ secrets.GATEWAY_HMAC_SECRET }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AES_KEY: ${{ secrets.AES_KEY }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          AI_MODEL_ENDPOINT: ${{ secrets.AI_MODEL_ENDPOINT }}
+          WECHAT_PAY_APP_ID: ${{ secrets.WECHAT_PAY_APP_ID }}
+          WECHAT_PAY_MCH_ID: ${{ secrets.WECHAT_PAY_MCH_ID }}
+          WECHAT_PAY_API_KEY: ${{ secrets.WECHAT_PAY_API_KEY }}
+          WECHAT_PAY_API_V3_KEY: ${{ secrets.WECHAT_PAY_API_V3_KEY }}
+          ALIPAY_APP_ID: ${{ secrets.ALIPAY_APP_ID }}
+          ALIPAY_PRIVATE_KEY: ${{ secrets.ALIPAY_PRIVATE_KEY }}
+          ALIPAY_PUBLIC_KEY: ${{ secrets.ALIPAY_PUBLIC_KEY }}
+          BLOCKCHAIN_API_KEY: ${{ secrets.BLOCKCHAIN_API_KEY }}
+          BLOCKCHAIN_ENDPOINT: ${{ secrets.BLOCKCHAIN_ENDPOINT }}
+          OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+          OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
+          DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
+          GRAFANA_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
+
   owasp-dependency-check:
     name: OWASP Dependency Check
     runs-on: ubuntu-latest
@@ -267,9 +317,6 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-  # ---------------------------------------------------------------------------
-  # Job 4: 密钥泄露扫描 (gitleaks)
-  # ---------------------------------------------------------------------------
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -283,3 +330,33 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           config-path: .gitleaks.toml
+
+  build-artifacts:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Build all modules with tests
+        run: |
+          mvn -B -ntp -T 4 \
+              -f tailor-is/pom.xml \
+              -Dmaven.javadoc.skip=true \
+              clean package
+
+      - name: Upload all JAR artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-release-jars
+          path: tailor-is/**/target/*.jar
+          retention-days: 14
