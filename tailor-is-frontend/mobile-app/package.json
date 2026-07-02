@@ -23,7 +23,7 @@
     "@dcloudio/types": "^3.4.0",
     "@dcloudio/uni-automator": "^3.0.0-4010120250123001",
     "@dcloudio/uni-cli-shared": "^3.0.0-4010120250123001",
-    "@dcloudio/uni-stacktracey": "^3.0.0-4010120250123001",
+    "@dcloudio/uni-stacktracey": "^3.0.0-5000720260410001",
     "@dcloudio/vite-plugin-uni": "3.0.0-alpha-5010220260604001",
     "@types/node": "^20.0.0",
     "@vue/tsconfig": "^0.5.0",
