@@ -7,7 +7,9 @@ vi.mock('axios', () => {
   }
   const mockAxiosInstance = {
     interceptors: mockInterceptors,
-    request: vi.fn(),
+    request: vi.fn().mockResolvedValue({
+      data: { code: 200, message: 'success', data: {} }
+    }),
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
@@ -28,3 +30,19 @@ vi.mock('axios', () => {
     InternalAxiosRequestConfig: {}
   }
 })
+
+vi.mock('@/router', () => ({
+  default: {
+    currentRoute: { value: { path: '/' } },
+    push: vi.fn()
+  }
+}))
+
+vi.mock('element-plus', () => ({
+  ElMessage: {
+    error: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn()
+  }
+}))
