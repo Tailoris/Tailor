@@ -8,7 +8,7 @@ groups:
   # --------------------------------------------------------------------------
   - name: database-critical
     rules:
-      - alert: DatabaseDown (P0)
+      - alert: DatabaseDownP0
         expr: mysql_up == 0
         for: 1m
         labels: { severity: critical, category: database, priority: P0 }
@@ -17,7 +17,7 @@ groups:
           description: "MySQL实例宕机, 立即检查数据库服务状态"
           action: "执行: systemctl status mysql; 查看错误日志"
 
-      - alert: HighConnectionErrorRate (P1)
+      - alert: HighConnectionErrorRateP1
         expr: rate(mysql_global_status_connection_errors_total[5m]) > 10
         for: 5m
         labels: { severity: critical, category: database, priority: P1 }
@@ -30,7 +30,7 @@ groups:
   # --------------------------------------------------------------------------
   - name: cache-critical
     rules:
-      - alert: RedisDown (P0)
+      - alert: RedisDownP0
         expr: redis_up == 0
         for: 1m
         labels: { severity: critical, category: cache, priority: P0 }
@@ -43,7 +43,7 @@ groups:
   # --------------------------------------------------------------------------
   - name: network-abnormal
     rules:
-      - alert: TrafficSpike (P2)
+      - alert: TrafficSpikeP2
         expr: rate(node_network_receive_bytes_total[5m]) > 100 * 1024 * 1024
         for: 5m
         labels: { severity: warning, category: network, priority: P2 }
@@ -51,7 +51,7 @@ groups:
           summary: "入站流量激增 (>100MB/s)"
           description: "可能遭受DDoS攻击或突发流量"
 
-      - alert: TrafficDrop (P2)
+      - alert: TrafficDropP2
         expr: rate(node_network_receive_bytes_total[5m]) < 1024
         for: 10m
         labels: { severity: warning, category: network, priority: P2 }
@@ -64,7 +64,7 @@ groups:
   # --------------------------------------------------------------------------
   - name: ssl-certificate
     rules:
-      - alert: SSLCertExpiringSoon (P2)
+      - alert: SSLCertExpiringSoonP2
         expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 30
         for: 1h
         labels: { severity: warning, category: security, priority: P2 }
@@ -72,7 +72,7 @@ groups:
           summary: "SSL证书30天内到期"
           description: "立即启动证书更新流程"
 
-      - alert: SSLCertExpiring (P3)
+      - alert: SSLCertExpiringP3
         expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 90
         for: 6h
         labels: { severity: info, category: security, priority: P3 }
@@ -85,7 +85,7 @@ groups:
   # --------------------------------------------------------------------------
   - name: security-alerts
     rules:
-      - alert: FailedLoginSpike (P2)
+      - alert: FailedLoginSpikeP2
         expr: increase(failed_login_attempts[10m]) > 100
         for: 5m
         labels: { severity: warning, category: security, priority: P2 }
@@ -93,7 +93,7 @@ groups:
           summary: "登录失败次数激增"
           description: "可能存在暴力破解攻击"
 
-      - alert: UnusualAdminActivity (P1)
+      - alert: UnusualAdminActivityP1
         expr: increase(admin_login_count[1h]) > 10
         for: 1m
         labels: { severity: critical, category: security, priority: P1 }

@@ -1,6 +1,22 @@
 # ==============================================================================
 # Tailor IS - Vault 配置
 # ==============================================================================
+#
+# 启用 Vault 替代 K8s Secret 的步骤:
+#   1. 部署 Vault: kubectl apply -f vault-deployment.yaml
+#   2. 初始化 Vault: kubectl exec -it vault-0 -n tailor-is-prod -- vault operator init
+#      记录输出的 5 个 Unseal Key 和 Root Token
+#   3. 解封 Vault: kubectl exec -it vault-0 -n tailor-is-prod -- vault operator unseal <key>
+#      (需使用 3 个不同的 Unseal Key)
+#   4. 登录 Vault: vault login <root-token>
+#   5. 启用 KV 引擎: vault secrets enable -path=tailor-is kv-v2
+#   6. 写入密钥: vault kv put tailor-is/prod/db username=root password=<password>
+#   7. 配置 K8s Auth: 参考 vault-init-job.yaml 创建 ServiceAccount 绑定
+#   8. 应用通过 CSI Driver 或 sidecar 注入读取密钥
+#   9. 更新 Deployment 移除 K8s Secret 引用，改用 Vault 注解
+#
+# 注意: Vault 生产环境建议使用 Auto-Unseal（AWS KMS / Azure Key Vault）
+# ==============================================================================
 
 apiVersion: v1
 kind: ConfigMap

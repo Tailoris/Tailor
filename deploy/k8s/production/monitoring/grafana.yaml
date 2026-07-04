@@ -42,6 +42,11 @@ data:
         url: http://prometheus:9090
         isDefault: true
         editable: false
+        # 数据源认证：如需 Prometheus 开启 Basic Auth，取消以下注释
+        # basicAuth: true
+        # basicAuthUser: ${PROMETHEUS_USER}
+        # secureJsonData:
+        #   basicAuthPassword: ${PROMETHEUS_PASSWORD}
         jsonData:
           timeInterval: 15s
           queryTimeout: 30s

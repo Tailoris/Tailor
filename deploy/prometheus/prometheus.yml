@@ -1,6 +1,11 @@
 # ==============================================================================
 # Tailor IS Prometheus 核心配置
 # ==============================================================================
+# 端口分配规范: 8101-8115 (与 K8s Deployment containerPort 一致)
+# 8101: user, 8102: product, 8103: order, 8104: payment, 8105: marketing
+# 8106: ai, 8107: copyright, 8108: message, 8109: message-im, 8110: merchant
+# 8111: community, 8112: academy, 8113: supply, 8114: admin, 8115: analytics
+# ==============================================================================
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -13,11 +18,12 @@ global:
 alerting:
   alertmanagers:
     - static_configs:
-      - targets: ['alertmanager:9093']
+      - targets: ['localhost:9093']
 
 # ========== 规则文件 ==========
 rule_files:
   - "alert-rules.yml"
+  - "alert-rules-extended.yml"
 
 # ==============================================================================
 # 抓取目标配置
@@ -29,30 +35,30 @@ scrape_configs:
       - targets: ['localhost:9090']
         labels: { service: prometheus, tier: monitoring }
 
-  # ----- 节点/主机监控 (如启用node-exporter) -----
+  # ----- 节点/主机监控 (🔒 H-13修复: exporter 已集成主 compose) -----
   - job_name: 'node-exporter'
     static_configs:
-      - targets: ['node-exporter:9100']
+      - targets: ['localhost:9100']
         labels: { service: node-exporter, tier: monitoring }
 
-  # ----- MySQL (如启用mysqld_exporter) -----
+  # ----- MySQL (🔒 H-13修复: mysqld-exporter 已集成主 compose) -----
   - job_name: 'mysql'
     metrics_path: /metrics
     static_configs:
-      - targets: ['mysql:9104']
+      - targets: ['localhost:9104']
         labels: { service: mysql, tier: database }
 
-  # ----- Redis (如启用redis_exporter) -----
+  # ----- Redis (🔒 H-13修复: redis-exporter 已集成主 compose) -----
   - job_name: 'redis'
     static_configs:
-      - targets: ['redis:9121']
+      - targets: ['localhost:9121']
         labels: { service: redis, tier: cache }
 
   # ----- RabbitMQ -----
   - job_name: 'rabbitmq'
     metrics_path: /metrics
     static_configs:
-      - targets: ['rabbitmq:15692']
+      - targets: ['localhost:15692']
         labels: { service: rabbitmq, tier: message }
 
   # ----- Spring Boot Actuator -----
@@ -62,8 +68,8 @@ scrape_configs:
     scrape_timeout: 10s
     static_configs:
       - targets:
-        - core-gateway:8080
-        - lite-gateway:8081
+        - localhost:9000
+        - localhost:8081
         labels: { service: spring-boot, tier: application }
 
   # ----- Tailor IS 用户服务 (业务指标: admin_login_count / failed_login_attempts / abnormal_login_rate 等) -----
@@ -73,7 +79,7 @@ scrape_configs:
     scrape_timeout: 10s
     static_configs:
       - targets:
-        - tailor-is-user:18080
+        - localhost:8101
         labels: { service: tailor-is-user, tier: auth }
 
   # ----- Tailor IS 业务服务 (订单/支付/AI/商户/商品) -----
@@ -82,21 +88,39 @@ scrape_configs:
     scrape_interval: 15s
     scrape_timeout: 10s
     static_configs:
-      - targets: ['tailor-is-order:18080']
+      - targets: ['localhost:8103']
         labels: { service: tailor-is-order, tier: order }
-      - targets: ['tailor-is-payment:18080']
+      - targets: ['localhost:8104']
         labels: { service: tailor-is-payment, tier: payment }
-      - targets: ['tailor-is-ai:18080']
+      - targets: ['localhost:8106']
         labels: { service: tailor-is-ai, tier: ai }
-      - targets: ['tailor-is-merchant:18080']
+      - targets: ['localhost:8110']
         labels: { service: tailor-is-merchant, tier: merchant }
-      - targets: ['tailor-is-product:18080']
+      - targets: ['localhost:8102']
         labels: { service: tailor-is-product, tier: product }
+      - targets: ['localhost:8105']
+        labels: { service: tailor-is-marketing, tier: marketing }
+      - targets: ['localhost:8107']
+        labels: { service: tailor-is-copyright, tier: copyright }
+      - targets: ['localhost:8111']
+        labels: { service: tailor-is-message, tier: message }
+      - targets: ['localhost:8114']
+        labels: { service: tailor-is-message-im, tier: message }
+      - targets: ['localhost:8108']
+        labels: { service: tailor-is-community, tier: community }
+      - targets: ['localhost:8112']
+        labels: { service: tailor-is-academy, tier: academy }
+      - targets: ['localhost:8109']
+        labels: { service: tailor-is-supply, tier: supply }
+      - targets: ['localhost:8100']
+        labels: { service: tailor-is-admin, tier: admin }
+      - targets: ['localhost:8113']
+        labels: { service: tailor-is-analytics, tier: analytics }
 
   # ----- Nginx -----
   - job_name: 'nginx'
     static_configs:
-      - targets: ['nginx:9113']
+      - targets: ['localhost:9113']
         labels: { service: nginx, tier: frontend }
 
   # ----- GraphQL Gateway -----

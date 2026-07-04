@@ -491,7 +491,163 @@ docker-compose -f docker-compose-services.yml logs -f <service-name>
 
 ## 10. 灾备切换
 
-### 10.1 数据库主从切换
+### 10.1 故障应急处理 SOP
+
+#### 故障等级定义
+| 等级 | 定义 | 响应时间 | 处理流程 |
+|------|------|----------|----------|
+| P0 紧急 | 核心业务完全不可用（支付、下单） | 5 分钟 | 立即通知技术负责人，启动应急响应 |
+| P1 严重 | 部分功能不可用，影响用户体验 | 15 分钟 | 值班运维排查，通知相关团队 |
+| P2 一般 | 非核心功能异常，不影响主流程 | 1 小时 | 记录问题，安排修复 |
+| P3 轻微 | UI 显示异常、性能下降 | 1 天 | 排入迭代修复 |
+
+#### P0 故障应急响应流程
+```bash
+# 1. 确认故障范围
+kubectl get pods -n tailor-is-prod | grep -v Running
+kubectl get events -n tailor-is-prod --sort-by='.lastTimestamp' | tail -20
+
+# 2. 快速止损（二选一）
+# 方案A: 回滚到上一个稳定版本
+kubectl rollout undo deployment/<service> -n tailor-is-prod
+# 方案B: 重启问题服务
+kubectl rollout restart deployment/<service> -n tailor-is-prod
+
+# 3. 保留现场证据
+kubectl logs <pod-name> -n tailor-is-prod --previous > /tmp/incident-$(date +%Y%m%d-%H%M%S).log
+kubectl describe pod <pod-name> -n tailor-is-prod > /tmp/incident-desc-$(date +%Y%m%d-%H%M%S).txt
+
+# 4. 通知相关方
+# - 钉钉群: @所有人 发送故障通告
+# - 更新 Status Page（如有）
+
+# 5. 故障恢复后
+# - 编写故障复盘报告（5 Why 分析）
+# - 更新 Runbook 预防措施
+```
+
+#### 常见故障快速处理
+| 故障现象 | 快速处理命令 | 备注 |
+|----------|-------------|------|
+| Pod CrashLoopBackOff | `kubectl logs <pod> -n tailor-is-prod --previous` | 查看启动日志定位原因 |
+| 内存溢出 OOMKilled | `kubectl scale deployment <name> --replicas=2 -n tailor-is-prod` | 临时增加副本分摊压力 |
+| 数据库连接池耗尽 | `kubectl rollout restart deployment/<service> -n tailor-is-prod` | 重启释放连接 |
+| 消息队列积压 | 检查消费者是否在线，临时增加消费者实例 | 避免消息丢失 |
+| 磁盘空间不足 | `kubectl exec <pod> -n tailor-is-prod -- df -h` | 清理日志或扩容 |
+
+### 10.2 回滚步骤
+
+#### K8s Deployment 回滚
+```bash
+# 查看部署历史
+kubectl rollout history deployment/<service> -n tailor-is-prod
+
+# 回滚到上一个版本
+kubectl rollout undo deployment/<service> -n tailor-is-prod
+
+# 回滚到指定版本
+kubectl rollout undo deployment/<service> -n tailor-is-prod --to-revision=3
+
+# 验证回滚状态
+kubectl rollout status deployment/<service> -n tailor-is-prod
+
+# 查看回滚后的 Pod
+kubectl get pods -l app=<service> -n tailor-is-prod
+```
+
+#### 数据库回滚
+```bash
+# 1. 停止写入服务
+kubectl scale deployment order --replicas=0 -n tailor-is-prod
+kubectl scale deployment payment --replicas=0 -n tailor-is-prod
+
+# 2. 从备份恢复
+mysql -h <mysql-host> -u root -p<password> tailor_is < backup_YYYYMMDD.sql
+
+# 3. 验证数据完整性
+mysql -h <mysql-host> -u root -p<password> -e "SELECT COUNT(*) FROM tailor_is.orders"
+
+# 4. 恢复服务
+kubectl scale deployment order --replicas=2 -n tailor-is-prod
+kubectl scale deployment payment --replicas=2 -n tailor-is-prod
+```
+
+#### 配置回滚
+```bash
+# 回滚 ConfigMap
+kubectl rollout undo deployment/<service> -n tailor-is-prod
+# 或从 Git 恢复配置文件
+git show <commit-hash>:deploy/k8s/production/configmap.yaml | kubectl apply -f -
+```
+
+### 10.3 数据恢复步骤
+
+#### 从 MySQL 全量备份恢复
+```bash
+# 1. 确认备份文件
+ls -la /backups/mysql/tailor_is_*.sql.gz
+
+# 2. 解压备份
+gunzip tailor_is_backup_YYYYMMDD.sql.gz
+
+# 3. 停止应用写入
+kubectl scale deployment order --replicas=0 -n tailor-is-prod
+kubectl scale deployment payment --replicas=0 -n tailor-is-prod
+kubectl scale deployment user --replicas=0 -n tailor-is-prod
+
+# 4. 恢复数据库
+mysql -h <mysql-host> -u root -p<password> < tailor_is_backup_YYYYMMDD.sql
+
+# 5. 验证数据
+mysql -h <mysql-host> -u root -p<password> tailor_is -e "
+  SELECT 'orders' AS tbl, COUNT(*) AS cnt FROM orders
+  UNION ALL SELECT 'payments', COUNT(*) FROM payments
+  UNION ALL SELECT 'users', COUNT(*) FROM users
+"
+
+# 6. 恢复服务
+kubectl scale deployment order --replicas=2 -n tailor-is-prod
+kubectl scale deployment payment --replicas=2 -n tailor-is-prod
+kubectl scale deployment user --replicas=2 -n tailor-is-prod
+
+# 7. 验证服务正常
+kubectl get pods -n tailor-is-prod | grep -E "order|payment|user"
+```
+
+#### 从 Binlog 增量恢复（误删数据）
+```bash
+# 1. 找到误删操作的时间点
+mysqlbinlog --base64-output=decode-rows -v mysql-bin.000123 | grep -B5 "DELETE FROM"
+
+# 2. 恢复到误删前的时间点
+mysqlbinlog --stop-datetime="2026-06-21 14:25:00" mysql-bin.000123 | mysql -h <host> -u root -p
+
+# 3. 跳过误删操作，恢复后续数据
+mysqlbinlog --start-datetime="2026-06-21 14:26:00" mysql-bin.000123 | mysql -h <host> -u root -p
+```
+
+#### Redis 数据恢复
+```bash
+# 1. 确认 RDB 备份文件
+ls -la /backups/redis/dump_*.rdb
+
+# 2. 停止 Redis 写入
+kubectl scale deployment redis --replicas=0 -n tailor-is-prod
+
+# 3. 复制备份到 Redis 数据目录
+kubectl cp /backups/redis/dump_YYYYMMDD.rdb tailor-is-prod/<redis-pod>:/data/dump.rdb
+
+# 4. 启动 Redis
+kubectl scale deployment redis --replicas=1 -n tailor-is-prod
+
+# 5. 验证数据
+kubectl exec <redis-pod> -n tailor-is-prod -- redis-cli -a <password> DBSIZE
+
+# 6. 清理缓存（缓存数据可通过业务重新生成）
+kubectl exec <redis-pod> -n tailor-is-prod -- redis-cli -a <password> FLUSHDB
+```
+
+### 10.4 数据库主从切换
 ```bash
 # 1. 检查主从同步状态
 # 在从库执行: SHOW SLAVE STATUS\G
