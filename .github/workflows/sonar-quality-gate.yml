@@ -30,7 +30,7 @@ jobs:
           cache: maven
 
       - name: 缓存 SonarQube 包
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.sonar
           key: ${{ runner.os }}-sonar
