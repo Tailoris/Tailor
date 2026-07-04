@@ -5,7 +5,7 @@
       <el-table-column label="商品图片" width="100">
         <template #default="{ row }">
           <el-image
-            :src="row.images?.[0] || 'https://via.placeholder.com/60x60'"
+            :src="row.images?.[0] || PLACEHOLDER_60x60"
             fit="cover"
             style="width: 60px; height: 60px; border-radius: 4px"
           />
@@ -71,6 +71,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { Product } from '@/types'
+import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder'
 
 defineProps<{
   products: Product[]

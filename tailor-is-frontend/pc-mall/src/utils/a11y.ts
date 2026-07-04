@@ -68,22 +68,24 @@ export function focusTrap(element: HTMLElement): () => void {
     const last = focusable[focusable.length - 1]
 
     if (e.shiftKey) {
-      if (document.activeElement === first) {
+      if (document.activeElement === first && last) {
         e.preventDefault()
         last.focus()
       }
     } else {
-      if (document.activeElement === last) {
+      if (document.activeElement === last && first) {
         e.preventDefault()
         first.focus()
       }
     }
   }
 
-  // 将焦点移至第一个可聚焦元素
   const focusable = getFocusableElements()
   if (focusable.length > 0) {
-    focusable[0].focus()
+    const firstFocusable = focusable[0]
+    if (firstFocusable) {
+      firstFocusable.focus()
+    }
   }
 
   element.addEventListener('keydown', handleKeyDown)

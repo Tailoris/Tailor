@@ -23,7 +23,7 @@
           <text class="sub-title">{{ currentCategoryName }}</text>
           <view class="sub-grid">
             <view class="sub-item" v-for="sub in currentSubCategories" :key="sub.id" @click="selectSubCategory(sub)">
-              <image :src="sub.icon || 'https://via.placeholder.com/150x150'" mode="aspectFill" class="sub-icon"></image>
+              <image :src="sub.icon || PLACEHOLDER_150x150" mode="aspectFill" class="sub-icon"></image>
               <text class="sub-name">{{ sub.name }}</text>
             </view>
           </view>
@@ -31,7 +31,7 @@
         
         <view class="product-grid">
           <view class="product-item" v-for="item in productList" :key="item.id" @click="goDetail(item.id)">
-            <image :src="item.image || 'https://via.placeholder.com/300x300'" mode="aspectFill" class="product-img"></image>
+            <image :src="item.image || PLACEHOLDER_300x300" mode="aspectFill" class="product-img"></image>
             <view class="product-info">
               <text class="name text-ellipsis-2">{{ item.name }}</text>
               <text class="price">¥{{ item.price }}</text>
@@ -46,6 +46,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { getCategories, getCategoryProducts } from '@/api/product'
+import { PLACEHOLDER_150x150, PLACEHOLDER_300x300 } from '@shared/utils/placeholder'
 
 const categories = ref([])
 const currentCategory = ref(0)

@@ -3,7 +3,7 @@
     <scroll-view scroll-y class="post-list" v-if="postList.length > 0" @scrolltolower="loadMore">
       <view class="post-card" v-for="post in postList" :key="post.id" @click="goDetail(post.id)">
         <view class="post-header">
-          <image :src="post.userAvatar || 'https://via.placeholder.com/80x80'" mode="aspectFill" class="avatar"></image>
+          <image :src="post.userAvatar || PLACEHOLDER_80x80" mode="aspectFill" class="avatar"></image>
           <view class="user-info">
             <text class="nickname">{{ post.nickname || '用户' }}</text>
             <text class="time">{{ post.createTime }}</text>
@@ -43,6 +43,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getPosts, likePost as likePostApi } from '@/api/community'
+import { PLACEHOLDER_80x80 } from '@shared/utils/placeholder'
 
 const postList = ref([])
 const loading = ref(true)

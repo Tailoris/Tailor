@@ -16,7 +16,19 @@ import TransactionCard from './transaction-card/transaction-card.vue'
 import AfterSaleForm from './aftersale-form/aftersale-form.vue'
 import AfterSaleProgress from './aftersale-progress/aftersale-progress.vue'
 
-/** 原生组件注册表 */
+/**
+ * 原生组件注册表.
+ *
+ * TODO: 以下组件需要实现原生渲染以提升性能
+ *   - ProductCard: 商品卡片组件（小程序端需原生渲染，解决复杂布局性能问题）
+ *   - ImChat: IM 聊天组件（需 WebSocket 长连接 + 原生消息列表渲染）
+ *   - SignaturePad: 签名板组件（需 Canvas 原生绑定）
+ *   - MapView: 地图组件（需原生地图 SDK 集成）
+ *   - PaymentKeyboard: 支付密码键盘（需原生键盘实现，安全要求）
+ *   - ImageCropper: 图片裁剪组件（需原生 Canvas 操作）
+ *   - LivePlayer: 直播播放器组件（需原生播放器 SDK）
+ * 参考: UniApp 原生组件开发文档
+ */
 const nativeComponents = {
   TransactionCard,
   AfterSaleForm,

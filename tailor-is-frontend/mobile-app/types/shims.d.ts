@@ -5,15 +5,16 @@
 // uni-app 全局变量类型
 declare module '*.vue' {
   import type { DefineComponent } from 'vue';
-  const component: DefineComponent<{}, {}, any>;
+  // 🔒 M-23修复: 使用 Record<string, unknown> 替代 any
+  const component: DefineComponent<Record<string, unknown>, Record<string, unknown>, unknown>;
   export default component;
 }
 
 declare namespace UniApp {
   interface NavigateToOptions {
     url: string;
-    success?: (res: any) => void;
-    fail?: (err: any) => void;
+    success?: (res: unknown) => void;
+    fail?: (err: unknown) => void;
     complete?: () => void;
   }
 
@@ -27,11 +28,11 @@ declare namespace UniApp {
   interface RequestOptions {
     url: string;
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS';
-    data?: any;
+    data?: unknown;
     header?: Record<string, string>;
     timeout?: number;
-    success?: (res: any) => void;
-    fail?: (err: any) => void;
+    success?: (res: unknown) => void;
+    fail?: (err: unknown) => void;
   }
 
   interface StorageInfo {

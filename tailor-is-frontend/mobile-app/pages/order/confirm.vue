@@ -16,7 +16,7 @@
     
     <view class="goods-section">
       <view class="goods-item" v-for="item in goodsList" :key="item.id">
-        <image :src="item.image || 'https://via.placeholder.com/150x150'" mode="aspectFill" class="goods-img"></image>
+        <image :src="item.image || PLACEHOLDER_150x150" mode="aspectFill" class="goods-img"></image>
         <view class="goods-info">
           <text class="name text-ellipsis-2">{{ item.name }}</text>
           <text class="sku" v-if="item.skuName">{{ item.skuName }}</text>
@@ -72,6 +72,7 @@ import { createOrder } from '@/api/order'
 import { getAddresses } from '@/api/user'
 import { getCartItems } from '@/api/cart'
 import { getProductDetail } from '@/api/product'
+import { PLACEHOLDER_150x150 } from '@shared/utils/placeholder'
 
 const selectedAddress = ref(null)
 const goodsList = ref([])

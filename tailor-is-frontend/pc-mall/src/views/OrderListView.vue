@@ -26,7 +26,7 @@
           </div>
           <div class="order-items">
             <div v-for="item in order.items" :key="item.id" class="order-item">
-              <img :src="item.productImage || 'https://via.placeholder.com/60x60'" loading="lazy" />
+              <img :src="item.productImage || PLACEHOLDER_60x60" loading="lazy" />
               <div class="item-info">
                 <span class="item-name">{{ item.productName }}</span>
                 <span class="item-attrs">{{ Object.entries(item.skuAttributes).map(([k, v]) => `${k}: ${v}`).join('; ') }}</span>
@@ -70,6 +70,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getOrders, payOrder, cancelOrder, confirmOrder } from '@/api/order'
 import { formatDate, formatOrderStatus, formatPrice } from '@/utils/format'
 import type { Order } from '@/types'
+import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder'
 
 const orders = ref<Order[]>([])
 const loading = ref(true)

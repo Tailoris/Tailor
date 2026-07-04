@@ -127,9 +127,10 @@ async function loadProducts() {
 }
 
 // 自定义防抖：快速点击筛选时合并为一次请求，避免竞态
-function debounce<T extends (...args: any[]) => void>(fn: T, delay: number): T {
+// 🔒 M-23修复: 使用 unknown[] 替代 any[]，保持类型安全
+function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
   let timer: ReturnType<typeof setTimeout>
-  return ((...args: any[]) => {
+  return ((...args: unknown[]) => {
     clearTimeout(timer)
     timer = setTimeout(() => fn(...args), delay)
   }) as T

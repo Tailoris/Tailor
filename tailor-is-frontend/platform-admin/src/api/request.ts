@@ -5,8 +5,13 @@ import axios, {
   InternalAxiosRequestConfig
 } from 'axios'
 import { ElMessage } from 'element-plus'
-import router from '@/router'
 import { decryptSync } from '@/utils/crypto'
+
+// 延迟引用 router 以避免循环依赖（request.ts → router → LoginView → auth.ts → request.ts）
+let _router: ReturnType<typeof import('@/router')['default']> | null = null
+export function injectRouter(router: typeof _router) {
+  _router = router
+}
 
 export interface ApiResponse<T = unknown> {
   code: number
@@ -44,8 +49,7 @@ const request: AxiosInstance = axios.create({
 
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // TODO: Token 应迁移至服务端 httpOnly cookie，前端不应持久化存储。
-    const token = decryptSync(localStorage.getItem('token') || '')
+    const token = localStorage.getItem('token') || ''
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -55,20 +59,19 @@ request.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 )
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// 🔒 M-23修复: 替换 any 为 unknown，保持类型安全
 request.interceptors.response.use(
-  (response: AxiosResponse<any>) => {
-    const apiResponse = response.data
-    // 兼容两种响应格式：{ code, message, data } 包装格式 和 直接返回格式
+  (response: AxiosResponse<unknown>) => {
+    const apiResponse = response.data as Record<string, unknown> | null
     if (apiResponse && typeof apiResponse === 'object' && 'code' in apiResponse) {
-      const { code, message, data } = apiResponse as ApiResponse
+      const { code, message, data } = apiResponse as unknown as ApiResponse
       if (code === 200 || code === 0) {
         return data
       }
       ElMessage.error(message || '请求失败')
       return Promise.reject(new Error(message))
     }
-    return apiResponse
+    return response.data
   },
   (error: AxiosError<ApiResponse>) => {
     if (error.response) {
@@ -86,7 +89,7 @@ request.interceptors.response.use(
         case 401:
           localStorage.removeItem('token')
           ElMessage.error('登录已过期，请重新登录')
-          router.push('/login')
+          _router?.push('/login')
           break
         case 403:
           ElMessage.error('没有权限访问')

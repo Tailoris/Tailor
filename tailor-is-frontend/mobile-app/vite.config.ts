@@ -4,10 +4,11 @@
 // UX-P2-01: Service Worker 离线浏览支持
 // ==============================================================================
 
-import { defineConfig } from 'vite'
+import { defineConfig, type ViteDevServer } from 'vite'
 import uni from '@dcloudio/vite-plugin-uni'
 import { resolve } from 'path'
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
+import type { IncomingMessage, ServerResponse } from 'http'
 
 const CDN_BASE = process.env.CDN_BASE_URL || '/'
 
@@ -28,8 +29,9 @@ function serviceWorkerPlugin() {
     enforce: 'post' as const,
 
     // 开发模式下，将 sw.js 从 src/service-worker 复制到 dev server 根路径
-    configureServer(server: any) {
-      server.middlewares.use('/sw.js', async (_req: any, res: any) => {
+    // 🔒 M-23修复: 使用 ViteDevServer 和 http 模块类型替代 any
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use('/sw.js', async (_req: IncomingMessage, res: ServerResponse) => {
         try {
           const { build } = await import('esbuild')
           const result = await build({
@@ -73,6 +75,7 @@ function serviceWorkerPlugin() {
           write: false,
           minify: true,
           platform: 'browser',
+          drop: ['console'],  // P3-L-05: 生产构建中移除 SW 的 console.* 调用
           define: {
             'process.env.NODE_ENV': JSON.stringify('production'),
           },

@@ -47,6 +47,16 @@
     "all": "All",
     "pendingPayment": "Pending Payment",
     "pendingDelivery": "Pending Delivery",
+    "delivered": "Shipped",
+    "refunded": "Refunded",
     "completed": "Completed"
+  },
+  "payment": {
+    "title": "Payment",
+    "wechat": "WeChat Pay",
+    "alipay": "Alipay",
+    "balance": "Balance Pay",
+    "payAmount": "Payment Amount",
+    "confirmPay": "Confirm Payment"
   }
 }

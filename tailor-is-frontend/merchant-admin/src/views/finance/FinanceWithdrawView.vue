@@ -110,12 +110,14 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { getBalance, withdraw, getWithdrawRecords } from '@/api/finance'
+import type { SettlementRecord } from '@/types'
 import PageHeader from '@/components/PageHeader.vue'
 import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
 const withdrawing = ref(false)
-const withdrawRecords = ref<any[]>([])
+// 🔒 M-23修复: 使用 SettlementRecord 替代 any[]，保持类型安全
+const withdrawRecords = ref<SettlementRecord[]>([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(10)

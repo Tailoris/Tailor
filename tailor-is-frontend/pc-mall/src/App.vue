@@ -2,12 +2,16 @@
   <div id="app" lang="zh-CN">
     <SkipNav />
     <template v-if="isAuthPage">
-      <router-view />
+      <ErrorBoundary>
+        <router-view />
+      </ErrorBoundary>
     </template>
     <template v-else>
       <AppHeader />
       <main id="main-content" class="main-content" role="main" aria-label="主内容区域" tabindex="-1">
-        <router-view />
+        <ErrorBoundary>
+          <router-view />
+        </ErrorBoundary>
       </main>
       <AppFooter />
     </template>
@@ -20,6 +24,7 @@ import { useRoute } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import SkipNav from '@shared/components/SkipNav.vue'
+import ErrorBoundary from '@shared/components/ErrorBoundary.vue'
 
 const route = useRoute()
 

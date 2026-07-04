@@ -25,8 +25,9 @@ interface LoginResult {
   userInfo: AdminUserInfo
 }
 
-export function login(data: LoginParams) {
-  return request<any, LoginResult>({
+export function apiLogin(data: LoginParams) {
+  // 🔒 M-23修复: 替换 any 为 unknown，保持类型安全
+  return request<unknown, LoginResult>({
     url: '/auth/login',
     method: 'post',
     data
@@ -34,7 +35,8 @@ export function login(data: LoginParams) {
 }
 
 export function sendVerificationCode(target: string, type: 'phone' | 'email') {
-  return request<any, void>({
+  // 🔒 M-23修复: 替换 any 为 unknown，保持类型安全
+  return request<unknown, void>({
     url: type === 'phone' ? '/auth/sms-code' : '/auth/email-code',
     method: 'post',
     data: type === 'phone' ? { phone: target } : { email: target }
@@ -42,7 +44,8 @@ export function sendVerificationCode(target: string, type: 'phone' | 'email') {
 }
 
 export function loginByCode(data: { target: string; code: string; type: 'phone' | 'email' }) {
-  return request<any, LoginResult>({
+  // 🔒 M-23修复: 替换 any 为 unknown，保持类型安全
+  return request<unknown, LoginResult>({
     url: '/auth/login/code',
     method: 'post',
     data
@@ -50,15 +53,26 @@ export function loginByCode(data: { target: string; code: string; type: 'phone' 
 }
 
 export function sendResetCode(data: SendCodeParams) {
-  return request<any, void>({
-    url: '/auth/reset/code',
-    method: 'post',
-    data
-  })
+  // 🔒 M-23修复: 替换 any 为 unknown，保持类型安全
+  const { target, type } = data
+  if (type === 'phone') {
+    return request<unknown, void>({
+      url: '/auth/sms-code',
+      method: 'post',
+      data: { phone: target }
+    })
+  } else {
+    return request<unknown, void>({
+      url: '/auth/email-code',
+      method: 'post',
+      data: { email: target }
+    })
+  }
 }
 
 export function resetPassword(data: { target: string; code: string; newPassword: string; type: 'phone' | 'email' }) {
-  return request<any, void>({
+  // 🔒 M-23修复: 替换 any 为 unknown，保持类型安全
+  return request<unknown, void>({
     url: '/auth/reset-password',
     method: 'post',
     data

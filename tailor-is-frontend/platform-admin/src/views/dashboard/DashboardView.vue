@@ -14,7 +14,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-label">总用户数</div>
-              <div class="stat-value">{{ formatNumber(stats.totalUsers) }}</div>
+              <div class="stat-value">{{ formatNumber(stats.userCount) }}</div>
               <div class="stat-trend up">较昨日 +{{ stats.userGrowth }}%</div>
             </div>
           </div>
@@ -28,7 +28,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-label">总订单数</div>
-              <div class="stat-value">{{ formatNumber(stats.totalOrders) }}</div>
+              <div class="stat-value">{{ formatNumber(stats.orderCount) }}</div>
               <div class="stat-trend up">较昨日 +{{ stats.orderGrowth }}%</div>
             </div>
           </div>
@@ -41,8 +41,8 @@
               <el-icon :size="24"><Money /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-label">总收入</div>
-              <div class="stat-value">¥{{ formatMoney(stats.totalRevenue) }}</div>
+              <div class="stat-label">今日收入</div>
+              <div class="stat-value">¥{{ formatMoney(stats.todayRevenue) }}</div>
               <div class="stat-trend up">较昨日 +{{ stats.revenueGrowth }}%</div>
             </div>
           </div>
@@ -55,9 +55,9 @@
               <el-icon :size="24"><Monitor /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-label">活跃模块</div>
-              <div class="stat-value">{{ stats.activeModules }}</div>
-              <div class="stat-trend normal">运行中</div>
+              <div class="stat-label">待审核</div>
+              <div class="stat-value">{{ stats.pendingAuditCount }}</div>
+              <div class="stat-trend normal">审核中</div>
             </div>
           </div>
         </el-card>
@@ -123,15 +123,17 @@ interface ModuleStatus {
 }
 
 interface DashboardStats {
-  totalUsers: number
-  totalOrders: number
-  totalRevenue: number
-  activeModules: number
-  userGrowth: number
-  orderGrowth: number
-  revenueGrowth: number
-  moduleStatus: ModuleStatus[]
-  revenueTrend: { date: string; amount: number }[]
+  userCount: number
+  merchantCount: number
+  orderCount: number
+  todayRevenue: number
+  todayOrders: number
+  pendingAuditCount: number
+  userGrowth?: number
+  orderGrowth?: number
+  revenueGrowth?: number
+  moduleStatus?: ModuleStatus[]
+  revenueTrend?: { date: string; amount: number }[]
 }
 
 const loading = ref(false)
@@ -139,10 +141,12 @@ const error = ref(false)
 const chartRange = ref<'week' | 'month'>('week')
 
 const stats = reactive<DashboardStats>({
-  totalUsers: 0,
-  totalOrders: 0,
-  totalRevenue: 0,
-  activeModules: 0,
+  userCount: 0,
+  merchantCount: 0,
+  orderCount: 0,
+  todayRevenue: 0,
+  todayOrders: 0,
+  pendingAuditCount: 0,
   userGrowth: 0,
   orderGrowth: 0,
   revenueGrowth: 0,

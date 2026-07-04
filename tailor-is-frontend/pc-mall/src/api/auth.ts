@@ -8,7 +8,7 @@ interface LoginParams {
 
 interface RegisterParams {
   phone: string
-  code: string
+  smsCode: string
   password: string
 }
 
@@ -24,7 +24,7 @@ interface SendCodeParams {
 }
 
 export function login(data: LoginParams) {
-  return request<Record<string, unknown>, { token: string; user: User }>({
+  return request<Record<string, unknown>, { token: string; userInfo: User; csrfToken?: string }>({
     url: '/auth/login',
     method: 'post',
     data
@@ -92,7 +92,7 @@ export function sendVerificationCode(target: string, type: 'phone' | 'email') {
 
 /** 验证码免密登录 */
 export function loginByCode(data: { target: string; code: string; type: 'phone' | 'email' }) {
-  return request<Record<string, unknown>, { token: string; user: User }>({
+  return request<Record<string, unknown>, { token: string; userInfo: User; csrfToken?: string }>({
     url: '/auth/login/code',
     method: 'post',
     data
@@ -101,11 +101,20 @@ export function loginByCode(data: { target: string; code: string; type: 'phone' 
 
 /** 找回密码 - 发送验证码 */
 export function sendResetCode(data: SendCodeParams) {
-  return request<Record<string, unknown>, boolean>({
-    url: '/auth/reset/code',
-    method: 'post',
-    data
-  })
+  const { target, type } = data
+  if (type === 'phone') {
+    return request<Record<string, unknown>, boolean>({
+      url: '/auth/sms-code',
+      method: 'post',
+      data: { phone: target }
+    })
+  } else {
+    return request<Record<string, unknown>, boolean>({
+      url: '/auth/email-code',
+      method: 'post',
+      data: { email: target }
+    })
+  }
 }
 
 /** 重置密码 */

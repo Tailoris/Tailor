@@ -33,7 +33,7 @@
       <view class="goods-section">
         <text class="section-title">商品信息</text>
         <view class="goods-item" v-for="item in orderDetail.items" :key="item.id">
-          <image :src="item.image || 'https://via.placeholder.com/150x150'" mode="aspectFill" class="goods-img"></image>
+          <image :src="item.image || PLACEHOLDER_150x150" mode="aspectFill" class="goods-img"></image>
           <view class="goods-info">
             <text class="name text-ellipsis-2">{{ item.name }}</text>
             <text class="sku" v-if="item.skuName">{{ item.skuName }}</text>
@@ -92,6 +92,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { getOrderDetail, cancelOrder as cancelOrderApi, confirmReceive as confirmReceiveApi, payOrder as payOrderApi, deleteOrder as deleteOrderApi } from '@/api/order'
+import { PLACEHOLDER_150x150 } from '@shared/utils/placeholder'
 
 const loading = ref(true)
 const orderDetail = ref({})

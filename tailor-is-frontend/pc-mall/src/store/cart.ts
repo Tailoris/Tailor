@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
+import { useUserStore } from './user'
 import {
   getCart as apiGetCart,
   addToCart as apiAddToCart,
@@ -63,10 +64,17 @@ export const useCartStore = defineStore('cart', () => {
   const isAllChecked = computed(() => items.value.length > 0 && checkedCount.value === items.value.length)
 
   async function fetchCart() {
-    const res = await apiGetCart()
-    items.value = res
-    // 🔒 F-H07: 同步到本地存储
-    saveCartToStorage(items.value)
+    const userStore = useUserStore()
+    if (!userStore.userInfo?.id) {
+      return
+    }
+    try {
+      const res = await apiGetCart()
+      items.value = res
+      saveCartToStorage(items.value)
+    } catch (e) {
+      console.warn('获取购物车失败:', e)
+    }
   }
 
   async function addItem(data: { productId: number; skuId: number; quantity: number }) {

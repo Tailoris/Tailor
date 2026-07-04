@@ -15,7 +15,7 @@
         
         <view class="order-goods">
           <view class="goods-item" v-for="item in order.items?.slice(0, 3)" :key="item.id">
-            <image :src="item.image || 'https://via.placeholder.com/150x150'" mode="aspectFill" class="goods-img"></image>
+            <image :src="item.image || PLACEHOLDER_150x150" mode="aspectFill" class="goods-img"></image>
             <view class="goods-info">
               <text class="name text-ellipsis">{{ item.name }}</text>
               <text class="spec" v-if="item.skuName">{{ item.skuName }}</text>
@@ -51,6 +51,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getOrders, cancelOrder as apiCancelOrder, confirmReceive, payOrder as payOrderApi } from '@/api/order'
+import { PLACEHOLDER_150x150 } from '@shared/utils/placeholder'
 
 const statusTabs = [
   { label: '全部', value: '' },

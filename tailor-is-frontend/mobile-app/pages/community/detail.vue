@@ -2,7 +2,7 @@
   <view class="post-detail-page">
     <scroll-view scroll-y class="content" v-if="!loading">
       <view class="post-header">
-        <image :src="post.userAvatar || 'https://via.placeholder.com/100x100'" mode="aspectFill" class="avatar"></image>
+        <image :src="post.userAvatar || PLACEHOLDER_100x100" mode="aspectFill" class="avatar"></image>
         <view class="user-info">
           <text class="nickname">{{ post.nickname || '用户' }}</text>
           <text class="time">{{ post.createTime }}</text>
@@ -29,7 +29,7 @@
       <view class="comment-section">
         <text class="section-title">评论 ({{ commentList.length }})</text>
         <view class="comment-item" v-for="comment in commentList" :key="comment.id">
-          <image :src="comment.userAvatar || 'https://via.placeholder.com/60x60'" mode="aspectFill" class="comment-avatar"></image>
+          <image :src="comment.userAvatar || PLACEHOLDER_60x60" mode="aspectFill" class="comment-avatar"></image>
           <view class="comment-content">
             <text class="comment-user">{{ comment.nickname }}</text>
             <text class="comment-text">{{ comment.content }}</text>
@@ -53,6 +53,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getPostDetail, getComments, addComment, likePost as likePostApi } from '@/api/community'
+import { PLACEHOLDER_100x100, PLACEHOLDER_60x60 } from '@shared/utils/placeholder'
 
 const loading = ref(true)
 const post = ref({})

@@ -91,11 +91,20 @@ export const logout = () => {
 
 // 找回密码相关接口
 export const sendResetCode = (data: { target: string; type: 'phone' | 'email' }) => {
-  return request<Record<string, unknown>, void>({
-    url: '/auth/reset/code',
-    method: 'POST',
-    data,
-  })
+  const { target, type } = data
+  if (type === 'phone') {
+    return request<Record<string, unknown>, void>({
+      url: '/auth/sms-code',
+      method: 'POST',
+      data: { phone: target },
+    })
+  } else {
+    return request<Record<string, unknown>, void>({
+      url: '/auth/email-code',
+      method: 'POST',
+      data: { email: target },
+    })
+  }
 }
 
 export const resetPassword = (data: { target: string; code: string; newPassword: string; type: 'phone' | 'email'; shopName: string }) => {

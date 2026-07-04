@@ -239,7 +239,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -269,6 +269,14 @@ function showAgreement(type: 'user' | 'privacy') {
   agreementType.value = type
   agreementVisible.value = true
 }
+
+// 同步复选框状态到表单模型，触发验证清除
+watch(isAgree, (val) => {
+  emailForm.value.agreement = val
+  phoneForm.value.agreement = val
+  emailFormRef.value?.clearValidate('agreement')
+  phoneFormRef.value?.clearValidate('agreement')
+})
 
 // 手机号表单
 const phoneForm = ref({
@@ -330,7 +338,7 @@ const phoneRules: FormRules = {
   agreement: [
     {
       validator: (_rule, value, callback) => {
-        if (!value) {
+        if (!isAgree.value) {
           callback(new Error('请先同意用户协议和隐私政策'))
         } else {
           callback()
@@ -381,7 +389,7 @@ const emailRules: FormRules = {
   agreement: [
     {
       validator: (_rule, value, callback) => {
-        if (!value) {
+        if (!isAgree.value) {
           callback(new Error('请先同意用户协议和隐私政策'))
         } else {
           callback()
@@ -449,7 +457,6 @@ async function handleSendPhoneCode() {
     ElMessage.success('验证码已发送')
     phoneCountdown.start()
   } catch {
-    ElMessage.error('发送失败')
   } finally {
     phoneSending.value = false
   }
@@ -466,10 +473,11 @@ async function handleSendEmailCode() {
   emailSending.value = true
   try {
     await sendEmailCode(emailForm.value.email)
-    ElMessage.success('验证码已发送')
+    ElMessage.success('验证码已发送，请查收邮件')
     emailCountdown.start()
-  } catch {
-    ElMessage.error('发送失败')
+  } catch (error: any) {
+    const errMessage = error?.message || error?.response?.data?.message || '发送失败，请稍后重试'
+    ElMessage.error(errMessage)
   } finally {
     emailSending.value = false
   }
@@ -483,33 +491,23 @@ async function handlePhoneRegister() {
   if (isPhoneSubmitting.value) return
   isPhoneSubmitting.value = true
 
-  await phoneFormRef.value.validate(async (valid) => {
-    if (valid) {
-      if (!isAgree.value) {
-        ElMessage.warning('请先同意用户协议和隐私政策')
-        isPhoneSubmitting.value = false
-        return
-      }
+  try {
+    await phoneFormRef.value.validate()
 
-      phoneLoading.value = true
-      try {
-        await apiRegister({
-          phone: phoneForm.value.phone,
-          code: phoneForm.value.code,
-          password: phoneForm.value.password
-        })
-        ElMessage.success('注册成功，请登录')
-        router.push('/login')
-      } catch {
-        ElMessage.error('注册失败，请检查信息后重试')
-      } finally {
-        phoneLoading.value = false
-        isPhoneSubmitting.value = false
-      }
-    } else {
-      isPhoneSubmitting.value = false
-    }
-  })
+    phoneLoading.value = true
+    await apiRegister({
+      phone: phoneForm.value.phone,
+      smsCode: phoneForm.value.code,
+      password: phoneForm.value.password
+    })
+    ElMessage.success('注册成功，请登录')
+    router.push('/login')
+  } catch {
+    ElMessage.error('注册失败，请检查信息后重试')
+  } finally {
+    phoneLoading.value = false
+    isPhoneSubmitting.value = false
+  }
 }
 
 // 邮箱注册
@@ -520,33 +518,23 @@ async function handleEmailRegister() {
   if (isEmailSubmitting.value) return
   isEmailSubmitting.value = true
 
-  await emailFormRef.value.validate(async (valid) => {
-    if (valid) {
-      if (!isAgree.value) {
-        ElMessage.warning('请先同意用户协议和隐私政策')
-        isEmailSubmitting.value = false
-        return
-      }
+  try {
+    await emailFormRef.value.validate()
 
-      emailLoading.value = true
-      try {
-        await registerByEmail({
-          email: emailForm.value.email,
-          code: emailForm.value.code,
-          password: emailForm.value.password
-        })
-        ElMessage.success('注册成功，请登录')
-        router.push('/login')
-      } catch {
-        ElMessage.error('注册失败，请检查信息后重试')
-      } finally {
-        emailLoading.value = false
-        isEmailSubmitting.value = false
-      }
-    } else {
-      isEmailSubmitting.value = false
-    }
-  })
+    emailLoading.value = true
+    await registerByEmail({
+      email: emailForm.value.email,
+      code: emailForm.value.code,
+      password: emailForm.value.password
+    })
+    ElMessage.success('注册成功，请登录')
+    router.push('/login')
+  } catch {
+    ElMessage.error('注册失败，请检查信息后重试')
+  } finally {
+    emailLoading.value = false
+    isEmailSubmitting.value = false
+  }
 }
 </script>
 

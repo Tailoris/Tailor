@@ -113,8 +113,18 @@ if (typeof globalThis !== 'undefined' && !(globalThis as { crypto?: { randomUUID
 
 let isRedirecting = false
 
+function isPublicPage(): boolean {
+  const pages = getCurrentPages()
+  if (pages.length === 0) return false
+  const currentPage = pages[pages.length - 1]
+  const pagePath = '/' + currentPage.route
+  return pagePath === '/pages/login/login' || pagePath === '/pages/register/register'
+}
+
 function redirectToLogin(): void {
   if (isRedirecting) return
+  if (isPublicPage()) return
+  
   isRedirecting = true
   try {
     uni.removeStorageSync(appConfig.tokenStorageKey)

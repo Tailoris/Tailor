@@ -30,21 +30,33 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'users',
         name: 'UserManagement',
-        component: () => import('@/views/system/SettingsView.vue'),
-        meta: { title: '用户管理' },
+        component: () => import('@/views/system/UserListView.vue'),
+        meta: { title: '用户管理', requiresAuth: true },
+      },
+      {
+        path: 'roles',
+        name: 'RoleManagement',
+        component: () => import('@/views/system/RoleListView.vue'),
+        meta: { title: '角色管理', requiresAuth: true },
+      },
+      {
+        path: 'audit-logs',
+        name: 'AuditLog',
+        component: () => import('@/views/system/AuditLogView.vue'),
+        meta: { title: '操作日志', requiresAuth: true },
       },
       {
         path: 'settings',
         name: 'SystemSettings',
         component: () => import('@/views/system/SettingsView.vue'),
-        meta: { title: '系统设置' },
+        meta: { title: '系统设置', requiresAuth: true },
       },
     ],
   },
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/admin'),
   routes,
 })
 

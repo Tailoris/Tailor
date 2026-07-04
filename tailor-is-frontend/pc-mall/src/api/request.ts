@@ -9,14 +9,12 @@ import { ElMessage } from 'element-plus'
 import router from '@/router'
 import { decryptSync, encryptSync } from '@/utils/crypto'
 
-// 🔒 F-H01: 严格类型化响应数据
 export interface ApiResponse<T = unknown> {
   code: number
   message: string
   data?: T | null
 }
 
-// 🔒 F-H08: Token刷新相关类型
 interface RefreshResponse {
   token: string
   refreshToken?: string
@@ -38,29 +36,28 @@ function generateCsrfToken(): string {
   return token
 }
 
-/**
- * 使用 crypto.getRandomValues 生成安全的 CSRF Token
- */
 function generateSecureToken(): string {
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     const array = new Uint8Array(32)
     crypto.getRandomValues(array)
     return Array.from(array, b => b.toString(16).padStart(2, '0')).join('')
   }
-  // For environments without crypto, return empty (server should provide CSRF tokens)
   return ''
 }
 
 const service: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  // 🔒 F-H02/F-M02修复: 缩短超时时间从30秒到15秒
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' }
 })
 
-// 🔒 F-H08: Token刷新状态管理
 let isRefreshing = false
 const pendingRequests: PendingRequest[] = []
+
+function isPublicPage(): boolean {
+  const currentPath = router.currentRoute.value.path
+  return currentPath === '/login' || currentPath === '/register'
+}
 
 function addPendingRequest(request: PendingRequest): void {
   pendingRequests.push(request)
@@ -79,15 +76,12 @@ function processPendingRequests(token: string | null, error: unknown = null): vo
 
 async function refreshToken(): Promise<string | null> {
   try {
-    // TODO: refresh_token 应迁移至服务端 httpOnly cookie，前端不应持久化存储。
-    // 当前使用 sessionStorage 降低泄露窗口（关闭浏览器即清除）。
     const refreshTokenValue = sessionStorage.getItem('refresh_token')
     if (!refreshTokenValue) {
       return null
     }
-    // 🔒 F-H08: 调用刷新Token接口（无Authorization头，避免循环）
     const response = await axios.post<ApiResponse<RefreshResponse>>(
-      `${import.meta.env.VITE_API_BASE_URL || '/api'}/api/auth/refresh`,
+      `${import.meta.env.VITE_API_BASE_URL || '/api'}/auth/refresh`,
       { refreshToken: refreshTokenValue }
     )
     if (response.data.code === 200 && response.data.data?.token) {
@@ -110,44 +104,43 @@ service.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    const userId = localStorage.getItem('user_id')
+    if (userId) {
+      config.headers['X-User-Id'] = userId
+    }
     config.headers['X-CSRF-Token'] = generateCsrfToken()
     return config
   },
   (error: AxiosError) => Promise.reject(error)
 )
 
-// 响应拦截器：提取 data 字段并处理错误
 service.interceptors.response.use(
-  async (response: AxiosResponse<ApiResponse<unknown>>) => {
+  (response: AxiosResponse<ApiResponse<unknown>>) => {
     const apiResponse = response.data
     if (!apiResponse || typeof apiResponse !== 'object') {
       ElMessage.error('响应格式错误')
       return Promise.reject(new Error('Invalid response format'))
     }
-    const { code, message, data } = apiResponse
-    if (code === 200 || code === 0) {
-      return data as any
+    const { code, message } = apiResponse
+    if (code !== 200 && code !== 0) {
+      ElMessage.error(message || '请求失败')
+      return Promise.reject(new Error(message))
     }
-    ElMessage.error(message || '请求失败')
-    return Promise.reject(new Error(message))
+    return response
   },
   async (error: AxiosError<ApiResponse>) => {
-    // 🔒 F-H04: 严格类型，替换 as any
     if (error.response) {
       const { status } = error.response
       const responseData = error.response.data
       const errMessage = responseData?.message || ''
 
-      // CSRF错误
       if (errMessage.toLowerCase().includes('csrf')) {
         ElMessage.error('安全验证失败，请刷新页面重试')
         return Promise.reject(error)
       }
 
-      // 🔒 F-H08: 处理401 - 自动刷新Token
       if (status === 401 && !error.config?.url?.includes('/auth/refresh')) {
         if (isRefreshing) {
-          // 正在刷新中，加入队列
           return new Promise((resolve, reject) => {
             addPendingRequest({ resolve, reject })
           }).then((token) => {
@@ -169,23 +162,25 @@ service.interceptors.response.use(
           }
           return service.request(error.config as AxiosRequestConfig)
         } else {
-          // 刷新失败，跳转登录
           processPendingRequests(null, new Error('Token refresh failed'))
           localStorage.removeItem('token')
           sessionStorage.removeItem('refresh_token')
-          ElMessage.error('登录已过期，请重新登录')
-          router.push('/login')
+          if (!isPublicPage()) {
+            ElMessage.error('登录已过期，请重新登录')
+            router.push('/login')
+          }
           return Promise.reject(error)
         }
       }
 
       switch (status) {
         case 401:
-          // 已在上面处理过刷新Token，这里是刷新失败或非auth请求的兜底
           localStorage.removeItem('token')
           sessionStorage.removeItem('refresh_token')
-          ElMessage.error('登录已过期，请重新登录')
-          router.push('/login')
+          if (!isPublicPage()) {
+            ElMessage.error('登录已过期，请重新登录')
+            router.push('/login')
+          }
           break
         case 403:
           ElMessage.error('没有权限访问')
@@ -193,11 +188,20 @@ service.interceptors.response.use(
         case 404:
           ElMessage.error('请求的资源不存在')
           break
+        case 429:
+          ElMessage.error('请求过于频繁，请稍后再试')
+          break
         case 500:
-          ElMessage.error('服务器内部错误')
+          ElMessage.error(errMessage || '服务器内部错误，请稍后重试')
+          break
+        case 502:
+          ElMessage.error('网关错误，服务暂时不可用')
           break
         case 503:
-          ElMessage.error('服务暂时不可用')
+          ElMessage.error('服务暂时不可用，请检查网络或稍后重试')
+          break
+        case 504:
+          ElMessage.error('网关超时，请稍后重试')
           break
         default:
           ElMessage.error(errMessage || `请求失败 (${status})`)
@@ -211,4 +215,7 @@ service.interceptors.response.use(
   }
 )
 
-export default service
+export default async function request<D = unknown, T = unknown>(config: AxiosRequestConfig): Promise<T> {
+  const response = await service.request<ApiResponse<T>>(config)
+  return response.data.data as T
+}

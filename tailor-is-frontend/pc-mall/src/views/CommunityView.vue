@@ -5,19 +5,77 @@
       <el-breadcrumb-item>社区</el-breadcrumb-item>
     </el-breadcrumb>
 
-    <div class="community-header">
-      <h2 class="page-title">社区动态</h2>
-      <el-button type="primary" @click="showPostDialog = true">
-        <el-icon><Plus /></el-icon>
-        发布动态
-      </el-button>
-    </div>
+    <template v-if="isDetail && postDetail">
+      <div class="detail-header">
+        <el-button @click="router.push('/community')" class="back-btn">
+          <el-icon><ArrowLeft /></el-icon>
+          返回列表
+        </el-button>
+      </div>
+      <div class="post-detail-card">
+        <div class="post-user-info">
+          <el-avatar :size="50" :src="postDetail.userAvatar || PLACEHOLDER_40x40" />
+          <div class="user-detail">
+            <span class="user-name">{{ postDetail.userName }}</span>
+            <span class="post-time">{{ formatDate(postDetail.createdAt) }}</span>
+          </div>
+        </div>
+        <h2 class="post-title">{{ postDetail.title }}</h2>
+        <p class="post-content">{{ postDetail.content }}</p>
+        <div v-if="postDetail.images && postDetail.images.length > 0" class="post-images">
+          <el-image
+            v-for="(img, i) in postDetail.images"
+            :key="i"
+            :src="img"
+            :preview-src-list="postDetail.images"
+            :initial-index="i"
+            fit="cover"
+            class="post-image-item"
+          />
+        </div>
+        <div class="post-actions">
+          <button :class="['action-btn', { liked: postLikeMap[postDetail.id] }]" @click="toggleLike(postDetail)">
+            <el-icon><Star /></el-icon>
+            <span>{{ postDetail.likeCount + (postLikeMap[postDetail.id] ? 1 : 0) }}</span>
+          </button>
+          <button class="action-btn" @click="toggleComment(postDetail.id)">
+            <el-icon><ChatLineRound /></el-icon>
+            <span>{{ postDetail.commentCount }}</span>
+          </button>
+          <button class="action-btn">
+            <el-icon><View /></el-icon>
+            <span>{{ postDetail.viewCount }}</span>
+          </button>
+        </div>
+        <div v-if="expandedComments[postDetail.id]" class="comment-section">
+          <el-input
+            v-model="commentContent[postDetail.id]"
+            type="textarea"
+            :rows="2"
+            placeholder="写下你的评论..."
+            @keyup.enter.ctrl="handleComment(postDetail.id)"
+          />
+          <el-button type="primary" size="small" @click="handleComment(postDetail.id)" :loading="commenting">
+            发表评论
+          </el-button>
+        </div>
+      </div>
+    </template>
 
-    <el-skeleton :loading="loading" animated :rows="3">
-      <template v-if="posts.length > 0">
+    <template v-else>
+      <div class="community-header">
+        <h2 class="page-title">社区动态</h2>
+        <el-button type="primary" @click="showPostDialog = true">
+          <el-icon><Plus /></el-icon>
+          发布动态
+        </el-button>
+      </div>
+
+      <el-skeleton :loading="loading" animated :rows="3">
+        <template v-if="posts.length > 0">
         <div v-for="post in posts" :key="post.id" class="post-card">
           <div class="post-user-info">
-            <el-avatar :size="40" :src="post.userAvatar || 'https://via.placeholder.com/40x40'" />
+            <el-avatar :size="40" :src="post.userAvatar || PLACEHOLDER_40x40" />
             <div class="user-detail">
               <span class="user-name">{{ post.userName }}</span>
               <span class="post-time">{{ formatDate(post.createdAt) }}</span>
@@ -74,7 +132,8 @@
         </div>
       </template>
       <el-empty v-else-if="!loading" description="暂无动态" />
-    </el-skeleton>
+      </el-skeleton>
+    </template>
 
     <el-dialog v-model="showPostDialog" title="发布动态" width="600px">
       <el-form :model="newPost" :rules="postRules" ref="postFormRef" label-width="80px">
@@ -104,22 +163,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Plus, Star, ChatLineRound, View } from '@element-plus/icons-vue'
+import { Plus, Star, ChatLineRound, View, ArrowLeft } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { getPosts, createPost, likePost, commentPost } from '@/api/community'
+import { getPosts, getPostDetail, createPost, likePost, commentPost } from '@/api/community'
 import { formatDate } from '@/utils/format'
 import type { Post } from '@/types'
+import { PLACEHOLDER_40x40 } from '@shared/utils/placeholder'
 
 const router = useRouter()
+const route = useRoute()
 
 const posts = ref<Post[]>([])
+const postDetail = ref<Post | null>(null)
 const loading = ref(true)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+
+const isDetail = computed(() => {
+  const postId = route.params.postId
+  return postId !== undefined && postId !== null
+})
 
 const showPostDialog = ref(false)
 const submitting = ref(false)
@@ -151,6 +218,22 @@ async function loadPosts() {
   } catch {
     posts.value = []
     total.value = 0
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadPostDetail() {
+  loading.value = true
+  try {
+    const postId = route.params.postId
+    if (postId) {
+      const res = await getPostDetail(Number(postId))
+      postDetail.value = res
+    }
+  } catch {
+    postDetail.value = null
+    ElMessage.error('加载帖子详情失败')
   } finally {
     loading.value = false
   }
@@ -224,7 +307,11 @@ function viewPost(id: number) {
 }
 
 onMounted(() => {
-  loadPosts()
+  if (isDetail.value) {
+    loadPostDetail()
+  } else {
+    loadPosts()
+  }
 })
 </script>
 
@@ -332,5 +419,43 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   margin-top: 24px;
+}
+.detail-header {
+  margin-bottom: 20px;
+}
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.post-detail-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+.post-detail-card .post-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 16px 0;
+  color: #333;
+}
+.post-detail-card .post-content {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #444;
+  margin: 16px 0;
+}
+.post-detail-card .post-images {
+  margin: 20px 0;
+}
+.post-detail-card .post-image-item {
+  height: auto;
+  max-height: 400px;
+}
+.post-detail-card .comment-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
 }
 </style>

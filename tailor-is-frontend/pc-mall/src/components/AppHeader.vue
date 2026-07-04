@@ -29,7 +29,7 @@
         <template v-if="userStore.token">
           <el-dropdown trigger="click" @command="handleUserCommand">
             <span class="user-info">
-              <el-avatar :size="32" :src="userStore.userInfo?.avatar || 'https://via.placeholder.com/32x32'" />
+              <el-avatar :size="32" :src="userStore.userInfo?.avatar || PLACEHOLDER_32x32" />
               <span class="username">{{ userStore.userInfo?.nickname || userStore.userInfo?.username }}</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
@@ -59,6 +59,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useCartStore } from '@/store/cart'
 import { Search, ShoppingCart, ArrowDown } from '@element-plus/icons-vue'
+import { PLACEHOLDER_32x32 } from '@shared/utils/placeholder'
 
 const router = useRouter()
 const userStore = useUserStore()

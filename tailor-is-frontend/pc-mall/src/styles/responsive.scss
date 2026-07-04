@@ -48,7 +48,13 @@ $breakpoint-xxl: 1920px; // 超大屏
 }
 
 @mixin xxl {
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-xl) and (max-width: #{$breakpoint-xxl - 1px}) {
+    @content;
+  }
+}
+
+@mixin xxxl {
+  @media (min-width: $breakpoint-xxl) {
     @content;
   }
 }

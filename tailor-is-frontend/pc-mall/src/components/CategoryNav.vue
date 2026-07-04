@@ -13,7 +13,7 @@
         @keydown.space.prevent="$router.push(`/products?categoryId=${cat.id}`)"
         :aria-label="`分类: ${cat.name}`"
       >
-        <img :src="cat.icon || 'https://via.placeholder.com/60x60'" :alt="cat.name" />
+        <img :src="cat.icon || PLACEHOLDER_60x60" :alt="cat.name" />
         <span>{{ cat.name }}</span>
       </div>
     </div>
@@ -21,7 +21,8 @@
 </template>
 
 <script setup lang="ts">
-import type { ProductCategory } from '@/types'
+import type { Category } from '@/types'
+import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder'
 
 defineProps<{
   categories: ProductCategory[]

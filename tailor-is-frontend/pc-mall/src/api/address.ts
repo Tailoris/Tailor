@@ -23,14 +23,14 @@ interface UpdateAddressData {
 
 export function getAddresses() {
   return request<Record<string, unknown>, Address[]>({
-    url: '/addresses',
+    url: '/user/address',
     method: 'get'
   })
 }
 
 export function createAddress(data: CreateAddressData) {
   return request<Record<string, unknown>, number>({
-    url: '/addresses',
+    url: '/user/address',
     method: 'post',
     data
   })
@@ -38,7 +38,7 @@ export function createAddress(data: CreateAddressData) {
 
 export function updateAddress(id: number, data: UpdateAddressData) {
   return request<Record<string, unknown>, boolean>({
-    url: `/addresses/${id}`,
+    url: `/user/address/${id}`,
     method: 'put',
     data
   })
@@ -46,14 +46,14 @@ export function updateAddress(id: number, data: UpdateAddressData) {
 
 export function deleteAddress(id: number) {
   return request<Record<string, unknown>, boolean>({
-    url: `/addresses/${id}`,
+    url: `/user/address/${id}`,
     method: 'delete'
   })
 }
 
 export function setDefaultAddress(id: number) {
   return request<Record<string, unknown>, boolean>({
-    url: `/addresses/${id}/default`,
+    url: `/user/address/${id}/default`,
     method: 'put'
   })
 }

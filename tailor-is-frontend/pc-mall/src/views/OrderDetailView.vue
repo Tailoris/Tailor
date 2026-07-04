@@ -29,7 +29,7 @@
             <el-table-column label="商品信息">
               <template #default="{ row }">
                 <div class="product-cell">
-                  <img :src="row.productImage || 'https://via.placeholder.com/50x50'" />
+                  <img :src="row.productImage || PLACEHOLDER_50x50" />
                   <span>{{ row.productName }}</span>
                 </div>
               </template>
@@ -121,6 +121,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getOrderDetail, payOrder, cancelOrder, confirmOrder } from '@/api/order'
 import { formatDate, formatOrderStatus, formatPrice } from '@/utils/format'
 import type { Order } from '@/types'
+import { PLACEHOLDER_50x50 } from '@shared/utils/placeholder'
 
 const props = defineProps<{
   id: string

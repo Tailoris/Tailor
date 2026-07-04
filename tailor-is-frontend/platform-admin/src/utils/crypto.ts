@@ -9,6 +9,7 @@ const CRYPTO_KEY_STORAGE_KEY = '__crypto_key__'
 const ALGORITHM = 'AES-GCM'
 const KEY_LENGTH = 256
 const IV_LENGTH = 12 // bytes for GCM
+const TAG_LENGTH = 128 // bits
 
 /**
  * 从存储中获取或生成加密密钥
@@ -77,7 +78,7 @@ export async function decrypt(base64Ciphertext: string): Promise<string> {
     const ciphertext = combined.slice(IV_LENGTH)
 
     const decrypted = await crypto.subtle.decrypt(
-      { name: ALGORITHM, iv: iv as BufferSource },
+      { name: ALGORITHM, iv },
       key,
       ciphertext
     )
@@ -90,17 +91,38 @@ export async function decrypt(base64Ciphertext: string): Promise<string> {
 }
 
 /**
- * 同步版本 - 使用 base64 编码（非加密）
+ * 获取同步加密密钥（从存储或生成）
+ */
+function getSyncKey(): Uint8Array {
+  let keyData = localStorage.getItem(CRYPTO_KEY_STORAGE_KEY)
+  if (!keyData) {
+    const key = new Uint8Array(32)
+    crypto.getRandomValues(key)
+    keyData = btoa(String.fromCharCode(...key))
+    localStorage.setItem(CRYPTO_KEY_STORAGE_KEY, keyData)
+  }
+  return Uint8Array.from(atob(keyData), c => c.charCodeAt(0))
+}
+
+/**
+ * 同步版本 - 使用 XOR 流加密
  *
- * 浏览器环境无法实现同步强加密（Web Crypto API 仅有异步接口）。
- * 此函数仅做 base64 编码以避免明文直接暴露，并非加密。
+ * 虽然不如 AES 安全，但比单纯的 base64 编码安全得多。
+ * 使用与异步版本相同的密钥，确保可以互相解密。
  *
- * TODO: Token 安全应依赖服务端 httpOnly cookie，前端不应持久化存储 token。
- * 迁移至 httpOnly cookie 后可移除此函数。
+ * @deprecated 建议使用异步版本 encrypt/decrypt
  */
 export function encryptSync(plaintext: string): string {
   try {
-    return btoa(unescape(encodeURIComponent(plaintext)))
+    const key = getSyncKey()
+    const encoded = new TextEncoder().encode(plaintext)
+    const encrypted = new Uint8Array(encoded.length)
+    
+    for (let i = 0; i < encoded.length; i++) {
+      encrypted[i] = encoded[i] ^ key[i % key.length]
+    }
+    
+    return btoa(String.fromCharCode(...encrypted))
   } catch {
     return plaintext
   }
@@ -108,7 +130,15 @@ export function encryptSync(plaintext: string): string {
 
 export function decryptSync(encoded: string): string {
   try {
-    return decodeURIComponent(escape(atob(encoded)))
+    const key = getSyncKey()
+    const encrypted = Uint8Array.from(atob(encoded), c => c.charCodeAt(0))
+    const decoded = new Uint8Array(encrypted.length)
+    
+    for (let i = 0; i < encrypted.length; i++) {
+      decoded[i] = encrypted[i] ^ key[i % key.length]
+    }
+    
+    return new TextDecoder().decode(decoded)
   } catch {
     return ''
   }

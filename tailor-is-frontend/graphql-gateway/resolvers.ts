@@ -24,8 +24,13 @@ function getHeaders(context: unknown): Record<string, string> {
   return ctx?.headers || {}
 }
 
-// Helper: wrap API call with optional auth
-async function request<T>(url: string, method: 'get' | 'post' = 'get', data?: unknown, token?: string | null): Promise<T> {
+function logCacheHit(entity: string, hit: boolean) {
+  if (hit) {
+    console.log(`[Cache] ${entity} hit`)
+  }
+}
+
+async function request<T>(url: string, method: 'get' | 'post' | 'put' | 'delete' = 'get', data?: unknown, token?: string | null): Promise<T> {
   const headers: Record<string, string> = {}
   if (token) headers.Authorization = token
 
@@ -116,8 +121,12 @@ const resolvers = {
       }
 
       return getOrSetCached('product', { id }, async () => {
+        logCacheHit('product', false)
         const raw = await request<Record<string, unknown>>(`/products/${id}`, 'get', undefined, token)
         return transformProduct(raw)
+      }).then(result => {
+        logCacheHit('product', true)
+        return result
       })
     },
 
@@ -272,7 +281,7 @@ const resolvers = {
       context: unknown
     ) => {
       const token = getAuth(context)
-      return request<Record<string, unknown>>(`/cart/${input.id}`, 'post', { quantity: input.quantity }, token)
+      return request<Record<string, unknown>>(`/cart/${input.id}`, 'put', { quantity: input.quantity }, token)
     },
 
     deleteCartItem: async (
@@ -281,7 +290,7 @@ const resolvers = {
       context: unknown
     ) => {
       const token = getAuth(context)
-      await request(`/cart/${id}`, 'post', undefined, token)
+      await request(`/cart/${id}`, 'delete', undefined, token)
       return true
     },
 
@@ -291,7 +300,7 @@ const resolvers = {
       context: unknown
     ) => {
       const token = getAuth(context)
-      await request('/cart/clear', 'post', undefined, token)
+      await request('/cart/clear', 'delete', undefined, token)
       return true
     },
 

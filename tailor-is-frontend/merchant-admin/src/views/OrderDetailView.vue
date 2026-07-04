@@ -36,7 +36,7 @@
         <el-table-column label="商品图片" width="80">
           <template #default="{ row }">
             <el-image
-              :src="row.productImage || 'https://via.placeholder.com/60x60'"
+              :src="row.productImage || PLACEHOLDER_60x60"
               fit="cover"
               style="width: 60px; height: 60px; border-radius: 4px"
             />
@@ -130,6 +130,7 @@ import { getOrderDetail, updateOrderRemark } from '@/api/order'
 import type { Order } from '@/types'
 import PageHeader from '@/components/PageHeader.vue'
 import { ElMessage } from 'element-plus'
+import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder'
 
 const route = useRoute()
 const router = useRouter()

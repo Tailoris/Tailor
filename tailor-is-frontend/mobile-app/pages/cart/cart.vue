@@ -14,7 +14,7 @@
           <view class="item-check" @click="toggleItemSelect(item)">
             <text class="checkbox" :class="{ checked: item.selected }">{{ item.selected ? '✓' : '' }}</text>
           </view>
-          <image :src="item.image || 'https://via.placeholder.com/200x200'" mode="aspectFill" class="item-image" @click="goDetail(item.productId)"></image>
+          <image :src="item.image || PLACEHOLDER_200x200" mode="aspectFill" class="item-image" @click="goDetail(item.productId)"></image>
           <view class="item-info">
             <text class="item-name text-ellipsis-2">{{ item.productName }}</text>
             <text class="item-sku" v-if="item.skuName">{{ item.skuName }}</text>
@@ -60,6 +60,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { getCart, updateCartQuantity, deleteCart } from '@/api/cart'
+import { PLACEHOLDER_200x200 } from '@shared/utils/placeholder'
 
 const cartList = ref([])
 

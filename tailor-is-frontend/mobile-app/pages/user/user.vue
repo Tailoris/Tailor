@@ -2,7 +2,7 @@
   <view class="user-page">
     <view class="user-header">
       <view class="user-info" v-if="isLogin" @click="goProfile">
-        <image :src="userInfo.avatar || 'https://via.placeholder.com/150x150'" mode="aspectFill" class="avatar"></image>
+        <image :src="userInfo.avatar || PLACEHOLDER_150x150" mode="aspectFill" class="avatar"></image>
         <view class="info">
           <text class="nickname">{{ userInfo.nickname || 'Tailor IS用户' }}</text>
           <view class="level-badge" v-if="userInfo.level">
@@ -100,6 +100,7 @@
 import { ref, onMounted } from 'vue'
 import { getUserInfo } from '@/api/auth'
 import { getOrders } from '@/api/order'
+import { PLACEHOLDER_150x150 } from '@shared/utils/placeholder'
 
 const isLogin = ref(false)
 const userInfo = ref({})

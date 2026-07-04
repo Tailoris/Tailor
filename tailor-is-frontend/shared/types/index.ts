@@ -34,6 +34,7 @@ export interface User {
   id: number
   username: string
   phone: string
+  nickName?: string
   nickname?: string
   email?: string
   avatar?: string

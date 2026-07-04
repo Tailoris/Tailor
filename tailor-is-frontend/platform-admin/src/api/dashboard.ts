@@ -12,19 +12,16 @@ export interface RevenueTrendItem {
 }
 
 export interface DashboardStats {
-  totalUsers: number
-  totalOrders: number
-  totalRevenue: number
-  activeModules: number
-  userGrowth: number
-  orderGrowth: number
-  revenueGrowth: number
-  moduleStatus: ModuleStatus[]
-  revenueTrend: RevenueTrendItem[]
+  userCount: number
+  merchantCount: number
+  orderCount: number
+  todayRevenue: number
+  todayOrders: number
+  pendingAuditCount: number
 }
 
 export function getDashboardStats(params?: { range?: 'week' | 'month' }) {
-  return request<any, DashboardStats>({
+  return request<unknown, DashboardStats>({
     url: '/admin/dashboard/stats',
     method: 'get',
     params

@@ -25,7 +25,7 @@
         >
           <el-checkbox :model-value="item.checked" @change="cartStore.toggleCheck(item.id)" />
           <div class="product-info">
-            <img :src="item.productImage || 'https://via.placeholder.com/80x80'" :alt="item.productName" />
+            <img :src="item.productImage || PLACEHOLDER_80x80" :alt="item.productName" />
             <div class="product-text">
               <span class="product-name">{{ item.productName }}</span>
               <span class="sku-attrs">{{ Object.entries(item.skuAttributes).map(([k, v]) => `${k}: ${v}`).join('; ') }}</span>
@@ -77,6 +77,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCartStore } from '@/store/cart'
 import { formatPrice } from '@/utils/format'
+import { PLACEHOLDER_80x80 } from '@shared/utils/placeholder'
 
 const router = useRouter()
 const cartStore = useCartStore()

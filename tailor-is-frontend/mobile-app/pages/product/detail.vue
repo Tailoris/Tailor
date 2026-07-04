@@ -4,7 +4,7 @@
       <view class="image-swiper">
         <swiper circular autoplay interval="3000" indicator-dots indicator-active-color="#FF4D4F" class="swiper">
           <swiper-item v-for="(img, index) in product.images" :key="index">
-            <image :src="img || 'https://via.placeholder.com/750x750'" mode="aspectFill" class="swiper-img"></image>
+            <image :src="img || PLACEHOLDER_750x750" mode="aspectFill" class="swiper-img"></image>
           </swiper-item>
         </swiper>
         <view class="share-btn" @click="share">分享</view>
@@ -57,7 +57,7 @@
       <view class="spec-popup" @click.stop>
         <view class="popup-header">
           <text class="close-btn" @click="closePopup">×</text>
-          <image :src="product.images?.[0] || 'https://via.placeholder.com/200x200'" mode="aspectFill" class="popup-img"></image>
+          <image :src="product.images?.[0] || PLACEHOLDER_200x200" mode="aspectFill" class="popup-img"></image>
           <view class="popup-info">
             <text class="price">¥{{ product.price }}</text>
             <text class="stock">库存 {{ product.stock || 0 }}</text>
@@ -95,6 +95,7 @@ import { ref, computed, onMounted } from 'vue'
 import { getProductDetail } from '@/api/product'
 import { addToCart } from '@/api/cart'
 import { addFavorite, removeFavorite } from '@/api/user'
+import { PLACEHOLDER_750x750, PLACEHOLDER_200x200 } from '@shared/utils/placeholder'
 
 const loading = ref(true)
 const product = ref({})

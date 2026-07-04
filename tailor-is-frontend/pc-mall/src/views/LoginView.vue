@@ -282,7 +282,6 @@ async function handlePasswordLogin() {
           username: passwordForm.value.account,
           password: passwordForm.value.password
         })
-        // 记住我
         if (rememberMe.value) {
           storage.saveAccount(passwordForm.value.account)
         } else {
@@ -291,8 +290,14 @@ async function handlePasswordLogin() {
         ElMessage.success('登录成功')
         const redirect = (route.query.redirect as string) || '/'
         router.push(redirect)
-      } catch {
-        ElMessage.error('账号或密码错误，请重新输入')
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : ''
+        if (errMsg.includes('503') || errMsg.includes('服务') || errMsg.includes('不可用')) {
+          return
+        }
+        if (!errMsg.includes('服务器') && !errMsg.includes('网络') && !errMsg.includes('连接')) {
+          ElMessage.error('账号或密码错误，请重新输入')
+        }
       } finally {
         loading.value = false
       }

@@ -331,7 +331,6 @@ async function handleSendCode() {
     ElMessage.success('验证码已发送')
     phoneCountdown.start()
   } catch {
-    ElMessage.error('发送失败')
   } finally {
     sending.value = false
   }
@@ -350,7 +349,6 @@ async function handleSendEmailCode() {
     ElMessage.success('验证码已发送')
     emailCountdown.start()
   } catch {
-    ElMessage.error('发送失败')
   } finally {
     sending.value = false
   }

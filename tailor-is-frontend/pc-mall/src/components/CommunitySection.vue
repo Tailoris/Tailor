@@ -13,7 +13,7 @@
           @click="$router.push(`/community/${post.id}`)"
         >
           <div class="post-header">
-            <el-avatar :size="32" :src="post.userAvatar || 'https://via.placeholder.com/32x32'" />
+            <el-avatar :size="32" :src="post.userAvatar || PLACEHOLDER_32x32" />
             <div class="post-user">
               <span class="user-name">{{ post.userName }}</span>
               <span class="post-time">{{ formatDate(post.createdAt) }}</span>
@@ -39,6 +39,7 @@
 import { View, Star, ChatLineRound } from '@element-plus/icons-vue'
 import { formatDate, truncateText } from '@/utils/format'
 import type { Post } from '@/types'
+import { PLACEHOLDER_32x32 } from '@shared/utils/placeholder'
 
 defineProps<{
   posts: Post[]

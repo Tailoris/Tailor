@@ -37,7 +37,7 @@
         </view>
         <scroll-view scroll-x class="seckill-scroll">
           <view class="seckill-item" v-for="item in seckillList" :key="item.id" @click="goDetail(item.id)">
-            <image :src="item.image || 'https://via.placeholder.com/300x300'" mode="aspectFill" class="seckill-img"></image>
+            <image :src="item.image || PLACEHOLDER_300x300" mode="aspectFill" class="seckill-img"></image>
             <view class="price-wrap">
               <text class="price">¥{{ item.seckillPrice }}</text>
               <text class="original">¥{{ item.price }}</text>
@@ -52,7 +52,7 @@
         </view>
         <view class="goods-grid">
           <view class="goods-item" v-for="item in recommendList" :key="item.id" @click="goDetail(item.id)">
-            <image :src="item.image || 'https://via.placeholder.com/300x300'" mode="aspectFill" class="goods-img"></image>
+            <image :src="item.image || PLACEHOLDER_300x300" mode="aspectFill" class="goods-img"></image>
             <view class="goods-info">
               <text class="goods-name text-ellipsis-2">{{ item.name }}</text>
               <view class="price-row">
@@ -78,10 +78,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { getProducts, getCategories, getSeckillProducts } from '@/api/product'
+import { PLACEHOLDER_300x300, PLACEHOLDER_750x300 } from '@shared/utils/placeholder'
 
 const banners = ref([
-  { id: 1, image: 'https://via.placeholder.com/750x300/FF4D4F/FFFFFF?text=Tailor+IS', link: '' },
-  { id: 2, image: 'https://via.placeholder.com/750x300/1890FF/FFFFFF?text=Custom+Fashion', link: '' }
+  { id: 1, image: PLACEHOLDER_750x300, link: '' },
+  { id: 2, image: PLACEHOLDER_750x300, link: '' }
 ])
 
 const categories = ref([])

@@ -9,7 +9,7 @@
     </div>
     <div v-for="item in items" :key="item.id" class="order-item">
       <div class="product-info">
-        <img :src="item.productImage || 'https://via.placeholder.com/60x60'" :alt="item.productName" loading="lazy" />
+        <img :src="item.productImage || PLACEHOLDER_60x60" :alt="item.productName" loading="lazy" />
         <div>
           <span class="product-name">{{ item.productName }}</span>
           <span class="sku-attrs">{{ Object.entries(item.skuAttributes).map(([k, v]) => `${k}: ${v}`).join('; ') }}</span>
@@ -25,6 +25,7 @@
 <script setup lang="ts">
 import { formatPrice } from '@/utils/format'
 import type { CartItem } from '@/types'
+import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder'
 
 defineProps<{
   items: CartItem[]

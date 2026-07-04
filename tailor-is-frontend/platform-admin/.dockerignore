@@ -1,4 +1,9 @@
+# =============================================================================
 # Development-only files excluded from production builds
+# 对应: P3-L-06 mock-server.js 排除
+# 说明: mock-server.js 仅用于本地开发调试，不在生产构建中包含
+# 注: 生产构建通过 vite build 输出到 dist/ 目录，Docker 构建基于 dist/
+# =============================================================================
 mock-server.js
 *.test.ts
 *.test.tsx

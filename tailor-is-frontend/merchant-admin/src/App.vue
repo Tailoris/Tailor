@@ -1,11 +1,14 @@
 <template>
   <div id="app" lang="zh-CN">
     <a href="#main-content" class="skip-link">跳转到主内容</a>
-    <router-view />
+    <ErrorBoundary>
+      <router-view />
+    </ErrorBoundary>
   </div>
 </template>
 
 <script setup lang="ts">
+import ErrorBoundary from '@shared/components/ErrorBoundary.vue'
 </script>
 
 <style>

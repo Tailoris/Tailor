@@ -6,7 +6,8 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { mobileCrypto, setSecure, getSecure, removeSecure } from '../crypto'
 
 // 模拟 uni 全局对象
-declare const global: any
+// 🔒 M-23修复: 使用 Record<string, unknown> 替代 any
+declare const global: Record<string, unknown> & typeof globalThis
 
 beforeEach(() => {
   global.uni = {

@@ -111,7 +111,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { User, Lock, Phone, Key } from '@element-plus/icons-vue'
-import { login as apiLogin, sendVerificationCode, loginByCode } from '@/api/auth'
+import { apiLogin, sendVerificationCode, loginByCode } from '@/api/auth'
 import { validate } from '@/utils/validate'
 import { storage } from '@/utils/storage'
 import { useCountdown } from '@/composables/useCountdown'
@@ -259,19 +259,12 @@ async function handlePasswordLogin() {
     if (valid) {
       loading.value = true
       try {
-        const res = await apiLogin({
+        const response = await apiLogin({
           username: passwordForm.value.account,
           password: passwordForm.value.password
         })
-        if (res.token) {
-          // FE-H-1: 加密存储Token，避免明文泄露
-          try {
-            const { encryptSync } = await import('@/utils/crypto')
-            const encryptedToken = encryptSync(res.token)
-            localStorage.setItem('token', encryptedToken)
-          } catch {
-            localStorage.setItem('token', res.token)
-          }
+        if (response && response.token) {
+          localStorage.setItem('token', response.token)
         }
         if (rememberMe.value) {
           storage.saveAccount(passwordForm.value.account)
@@ -280,8 +273,17 @@ async function handlePasswordLogin() {
         }
         ElMessage.success('登录成功')
         router.push('/dashboard')
-      } catch {
-        ElMessage.error('账号或密码错误，请重新输入')
+      } catch (error) {
+        const err = error as Error
+        if (err.message && err.message.includes('502')) {
+          ElMessage.error('服务暂时不可用，请稍后重试')
+        } else if (err.message && err.message.includes('ECONNABORTED')) {
+          ElMessage.error('请求超时，请检查网络连接')
+        } else if (err.message && err.message.includes('网络')) {
+          ElMessage.error('网络连接异常，请检查网络')
+        } else {
+          ElMessage.error('账号或密码错误，请重新输入')
+        }
       } finally {
         loading.value = false
       }

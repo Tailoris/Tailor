@@ -11,7 +11,7 @@
         <div class="gallery-section" aria-label="商品图片画廊">
           <el-carousel :autoplay="false" height="480px">
             <el-carousel-item v-for="(img, index) in (product.images.length > 0 ? product.images : [product.mainImage])" :key="index">
-              <img :src="img || 'https://via.placeholder.com/480x480'" :alt="`${product.name} 图片${index + 1}`" />
+              <img :src="img || PLACEHOLDER_480x480" :alt="`${product.name} 图片${index + 1}`" />
             </el-carousel-item>
           </el-carousel>
           <div class="thumbnail-list" role="tablist" aria-label="商品图片缩略图">
@@ -171,6 +171,7 @@ import { useProductGraphQL, PRODUCT_DETAIL_QUERY, graphqlQuery } from '@/api/gra
 import { useCartStore } from '@/store/cart'
 import { formatPrice, formatProductType } from '@/utils/format'
 import type { Product, Sku, ProductReview } from '@/types'
+import { PLACEHOLDER_480x480 } from '@shared/utils/placeholder'
 
 // Constants
 const ORIGINAL_PRICE_MULTIPLIER = 1.2

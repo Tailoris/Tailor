@@ -3,7 +3,7 @@
     <div class="profile-layout">
       <aside class="profile-sidebar" role="navigation" aria-label="个人中心导航">
         <div class="user-card">
-          <el-avatar :size="80" :src="userStore.userInfo?.avatar || 'https://via.placeholder.com/80x80'" :alt="userStore.userInfo?.nickname || '用户' + '的头像'" />
+          <el-avatar :size="80" :src="userStore.userInfo?.avatar || PLACEHOLDER_80x80" :alt="userStore.userInfo?.nickname || '用户' + '的头像'" />
           <h3>{{ userStore.userInfo?.nickname || userStore.userInfo?.username || '用户' }}</h3>
           <p>普通会员</p>
         </div>
@@ -174,6 +174,7 @@ import { User, Location, Star, Trophy, Document } from '@element-plus/icons-vue'
 import ProductCard from '@/components/ProductCard.vue'
 import { useUserStore } from '@/store/user'
 import { updateProfile, updatePassword, getFavorites, getPoints } from '@/api/user'
+import { PLACEHOLDER_80x80 } from '@shared/utils/placeholder'
 import { getAddresses, deleteAddress, setDefaultAddress, createAddress } from '@/api/address'
 import { formatDate } from '@/utils/format'
 import type { Address, Product } from '@/types'

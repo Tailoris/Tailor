@@ -2,7 +2,7 @@
   <view class="goods-list-component">
     <view class="goods-grid" :class="{ 'two-column': column === 2 }">
       <view class="goods-item" v-for="item in list" :key="item.id" @click="goDetail(item.id)">
-        <image :src="item.image || 'https://via.placeholder.com/300x300'" mode="aspectFill" class="goods-img"></image>
+        <image :src="item.image || PLACEHOLDER_300x300" mode="aspectFill" class="goods-img"></image>
         <view class="goods-info">
           <text class="goods-name text-ellipsis-2">{{ item.name }}</text>
           <view class="price-row">
@@ -18,6 +18,8 @@
 </template>
 
 <script setup lang="ts">
+import { PLACEHOLDER_300x300 } from '@shared/utils/placeholder'
+
 const props = defineProps({
   list: { type: Array, default: () => [] },
   column: { type: Number, default: 2 },

@@ -48,8 +48,32 @@ export default defineConfig({
   server: {
     port: 3001,
     proxy: {
+      '/api/auth': {
+        target: 'http://localhost:8101',
+        changeOrigin: true,
+      },
+      '/api/user': {
+        target: 'http://localhost:8101',
+        changeOrigin: true,
+      },
+      '/api/address': {
+        target: 'http://localhost:8101',
+        changeOrigin: true,
+      },
+      '/api/product': {
+        target: 'http://localhost:8102',
+        changeOrigin: true,
+      },
+      '/api/products': {
+        target: 'http://localhost:8102',
+        changeOrigin: true,
+      },
+      '/api/community': {
+        target: 'http://localhost:8108',
+        changeOrigin: true,
+      },
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'http://localhost:8080',
+        target: process.env.VITE_CORE_GATEWAY_URL || 'http://localhost:9000',
         changeOrigin: true,
       },
     },
@@ -79,16 +103,20 @@ export default defineConfig({
     // Rollup 配置
     rollupOptions: {
       output: {
-        // 代码分割策略
-        manualChunks: {
-          // 框架层
-          'vue-vendor': ['vue', 'vue-router', 'pinia'],
-          // UI 组件库
-          'element-plus': ['element-plus', '@element-plus/icons-vue'],
-          // 工具库
-          'utils-vendor': ['axios', 'dayjs', 'lodash-es'],
-          // 图片相关
-          'media-vendor': ['swiper', 'vue3-lazyload'],
+        // 🔒 修复: 合并 element-plus 到 vue-vendor 以避免循环依赖
+        // 原因: @element-plus/icons-vue 路径包含 'vue' 会被误匹配到 vue-vendor，
+        // 导致 element-plus ↔ vue-vendor 循环依赖，引发运行时 TDZ 错误
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router') || id.includes('@vue/') || id.includes('element-plus') || id.includes('@element-plus/')) {
+            return 'vue-vendor'
+          }
+          if (id.includes('axios') || id.includes('dayjs') || id.includes('lodash-es') || id.includes('lodash')) {
+            return 'utils-vendor'
+          }
+          if (id.includes('swiper') || id.includes('vue3-lazyload')) {
+            return 'media-vendor'
+          }
         },
         // 输出命名
         chunkFileNames: 'js/[name]-[hash:8].js',

@@ -8,7 +8,7 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import viteCompression from 'vite-plugin-compression'
 
-const CDN_BASE = process.env.CDN_BASE_URL || '/'
+const CDN_BASE = process.env.CDN_BASE_URL || '/merchant/'
 
 export default defineConfig({
   plugins: [
@@ -61,10 +61,15 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vue-vendor': ['vue', 'vue-router', 'pinia'],
-          'element-plus': ['element-plus', '@element-plus/icons-vue'],
-          'utils-vendor': ['axios', 'dayjs'],
+        // 🔒 修复: 合并 element-plus 到 vue-vendor 以避免循环依赖
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router') || id.includes('@vue/') || id.includes('element-plus') || id.includes('@element-plus/')) {
+            return 'vue-vendor'
+          }
+          if (id.includes('axios') || id.includes('dayjs') || id.includes('lodash-es') || id.includes('lodash')) {
+            return 'utils-vendor'
+          }
         },
         chunkFileNames: 'js/[name]-[hash:8].js',
         entryFileNames: 'js/[name]-[hash:8].js',
