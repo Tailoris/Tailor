@@ -1,28 +1,24 @@
 package com.tailoris.admin.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tailoris.admin.constant.AdminConstants;
 import com.tailoris.api.admin.dto.DashboardStatsResponse;
 import com.tailoris.admin.service.AdminDashboardService;
-import com.tailoris.api.merchant.entity.Merchant;
-import com.tailoris.api.merchant.mapper.MerchantMapper;
-import com.tailoris.api.order.entity.OrderInfo;
-import com.tailoris.api.order.mapper.OrderInfoMapper;
-import com.tailoris.api.product.entity.Product;
-import com.tailoris.api.product.mapper.ProductMapper;
 import com.tailoris.api.user.entity.SysUser;
 import com.tailoris.api.user.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -31,11 +27,9 @@ import java.util.concurrent.TimeUnit;
 public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     private final SysUserMapper sysUserMapper;
-    private final MerchantMapper merchantMapper;
-    private final OrderInfoMapper orderInfoMapper;
-    private final ProductMapper productMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public DashboardStatsResponse getDashboardStats() {
@@ -49,47 +43,25 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             }
         }
 
-        LambdaQueryWrapper<SysUser> userQuery = new LambdaQueryWrapper<>();
-        Long userCount = sysUserMapper.selectCount(userQuery);
+        Long userCount = sysUserMapper.selectCount(null);
 
-        LambdaQueryWrapper<Merchant> merchantQuery = new LambdaQueryWrapper<>();
-        Long merchantCount = merchantMapper.selectCount(merchantQuery);
+        Long merchantCount = queryMerchantCount();
 
-        LambdaQueryWrapper<OrderInfo> orderQuery = new LambdaQueryWrapper<>();
-        Long orderCount = orderInfoMapper.selectCount(orderQuery);
+        Long orderCount = queryOrderCount();
 
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
         LocalDateTime todayEnd = todayStart.plusDays(1);
+        String dateFormat = "yyyy-MM-dd HH:mm:ss";
+        String todayStartStr = todayStart.format(DateTimeFormatter.ofPattern(dateFormat));
+        String todayEndStr = todayEnd.format(DateTimeFormatter.ofPattern(dateFormat));
 
-        LambdaQueryWrapper<OrderInfo> todayPayQuery = new LambdaQueryWrapper<>();
-        todayPayQuery.ge(OrderInfo::getCreateTime, todayStart)
-                .lt(OrderInfo::getCreateTime, todayEnd)
-                .in(OrderInfo::getStatus, AdminConstants.ORDER_STATUS_PAID,
-                        AdminConstants.ORDER_STATUS_DELIVERED,
-                        AdminConstants.ORDER_STATUS_COMPLETED);
-        Long todayOrders = orderInfoMapper.selectCount(todayPayQuery);
+        Long todayOrders = queryTodayOrders(todayStartStr, todayEndStr);
 
-        LambdaQueryWrapper<OrderInfo> revenueQuery = new LambdaQueryWrapper<>();
-        revenueQuery.ge(OrderInfo::getCreateTime, todayStart)
-                .lt(OrderInfo::getCreateTime, todayEnd)
-                .in(OrderInfo::getStatus, AdminConstants.ORDER_STATUS_PAID,
-                        AdminConstants.ORDER_STATUS_DELIVERED,
-                        AdminConstants.ORDER_STATUS_COMPLETED);
-        BigDecimal todayRevenue = BigDecimal.ZERO;
-        var paidOrders = orderInfoMapper.selectList(revenueQuery);
-        for (OrderInfo order : paidOrders) {
-            if (order.getPayAmount() != null) {
-                todayRevenue = todayRevenue.add(order.getPayAmount());
-            }
-        }
+        BigDecimal todayRevenue = queryTodayRevenue(todayStartStr, todayEndStr);
 
-        LambdaQueryWrapper<Merchant> pendingMerchantQuery = new LambdaQueryWrapper<>();
-        pendingMerchantQuery.eq(Merchant::getAuditStatus, AdminConstants.AUDIT_STATUS_PENDING);
-        Long pendingMerchantCount = merchantMapper.selectCount(pendingMerchantQuery);
+        Long pendingMerchantCount = queryPendingMerchantCount();
 
-        LambdaQueryWrapper<Product> pendingProductQuery = new LambdaQueryWrapper<>();
-        pendingProductQuery.eq(Product::getAuditStatus, AdminConstants.AUDIT_STATUS_PENDING);
-        Long pendingProductCount = productMapper.selectCount(pendingProductQuery);
+        Long pendingProductCount = queryPendingProductCount();
 
         DashboardStatsResponse response = new DashboardStatsResponse();
         response.setUserCount(userCount);
@@ -111,5 +83,64 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         }
 
         return response;
+    }
+
+    private Long queryMerchantCount() {
+        try {
+            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tailor_is_merchant.merchant", Long.class);
+        } catch (Exception e) {
+            log.warn("Failed to query merchant count", e);
+            return 0L;
+        }
+    }
+
+    private Long queryOrderCount() {
+        try {
+            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tailor_is_order.order_info", Long.class);
+        } catch (Exception e) {
+            log.warn("Failed to query order count", e);
+            return 0L;
+        }
+    }
+
+    private Long queryTodayOrders(String start, String end) {
+        try {
+            return jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM tailor_is_order.order_info WHERE create_time >= ? AND create_time < ? AND status IN (2, 3, 4)",
+                    Long.class, start, end);
+        } catch (Exception e) {
+            log.warn("Failed to query today orders", e);
+            return 0L;
+        }
+    }
+
+    private BigDecimal queryTodayRevenue(String start, String end) {
+        try {
+            BigDecimal result = jdbcTemplate.queryForObject(
+                    "SELECT COALESCE(SUM(pay_amount), 0) FROM tailor_is_order.order_info WHERE create_time >= ? AND create_time < ? AND status IN (2, 3, 4)",
+                    BigDecimal.class, start, end);
+            return result != null ? result : BigDecimal.ZERO;
+        } catch (Exception e) {
+            log.warn("Failed to query today revenue", e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private Long queryPendingMerchantCount() {
+        try {
+            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tailor_is_merchant.merchant WHERE audit_status = 0", Long.class);
+        } catch (Exception e) {
+            log.warn("Failed to query pending merchant count", e);
+            return 0L;
+        }
+    }
+
+    private Long queryPendingProductCount() {
+        try {
+            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tailor_is_product.product WHERE audit_status = 0", Long.class);
+        } catch (Exception e) {
+            log.warn("Failed to query pending product count", e);
+            return 0L;
+        }
     }
 }

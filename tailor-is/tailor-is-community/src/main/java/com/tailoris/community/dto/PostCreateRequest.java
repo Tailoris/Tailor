@@ -24,8 +24,8 @@ public class PostCreateRequest {
     @Size(max = 500)
     private String summary;
 
-    @Schema(description = "图片URL列表(JSON数组)")
-    private String images;
+    @Schema(description = "图片URL列表")
+    private List<String> images;
 
     @Schema(description = "视频URL")
     private String videoUrl;

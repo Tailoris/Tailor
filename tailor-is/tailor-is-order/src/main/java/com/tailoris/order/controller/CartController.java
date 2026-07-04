@@ -3,6 +3,7 @@ package com.tailoris.order.controller;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.tailoris.common.result.Result;
 import com.tailoris.order.dto.CartAddRequest;
+import com.tailoris.order.dto.CartCheckoutRequest;
 import com.tailoris.order.dto.CartUpdateRequest;
 import com.tailoris.order.dto.CreateOrderRequest;
 import com.tailoris.order.entity.ShoppingCart;
@@ -70,8 +71,19 @@ public class CartController {
     @PostMapping("/checkout")
     public Result<List<ShoppingCart>> batchCheckout(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestBody List<Long> cartIds) {
-        List<ShoppingCart> carts = shoppingCartService.batchCheckout(userId, cartIds);
+            @Valid @RequestBody CartCheckoutRequest request) {
+        List<ShoppingCart> carts = shoppingCartService.batchCheckout(userId, request.getIds());
         return Result.success(carts);
+    }
+
+    /**
+     * 清空购物车
+     */
+    @Operation(summary = "清空购物车")
+    @DeleteMapping("/clear")
+    public Result<Void> clearCart(
+            @RequestHeader("X-User-Id") Long userId) {
+        shoppingCartService.clearCart(userId);
+        return Result.success();
     }
 }

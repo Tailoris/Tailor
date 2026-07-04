@@ -7,6 +7,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.Primary;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -35,6 +36,7 @@ import java.util.List;
  */
 @Slf4j
 @Service
+@Primary
 public class LocalFileService implements ObjectStorageService {
 
     private final OssProperties properties;

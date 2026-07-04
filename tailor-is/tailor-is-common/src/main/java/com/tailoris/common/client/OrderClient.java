@@ -4,6 +4,8 @@ import com.tailoris.common.result.Result;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -13,4 +15,8 @@ public interface OrderClient {
 
     @GetMapping("/detail/{orderId}")
     Result<Map<String, Object>> getOrderDetail(@PathVariable Long orderId);
+
+    @PostMapping("/payment/status/update")
+    Result<Boolean> updatePaymentStatus(@RequestParam String paymentNo,
+                                        @RequestParam String status);
 }

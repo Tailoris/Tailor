@@ -65,10 +65,14 @@ public class AuthWhitelistProperties {
         List<String> defaults = new ArrayList<>();
         defaults.add("/api/auth/login");
         defaults.add("/api/auth/register");
-        defaults.add("/api/auth/refresh");
+        defaults.add("/api/auth/register/email");
         defaults.add("/api/auth/sms-code");
+        defaults.add("/api/auth/email-code");
+        defaults.add("/api/auth/refresh");
         defaults.add("/api/auth/reset-password");
         defaults.add("/api/auth/captcha");
+        defaults.add("/api/auth/login/code");
+        defaults.add("/api/auth/wechat-login");
         defaults.add("/api/public/**");
         defaults.add("/api/file/upload");
         defaults.add("/api/file/download");

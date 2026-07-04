@@ -42,12 +42,11 @@ COPY tailor-is-common/src /build/tailor-is-common/src
 COPY tailor-is-common-web/src /build/tailor-is-common-web/src
 COPY tailor-is-payment/src /build/tailor-is-payment/src
 
-# 编译支付服务（依赖会在编译时自动下载，避免 dependency:go-offline 卡死）
-RUN mvn -f /build/pom.xml -pl tailor-is-payment -am clean package -DskipTests -B -U
+RUN mvn -f /build/pom.xml -pl tailor-is-payment -am clean package -Dmaven.test.skip=true -Dmaven.test.skip=true -B -U
 RUN ls -la /build/tailor-is-payment/target/*.jar
 
 # -------- 阶段 2: 运行
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jre-jammy
 LABEL maintainer="Tailor IS Team"
 LABEL description="Tailor IS 支付服务"
 LABEL version="1.0.0"
@@ -81,7 +80,7 @@ RUN groupadd --system tailor \
     && chown -R tailor:tailor /app
 USER tailor
 
-ENTRYPOINT [ "sh", "-c", "java \
+ENTRYPOINT exec java \
     -Duser.timezone=${TZ} \
     -Dserver.port=${SERVER_PORT} \
     -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE} \
@@ -89,7 +88,7 @@ ENTRYPOINT [ "sh", "-c", "java \
     -Dmanagement.endpoints.web.exposure.include=${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE} \
     -Dmanagement.endpoint.prometheus.enabled=${MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED} \
     -Xmx${JVM_XMX} -Xms${JVM_XMS} \
-    -jar /app/app.jar" ]
+    -jar /app/app.jar
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \

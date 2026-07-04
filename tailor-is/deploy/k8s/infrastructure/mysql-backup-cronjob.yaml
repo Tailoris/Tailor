@@ -1,0 +1,174 @@
+# ==============================================================================
+# Tailor IS - MySQL 定时备份
+# ==============================================================================
+# 版本: MySQL 8.0
+# 备份方式: mysqldump --all-databases, gzip 压缩
+# 调度: 每天凌晨 02:00 (UTC+8)
+# 保留策略: 保留最近 7 个备份
+#
+# 使用说明:
+#   1. 需要先创建 tailor-is-secret (包含 mysql-root-password)
+#   2. 备份数据存储在 PVC 中 (mysql-backup-pvc)
+#   3. 备份文件命名格式: mysql-backup-YYYYMMDD-HHMMSS.sql.gz
+#   4. 支持从 mysql-master 服务读取备份
+#
+# 恢复说明:
+#   gunzip < backup-file.sql.gz | mysql -u root -p -h mysql-master
+# ==============================================================================
+
+---
+# ==============================================================================
+# PersistentVolumeClaim: 备份存储
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-backup-pvc
+  namespace: tailor-is-prod
+  labels:
+    app: mysql-backup
+    app.kubernetes.io/name: mysql-backup-pvc
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: tailor-is-storage
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+# ==============================================================================
+# ConfigMap: 备份脚本
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-backup-script
+  namespace: tailor-is-prod
+  labels:
+    app: mysql-backup
+    app.kubernetes.io/name: mysql-backup-script
+    app.kubernetes.io/part-of: tailor-is
+data:
+  backup.sh: |
+    #!/bin/bash
+    set -e
+
+    BACKUP_DIR="/backups"
+    RETENTION_DAYS=7
+    TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+    BACKUP_FILE="${BACKUP_DIR}/mysql-backup-${TIMESTAMP}.sql.gz"
+    LOG_FILE="${BACKUP_DIR}/backup.log"
+
+    echo "[$(date)] ==========================================" >> ${LOG_FILE}
+    echo "[$(date)] Starting MySQL backup..." >> ${LOG_FILE}
+
+    # 执行全量备份
+    echo "[$(date)] Running mysqldump --all-databases..." >> ${LOG_FILE}
+    mysqldump \
+      -h ${MYSQL_HOST} \
+      -P ${MYSQL_PORT} \
+      -u ${MYSQL_USER} \
+      -p${MYSQL_PASSWORD} \
+      --all-databases \
+      --single-transaction \
+      --routines \
+      --triggers \
+      --events \
+      --set-gtid-purged=OFF \
+      --master-data=2 \
+      2>> ${LOG_FILE} | gzip > ${BACKUP_FILE}
+
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+      echo "[$(date)] ERROR: mysqldump failed!" >> ${LOG_FILE}
+      exit 1
+    fi
+
+    BACKUP_SIZE=$(ls -lh ${BACKUP_FILE} | awk '{print $5}')
+    echo "[$(date)] Backup completed: ${BACKUP_FILE} (${BACKUP_SIZE})" >> ${LOG_FILE}
+
+    # 清理过期备份
+    echo "[$(date)] Cleaning up backups older than ${RETENTION_DAYS} days..." >> ${LOG_FILE}
+    find ${BACKUP_DIR} -name "mysql-backup-*.sql.gz" -type f -mtime +${RETENTION_DAYS} -delete -print >> ${LOG_FILE} 2>&1
+
+    echo "[$(date)] Backup job finished." >> ${LOG_FILE}
+
+---
+# ==============================================================================
+# CronJob: MySQL 定时备份
+# ==============================================================================
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mysql-backup
+  namespace: tailor-is-prod
+  labels:
+    app: mysql-backup
+    app.kubernetes.io/name: mysql-backup
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  # 每天凌晨 02:00 (UTC+8 = 前一天 18:00 UTC)
+  # 若集群时区为 UTC+8，使用本地时间 02:00
+  schedule: "0 18 * * *"
+  # 保留最近 7 个成功和失败的 Job 记录
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: mysql-backup
+            app.kubernetes.io/name: mysql-backup
+          annotations:
+            prometheus.io/scrape: "false"
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: mysql-backup
+              image: mysql:8.0
+              imagePullPolicy: IfNotPresent
+              command:
+                - bash
+                - /scripts/backup.sh
+              env:
+                - name: MYSQL_HOST
+                  value: "mysql-master.tailor-is-prod.svc.cluster.local"
+                - name: MYSQL_PORT
+                  value: "3306"
+                - name: MYSQL_USER
+                  value: "root"
+                - name: MYSQL_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: tailor-is-secret
+                      key: mysql-root-password
+              resources:
+                requests:
+                  cpu: "250m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "1000m"
+                  memory: "1Gi"
+              volumeMounts:
+                - name: backup-scripts
+                  mountPath: /scripts
+                - name: backup-storage
+                  mountPath: /backups
+          volumes:
+            - name: backup-scripts
+              configMap:
+                name: mysql-backup-script
+                items:
+                  - key: backup.sh
+                    path: backup.sh
+                defaultMode: 0755
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: mysql-backup-pvc

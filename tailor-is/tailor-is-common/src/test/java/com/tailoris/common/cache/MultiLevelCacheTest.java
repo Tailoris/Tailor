@@ -39,7 +39,7 @@ class MultiLevelCacheTest {
     @BeforeEach
     void setUp() {
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        cache = new MultiLevelCache<>(redisTemplate);
+        cache = new MultiLevelCache<>(redisTemplate, 300L, 10000L, 5L);
     }
 
     @Test

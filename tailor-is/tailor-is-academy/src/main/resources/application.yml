@@ -1,3 +1,11 @@
+# ============================================================
+# TODO [架构对齐]: 架构方案要求非核心模块采用 SpringBoot 单体 + 插件化架构
+# 当前为独立微服务部署，后续版本需重构为：
+# 1. 合并至单一 SpringBoot 应用（如 tailor-is-lite）
+# 2. 按功能模块插件化（community/academy/supply 作为独立 Maven 模块）
+# 3. 共享数据库连接池和缓存
+# 参考: docs/architecture/Tailor IS（裁智云）服装全产业平台架构优化方案.md
+# ============================================================
 server:
   port: 8112
 spring:
@@ -15,8 +23,8 @@ spring:
           enabled: false
         fail-fast: false
         auth:
-          username: ${NACOS_USERNAME:nacos}
-          password: ${NACOS_PASSWORD:nacos}
+          username: ${NACOS_USERNAME:}
+          password: ${NACOS_PASSWORD:}
       config:
         server-addr: ${NACOS_ADDR:localhost:8848}
         namespace: ${NACOS_NAMESPACE:}
@@ -26,7 +34,7 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_academy?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_academy?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:}
     druid:
@@ -69,6 +77,7 @@ sa-token:
   is-share: true
   token-style: uuid
   is-log: false
+  is-redis: true
 springdoc:
   api-docs:
     enabled: true

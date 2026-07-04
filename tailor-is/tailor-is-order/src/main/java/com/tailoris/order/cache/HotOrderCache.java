@@ -171,8 +171,10 @@ public class HotOrderCache {
 
     /**
      * 记录商品访问，达到阈值时加入热门排行
+     *
+     * <p>每次商品被访问时调用，用于统计热度并自动维护热门商品排行榜。</p>
      */
-    private void recordProductAccess(Long productId) {
+    public void recordProductAccess(Long productId) {
         Double score = stringRedisTemplate.opsForZSet().incrementScore(HOT_PRODUCT_RANK_KEY,
                 String.valueOf(productId), 1);
         if (score != null && score >= hotThreshold) {

@@ -14,7 +14,7 @@ spring:
     #   - rewriteBatchedStatements=true: 批量写入优化
     #   - useServerPrepStmts=true: 服务端预处理
     #   - cachePrepStmts=true: 预处理缓存
-    url: jdbc:mysql://${TIDB_HOST:localhost}:${TIDB_PORT:4000}/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048
+    url: jdbc:mysql://${TIDB_HOST:localhost}:${TIDB_PORT:4000}/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048
     username: ${TIDB_USERNAME:root}
     password: ${TIDB_PASSWORD:}
     druid:

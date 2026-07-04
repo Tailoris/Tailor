@@ -5,10 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.tailoris.common.entity.BaseEntity;
+import com.tailoris.common.serializer.JsonListTypeHandler;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -27,8 +29,8 @@ public class CommunityPost extends BaseEntity {
     @TableField("content")
     private String content;
 
-    @TableField("images")
-    private String images;
+    @TableField(value = "images", typeHandler = JsonListTypeHandler.class)
+    private List<String> images;
 
     @TableField("video_url")
     private String videoUrl;

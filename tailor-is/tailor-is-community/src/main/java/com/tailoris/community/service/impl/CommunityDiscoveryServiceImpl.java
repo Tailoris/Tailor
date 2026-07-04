@@ -1,5 +1,6 @@
-package com.tailoris.community.service;
+package com.tailoris.community.service.impl;
 
+import com.tailoris.community.service.CommunityDiscoveryService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tailoris.common.dto.PageRequest;

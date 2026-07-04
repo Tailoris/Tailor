@@ -7,6 +7,8 @@ import com.tailoris.common.constant.RedisKeyPrefix;
 import com.tailoris.common.dto.PageResponse;
 import com.tailoris.common.exception.BusinessException;
 import com.tailoris.common.lock.DistributedLock;
+import com.tailoris.common.cache.MultiLevelCache;
+import com.tailoris.product.config.RabbitMQConfig;
 import com.tailoris.product.dto.ProductCreateRequest;
 import com.tailoris.product.dto.ProductQueryRequest;
 import com.tailoris.product.dto.ProductUpdateRequest;
@@ -32,13 +34,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -76,6 +81,8 @@ public class ProductServiceImpl implements ProductService {
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
     private final DistributedLock distributedLock;
+    private final MultiLevelCache<Long, Product> multiLevelCache;
+    private final RabbitTemplate rabbitTemplate;
 
     private static final String PRODUCT_CACHE_KEY = RedisKeyPrefix.PRODUCT + "detail:";
     // 🔒 B-L09修复: 缓存过期时间改用配置化，支持不同环境差异化
@@ -147,6 +154,11 @@ public class ProductServiceImpl implements ProductService {
 
             // 🔒 PRD-001: 写入成功后清理可能的缓存残留
             stringRedisTemplate.delete(PRODUCT_CACHE_KEY + product.getId());
+            multiLevelCache.invalidate(product.getId(), MULTI_LEVEL_CACHE_PREFIX);
+
+            // 发送商品创建MQ通知
+            sendProductEventMessage("product.created", product.getId(), product.getMerchantId(),
+                    product.getShopId(), product.getName());
 
             log.info("商品创建成功: id={}, name={}, merchantId={}",
                     product.getId(), product.getName(), request.getMerchantId());
@@ -273,6 +285,12 @@ public class ProductServiceImpl implements ProductService {
         saveOrUpdateAttributes(id, request.getAttributes());
         replaceProductTags(id, request.getTagIds());
         stringRedisTemplate.delete(PRODUCT_CACHE_KEY + id);
+        multiLevelCache.invalidate(id, MULTI_LEVEL_CACHE_PREFIX);
+
+        // 发送商品更新MQ通知
+        sendProductEventMessage("product.updated", id, null, null, request.getName());
+
+        log.info("商品更新成功: id={}", id);
     }
 
     private void validateProductEditable(Long id) {
@@ -434,6 +452,10 @@ public class ProductServiceImpl implements ProductService {
         // 5. 多级缓存清理
         clearProductCaches(id);
 
+        // 发送商品删除MQ通知
+        sendProductEventMessage("product.deleted", id, existing.getMerchantId(),
+                existing.getShopId(), existing.getName());
+
         log.info("商品删除完成: productId={}, name={}", id, existing.getName());
     }
 
@@ -459,10 +481,21 @@ public class ProductServiceImpl implements ProductService {
         // BE-M-41: 仅清理目标商品缓存，避免使用 KEYS 通配符过度清理
         // 删除单个商品时无需清空全部商品详情缓存
         stringRedisTemplate.delete(PRODUCT_CACHE_KEY + productId);
+        multiLevelCache.invalidate(productId, MULTI_LEVEL_CACHE_PREFIX);
     }
 
     @Override
     public Product getProductDetail(Long id) {
+        // 0. 多级缓存预检查（Caffeine L1 + Redis L2）
+        Product multiLevelCached = multiLevelCache.get(id, MULTI_LEVEL_CACHE_PREFIX,
+                Duration.ofSeconds(cacheExpireSeconds), pid -> null);
+        if (multiLevelCached != null) {
+            log.debug("MultiLevelCache HIT: productId={}", id);
+            logMultiLevelCacheStats();
+            asyncIncrementViewCount(id);
+            return multiLevelCached;
+        }
+
         // 🔒 PRD-006: 缓存击穿防护（双检查锁 + 分布式锁 + 空值标记）
         String cacheKey = PRODUCT_CACHE_KEY + id;
 
@@ -509,6 +542,8 @@ public class ProductServiceImpl implements ProductService {
             // 4. 写回缓存
             try {
                 stringRedisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(product), cacheExpireSeconds, TimeUnit.SECONDS);
+                // 刷新 MultiLevelCache L1，确保下次读取能获取最新数据
+                multiLevelCache.invalidate(id, MULTI_LEVEL_CACHE_PREFIX);
             } catch (Exception e) {
                 log.error("Failed to write product cache, key: {}, error: {}", cacheKey, e.getMessage());
             }
@@ -523,10 +558,28 @@ public class ProductServiceImpl implements ProductService {
      */
     private static final String CACHE_NULL_VALUE = "__NULL__";
 
+    /** MultiLevelCache L2 Redis 键前缀 */
+    private static final String MULTI_LEVEL_CACHE_PREFIX = "tailor:product:detail";
+
     /**
      * 🔒 PRD-006: 空值缓存 TTL（短，防止恶意构造不存在的id长占缓存）
      */
     private static final long CACHE_NULL_TTL_SECONDS = 60;
+
+    /**
+     * 记录 MultiLevelCache 命中率统计日志.
+     */
+    private void logMultiLevelCacheStats() {
+        try {
+            MultiLevelCache.CacheStats stats = multiLevelCache.getStats();
+            if (stats != null && stats.hitCount() + stats.missCount() > 0) {
+                log.info("MultiLevelCache stats: hitCount={}, missCount={}, hitRate={}%, evictionCount={}",
+                        stats.hitCount(), stats.missCount(), String.format("%.2f", stats.hitRate()), stats.evictionCount());
+            }
+        } catch (Exception e) {
+            log.debug("Failed to log MultiLevelCache stats: {}", e.getMessage());
+        }
+    }
 
     /**
      * 异步增加商品浏览量 - 修复 B-M33
@@ -611,6 +664,11 @@ public class ProductServiceImpl implements ProductService {
 
         productMapper.updateById(product);
         stringRedisTemplate.delete(PRODUCT_CACHE_KEY + id);
+        multiLevelCache.invalidate(id, MULTI_LEVEL_CACHE_PREFIX);
+
+        // 发送商品状态变更MQ通知
+        sendProductEventMessage("product.status_changed", id, existing.getMerchantId(),
+                existing.getShopId(), existing.getName());
     }
 
     @Override
@@ -642,5 +700,48 @@ public class ProductServiceImpl implements ProductService {
 
         productMapper.updateById(product);
         stringRedisTemplate.delete(PRODUCT_CACHE_KEY + id);
+        multiLevelCache.invalidate(id, MULTI_LEVEL_CACHE_PREFIX);
+
+        // 发送商品审核MQ通知
+        sendProductEventMessage("product.audited", id, existing.getMerchantId(),
+                existing.getShopId(), existing.getName());
+    }
+
+    /**
+     * 发送商品事件MQ消息到 product.event.exchange.
+     *
+     * <p>商品创建、更新、删除、状态变更时发送通知，供下游服务（搜索ES索引更新、推荐更新、数据分析）使用。</p>
+     *
+     * @param eventType  事件类型（product.created / product.updated / product.deleted / product.status_changed / product.audited）
+     * @param productId  商品ID
+     * @param merchantId 商户ID
+     * @param shopId     店铺ID
+     * @param productName 商品名称
+     */
+    private void sendProductEventMessage(String eventType, Long productId, Long merchantId,
+                                          Long shopId, String productName) {
+        try {
+            Map<String, Object> message = new java.util.HashMap<>();
+            message.put("eventType", eventType);
+            message.put("productId", productId);
+            message.put("merchantId", merchantId);
+            message.put("shopId", shopId);
+            message.put("productName", productName);
+            message.put("timestamp", System.currentTimeMillis());
+            String jsonMsg = objectMapper.writeValueAsString(message);
+            String routingKey = "product." + eventType.substring(eventType.lastIndexOf('.') + 1);
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.PRODUCT_EVENT_EXCHANGE,
+                    routingKey,
+                    jsonMsg);
+            log.info("商品事件MQ消息已发送: eventType={}, productId={}", eventType, productId);
+        } catch (Exception e) {
+            log.error("发送商品事件MQ消息失败（非致命）: eventType={}, productId={}", eventType, productId, e);
+        }
+    }
+
+    @Override
+    public List<Product> listProductsByWrapper(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Product> wrapper) {
+        return productMapper.selectList(wrapper);
     }
 }

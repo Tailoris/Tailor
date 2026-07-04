@@ -1,143 +1,118 @@
 package com.tailoris.order.dto;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
+import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("创建订单请求DTO测试")
+/**
+ * CreateOrderRequest 单元测试 - 业务模块 order-service
+ * 覆盖率: DTO 校验逻辑
+ */
 class CreateOrderRequestTest {
 
-    @Test
-    @DisplayName("创建订单请求 - 基本属性")
-    void testCreateOrderRequest_BasicProperties() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        request.setCartIds(Arrays.asList(1L, 2L, 3L));
-        request.setAddressId(100L);
-        request.setCouponId(50L);
-        request.setPromotionId(200L);
-        request.setRemark("请尽快发货");
-        request.setRequestId("550e8400-e29b-41d4-a716-446655440000");
+    private static Validator validator;
 
-        assertEquals(3, request.getCartIds().size());
-        assertEquals(100L, request.getAddressId());
-        assertEquals(50L, request.getCouponId());
-        assertEquals(200L, request.getPromotionId());
-        assertEquals("请尽快发货", request.getRemark());
-        assertEquals("550e8400-e29b-41d4-a716-446655440000", request.getRequestId());
+    @BeforeAll
+    static void setUp() {
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            validator = factory.getValidator();
+        }
     }
 
     @Test
-    @DisplayName("创建订单请求 - 购物车ID列表")
-    void testCreateOrderRequest_CartIds() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        List<Long> cartIds = Arrays.asList(1L, 2L, 3L, 4L, 5L);
-        request.setCartIds(cartIds);
+    @DisplayName("有效创建订单请求 - 应校验通过")
+    void validRequest_shouldPass() {
+        CreateOrderRequest req = new CreateOrderRequest();
+        req.setCartIds(Arrays.asList(1L, 2L, 3L));
+        req.setAddressId(100L);
+        req.setCouponId(50L);
+        req.setRequestId(UUID.randomUUID().toString());
+        req.setRemark("请尽快发货");
 
-        assertNotNull(request.getCartIds());
-        assertEquals(5, request.getCartIds().size());
-        assertTrue(request.getCartIds().contains(1L));
-        assertTrue(request.getCartIds().contains(5L));
+        var violations = validator.validate(req);
+        assertThat(violations).isEmpty();
     }
 
     @Test
-    @DisplayName("创建订单请求 - 空购物车ID列表")
-    void testCreateOrderRequest_EmptyCartIds() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        request.setCartIds(Collections.emptyList());
+    @DisplayName("购物车 ID 列表为空 - 应校验失败")
+    void emptyCartIds_shouldFail() {
+        CreateOrderRequest req = new CreateOrderRequest();
+        req.setCartIds(Collections.emptyList());
+        req.setRequestId(UUID.randomUUID().toString());
 
-        assertNotNull(request.getCartIds());
-        assertTrue(request.getCartIds().isEmpty());
+        var violations = validator.validate(req);
+        assertThat(violations).anyMatch(v -> v.getMessage().contains("购物车ID列表不能为空"));
     }
 
     @Test
-    @DisplayName("创建订单请求 - 可选属性为空")
-    void testCreateOrderRequest_OptionalFieldsNull() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        request.setCartIds(Arrays.asList(1L, 2L));
-        request.setRequestId("test-request-id");
+    @DisplayName("购物车 ID 列表为 null - 应校验失败")
+    void nullCartIds_shouldFail() {
+        CreateOrderRequest req = new CreateOrderRequest();
+        req.setCartIds(null);
+        req.setRequestId(UUID.randomUUID().toString());
 
-        assertNotNull(request.getCartIds());
-        assertNotNull(request.getRequestId());
-        assertNull(request.getAddressId());
-        assertNull(request.getCouponId());
-        assertNull(request.getPromotionId());
-        assertNull(request.getRemark());
+        var violations = validator.validate(req);
+        assertThat(violations).anyMatch(v -> v.getMessage().contains("购物车ID列表不能为空"));
     }
 
     @Test
-    @DisplayName("创建订单请求 - 仅必填字段")
-    void testCreateOrderRequest_RequiredFieldsOnly() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        request.setCartIds(Arrays.asList(1L));
-        request.setRequestId("uuid-123");
+    @DisplayName("请求 ID 为空 - 应校验失败（防重复提交）")
+    void emptyRequestId_shouldFail() {
+        CreateOrderRequest req = new CreateOrderRequest();
+        req.setCartIds(Arrays.asList(1L));
+        req.setRequestId("");
 
-        assertNotNull(request.getCartIds());
-        assertFalse(request.getCartIds().isEmpty());
-        assertNotNull(request.getRequestId());
-        assertFalse(request.getRequestId().isEmpty());
+        var violations = validator.validate(req);
+        assertThat(violations).anyMatch(v -> v.getMessage().contains("请求ID不能为空"));
     }
 
     @Test
-    @DisplayName("创建订单请求 - 地址ID")
-    void testCreateOrderRequest_AddressId() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        request.setAddressId(100L);
+    @DisplayName("请求 ID 为 null - 应校验失败")
+    void nullRequestId_shouldFail() {
+        CreateOrderRequest req = new CreateOrderRequest();
+        req.setCartIds(Arrays.asList(1L));
+        req.setRequestId(null);
 
-        assertEquals(100L, request.getAddressId());
+        var violations = validator.validate(req);
+        assertThat(violations).anyMatch(v -> v.getMessage().contains("请求ID不能为空"));
     }
 
     @Test
-    @DisplayName("创建订单请求 - 优惠券ID")
-    void testCreateOrderRequest_CouponId() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        request.setCouponId(50L);
+    @DisplayName("可选字段 - 全部为 null 应通过")
+    void onlyRequiredFields_shouldPass() {
+        CreateOrderRequest req = new CreateOrderRequest();
+        req.setCartIds(Arrays.asList(1L));
+        req.setRequestId(UUID.randomUUID().toString());
 
-        assertEquals(50L, request.getCouponId());
+        var violations = validator.validate(req);
+        assertThat(violations).isEmpty();
     }
 
     @Test
-    @DisplayName("创建订单请求 - 促销活动ID")
-    void testCreateOrderRequest_PromotionId() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        request.setPromotionId(200L);
+    @DisplayName("完整流程 - 设置所有字段")
+    void setAllFields_shouldPersist() {
+        CreateOrderRequest req = new CreateOrderRequest();
+        req.setCartIds(Arrays.asList(10L, 20L));
+        req.setAddressId(1L);
+        req.setCouponId(2L);
+        req.setPromotionId(3L);
+        req.setRemark("测试备注");
+        req.setRequestId("req-123");
 
-        assertEquals(200L, request.getPromotionId());
-    }
-
-    @Test
-    @DisplayName("创建订单请求 - 备注信息")
-    void testCreateOrderRequest_Remark() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        request.setRemark("请使用顺丰快递，谢谢！");
-
-        assertEquals("请使用顺丰快递，谢谢！", request.getRemark());
-    }
-
-    @Test
-    @DisplayName("创建订单请求 - 幂等请求ID")
-    void testCreateOrderRequest_RequestId() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        String requestId = "550e8400-e29b-41d4-a716-446655440000";
-        request.setRequestId(requestId);
-
-        assertEquals(requestId, request.getRequestId());
-        assertEquals(36, request.getRequestId().length());
-    }
-
-    @Test
-    @DisplayName("创建订单请求 - 多个购物车ID")
-    void testCreateOrderRequest_MultipleCartIds() {
-        CreateOrderRequest request = new CreateOrderRequest();
-        List<Long> cartIds = Arrays.asList(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L);
-        request.setCartIds(cartIds);
-
-        assertEquals(10, request.getCartIds().size());
-        assertEquals(1L, request.getCartIds().get(0));
-        assertEquals(10L, request.getCartIds().get(9));
+        assertThat(req.getCartIds()).hasSize(2);
+        assertThat(req.getAddressId()).isEqualTo(1L);
+        assertThat(req.getCouponId()).isEqualTo(2L);
+        assertThat(req.getPromotionId()).isEqualTo(3L);
+        assertThat(req.getRemark()).isEqualTo("测试备注");
+        assertThat(req.getRequestId()).isEqualTo("req-123");
     }
 }

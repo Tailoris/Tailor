@@ -42,11 +42,11 @@ COPY tailor-is-common-web/src /build/tailor-is-common-web/src
 COPY tailor-is-user/src /build/tailor-is-user/src
 
 # 编译用户服务
-RUN mvn -f /build/pom.xml -pl tailor-is-user -am clean package -DskipTests -B -U
+RUN mvn -f /build/pom.xml -pl tailor-is-user -am clean package -Dmaven.test.skip=true -B -U
 RUN ls -la /build/tailor-is-user/target/*.jar
 
 # -------- 阶段 2: 运行
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jre-jammy
 LABEL maintainer="Tailor IS Team"
 LABEL description="Tailor IS 用户服务"
 LABEL version="1.0.0"

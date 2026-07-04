@@ -76,6 +76,14 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 <artifactId>spring-boot-starter-amqp</artifactId>
 </dependency>
 
+<!-- RocketMQ: 批量结算等批量异步场景，架构方案要求使用 RocketMQ -->
+<!-- 可选依赖: 当 RocketMQ 可用时优先使用，否则回退到 RabbitMQ -->
+<dependency>
+<groupId>org.apache.rocketmq</groupId>
+<artifactId>rocketmq-spring-boot-starter</artifactId>
+<optional>true</optional>
+</dependency>
+
 <dependency>
 <groupId>com.alibaba.cloud</groupId>
 <artifactId>spring-cloud-starter-alibaba-seata</artifactId>

@@ -1,0 +1,545 @@
+# ==============================================================================
+# Tailor IS - Redis Sentinel 高可用
+# ==============================================================================
+# 版本: Redis 7.x
+# 部署模式: 1 主 2 从 + 3 Sentinel (高可用)
+# 端口: 6379 (Redis), 26379 (Sentinel)
+#
+# 使用说明:
+#   1. 需要先创建 tailor-is-secret (包含 redis-password)
+#   2. 写入操作连接 redis-master 服务
+#   3. 读取操作连接 redis-replicas 服务 (负载均衡)
+#   4. Sentinel 自动故障转移, 哨兵集群通过 redis-sentinel 服务暴露
+#   5. Sentinel quorum = 2, 至少 2 个哨兵同意才能触发故障转移
+#
+# 架构说明:
+#   - redis-headless: 无头服务, 用于 StatefulSet 内部 DNS 解析
+#   - redis-master: ClusterIP, 指向当前 Redis 主节点
+#   - redis-replicas: ClusterIP, 指向 Redis 从节点 (只读负载均衡)
+#   - redis-sentinel: ClusterIP, Sentinel 监控服务 (端口 26379)
+# ==============================================================================
+
+---
+# ==============================================================================
+# ConfigMap: Redis 与 Sentinel 配置
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: tailor-is-prod
+  labels:
+    app: redis
+    app.kubernetes.io/name: redis-config
+    app.kubernetes.io/part-of: tailor-is
+data:
+  redis.conf: |
+    # Redis 基础配置
+    bind 0.0.0.0
+    port 6379
+    protected-mode no
+    tcp-backlog 511
+    timeout 300
+    tcp-keepalive 300
+    daemonize no
+    supervised no
+    pidfile /var/run/redis_6379.pid
+    loglevel notice
+    logfile ""
+    databases 16
+    always-show-logo no
+
+    # 持久化配置
+    save 900 1
+    save 300 10
+    save 60 10000
+    stop-writes-on-bgsave-error yes
+    rdbcompression yes
+    rdbchecksum yes
+    dbfilename dump.rdb
+    dir /data
+
+    # 认证配置
+    requirepass ${REDIS_PASSWORD}
+    masterauth ${REDIS_PASSWORD}
+
+    # 复制配置 (由 Sentinel 自动管理)
+    replica-serve-stale-data yes
+    replica-read-only yes
+    repl-diskless-sync no
+    repl-diskless-sync-delay 5
+    repl-ping-replica-period 10
+    repl-timeout 60
+    repl-disable-tcp-nodelay no
+    repl-backlog-size 64mb
+    repl-backlog-ttl 3600
+    min-replicas-to-write 1
+    min-replicas-max-lag 10
+
+    # 内存管理
+    maxmemory 2gb
+    maxmemory-policy volatile-lru
+    lazyfree-lazy-eviction no
+    lazyfree-lazy-expire no
+    lazyfree-lazy-server-del no
+    replica-lazy-flush no
+
+    # 慢查询日志
+    slowlog-log-slower-than 10000
+    slowlog-max-len 128
+
+    # 客户端配置
+    maxclients 10000
+
+  sentinel.conf: |
+    # Sentinel 基础配置
+    bind 0.0.0.0
+    port 26379
+    protected-mode no
+    daemonize no
+    supervised no
+    pidfile /var/run/redis-sentinel_26379.pid
+    loglevel notice
+    logfile ""
+    dir /data
+
+    # 监控 Redis 主节点
+    # sentinel monitor <master-name> <ip> <port> <quorum>
+    sentinel monitor mymaster redis-0.redis-headless.tailor-is-prod.svc.cluster.local 6379 2
+    sentinel down-after-milliseconds mymaster 10000
+    sentinel parallel-syncs mymaster 1
+    sentinel failover-timeout mymaster 180000
+
+    # 认证配置
+    sentinel auth-pass mymaster ${REDIS_PASSWORD}
+    sentinel resolve-hostnames yes
+    sentinel announce-hostnames yes
+
+  redis-init.sh: |
+    #!/bin/bash
+    set -e
+
+    # 替换配置文件中的环境变量
+    envsubst < /configmap/redis.conf > /usr/local/etc/redis/redis.conf
+    echo "Redis configuration generated."
+
+    HOSTNAME=$(hostname)
+    echo "Pod hostname: ${HOSTNAME}"
+
+    # 如果是 redis-0, 作为初始主节点 (若没有已存在的 Sentinel 主节点)
+    if [[ "$HOSTNAME" == "redis-0" ]]; then
+      echo "This is redis-0, will be evaluated as master candidate."
+    else
+      echo "This is replica node (${HOSTNAME}), will replicate from master."
+      # 在配置中追加 replicaof (Sentinel 会自动管理, 这里作为初始配置)
+      echo "replicaof redis-0.redis-headless.tailor-is-prod.svc.cluster.local 6379" >> /usr/local/etc/redis/redis.conf
+    fi
+
+    echo "Final Redis configuration:"
+    cat /usr/local/etc/redis/redis.conf
+
+  sentinel-init.sh: |
+    #!/bin/bash
+    set -e
+
+    # 替换配置文件中的环境变量
+    envsubst < /configmap/sentinel.conf > /usr/local/etc/redis/sentinel.conf
+    echo "Sentinel configuration generated:"
+    cat /usr/local/etc/redis/sentinel.conf
+
+---
+# ==============================================================================
+# Service: Redis Headless (StatefulSet 内部 DNS 解析)
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-headless
+  namespace: tailor-is-prod
+  labels:
+    app: redis
+    app.kubernetes.io/name: redis-headless
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+      protocol: TCP
+  selector:
+    app: redis
+
+---
+# ==============================================================================
+# Service: Redis Sentinel Headless (Sentinel 内部 DNS 解析)
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-sentinel-headless
+  namespace: tailor-is-prod
+  labels:
+    app: redis-sentinel
+    app.kubernetes.io/name: redis-sentinel-headless
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: sentinel
+      port: 26379
+      targetPort: 26379
+      protocol: TCP
+  selector:
+    app: redis-sentinel
+
+---
+# ==============================================================================
+# Service: Redis Sentinel (监控/查询)
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-sentinel
+  namespace: tailor-is-prod
+  labels:
+    app: redis-sentinel
+    app.kubernetes.io/name: redis-sentinel
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  type: ClusterIP
+  ports:
+    - name: sentinel
+      port: 26379
+      targetPort: 26379
+      protocol: TCP
+  selector:
+    app: redis-sentinel
+
+---
+# ==============================================================================
+# StatefulSet: Redis 主从
+# ==============================================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: tailor-is-prod
+  labels:
+    app: redis
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  serviceName: redis-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        app.kubernetes.io/name: redis
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9121"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - redis
+              topologyKey: kubernetes.io/hostname
+      initContainers:
+        # ======================================================================
+        # Init Container: 生成 Redis 配置文件
+        # ======================================================================
+        - name: init-config
+          image: redis:7-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              # 安装 envsubst (gettext)
+              apk add --no-cache gettext > /dev/null 2>&1
+              bash /configmap/redis-init.sh
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: redis-password
+          volumeMounts:
+            - name: configmap
+              mountPath: /configmap
+            - name: redis-config
+              mountPath: /usr/local/etc/redis
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - redis-server
+            - /usr/local/etc/redis/redis.conf
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: redis-password
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - -a
+                - ${REDIS_PASSWORD}
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - -a
+                - ${REDIS_PASSWORD}
+                - ping
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            exec:
+              command:
+                - redis-cli
+                - -a
+                - ${REDIS_PASSWORD}
+                - ping
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+            - name: redis-config
+              mountPath: /usr/local/etc/redis
+      volumes:
+        - name: configmap
+          configMap:
+            name: redis-config
+            items:
+              - key: redis.conf
+                path: redis.conf
+              - key: redis-init.sh
+                path: redis-init.sh
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+        labels:
+          app: redis
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: tailor-is-storage
+        resources:
+          requests:
+            storage: 10Gi
+    - metadata:
+        name: redis-config
+        labels:
+          app: redis
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: tailor-is-storage
+        resources:
+          requests:
+            storage: 1Gi
+
+---
+# ==============================================================================
+# StatefulSet: Redis Sentinel
+# ==============================================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-sentinel
+  namespace: tailor-is-prod
+  labels:
+    app: redis-sentinel
+    app.kubernetes.io/name: redis-sentinel
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  serviceName: redis-sentinel-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis-sentinel
+  template:
+    metadata:
+      labels:
+        app: redis-sentinel
+        app.kubernetes.io/name: redis-sentinel
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9121"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - redis-sentinel
+              topologyKey: kubernetes.io/hostname
+      initContainers:
+        # ======================================================================
+        # Init Container: 生成 Sentinel 配置文件
+        # ======================================================================
+        - name: init-sentinel-config
+          image: redis:7-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              # 安装 envsubst (gettext)
+              apk add --no-cache gettext > /dev/null 2>&1
+              bash /configmap/sentinel-init.sh
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: redis-password
+          volumeMounts:
+            - name: configmap
+              mountPath: /configmap
+            - name: sentinel-config
+              mountPath: /usr/local/etc/redis
+      containers:
+        - name: redis-sentinel
+          image: redis:7-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - redis-sentinel
+            - /usr/local/etc/redis/sentinel.conf
+          ports:
+            - name: sentinel
+              containerPort: 26379
+              protocol: TCP
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tailor-is-secret
+                  key: redis-password
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - -a
+                - ${REDIS_PASSWORD}
+                - -p
+                - "26379"
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - -a
+                - ${REDIS_PASSWORD}
+                - -p
+                - "26379"
+                - ping
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            exec:
+              command:
+                - redis-cli
+                - -a
+                - ${REDIS_PASSWORD}
+                - -p
+                - "26379"
+                - ping
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          volumeMounts:
+            - name: sentinel-data
+              mountPath: /data
+            - name: sentinel-config
+              mountPath: /usr/local/etc/redis
+      volumes:
+        - name: configmap
+          configMap:
+            name: redis-config
+            items:
+              - key: sentinel.conf
+                path: sentinel.conf
+              - key: sentinel-init.sh
+                path: sentinel-init.sh
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata:
+        name: sentinel-data
+        labels:
+          app: redis-sentinel
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: tailor-is-storage
+        resources:
+          requests:
+            storage: 1Gi
+    - metadata:
+        name: sentinel-config
+        labels:
+          app: redis-sentinel
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: tailor-is-storage
+        resources:
+          requests:
+            storage: 1Gi

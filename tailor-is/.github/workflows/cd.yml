@@ -110,15 +110,23 @@ jobs:
     strategy:
       matrix:
         service:
+          # 核心服务
           - tailor-is-order
           - tailor-is-payment
           - tailor-is-ai
           - tailor-is-copyright
           - tailor-is-merchant
           - tailor-is-product
+          - tailor-is-user
           - tailor-is-core-gateway
+          # 业务服务
           - tailor-is-community
           - tailor-is-academy
+          - tailor-is-supply
+          - tailor-is-marketing
+          - tailor-is-message
+          - tailor-is-admin
+          - tailor-is-pattern
     steps:
       - name: Checkout 代码
         uses: actions/checkout@v4
@@ -219,6 +227,35 @@ jobs:
             exit 1
           fi
           echo "所有 Pod 运行正常"
+
+      - name: API健康检查
+        run: |
+          echo "=== 执行API健康检查 ==="
+          GATEWAY_POD=$(kubectl get pods -n ${{ env.K8S_NAMESPACE }} \
+            -l app.kubernetes.io/name=tailor-is-core-gateway \
+            -o jsonpath='{.items[0].metadata.name}')
+          if [ -n "$GATEWAY_POD" ]; then
+            kubectl exec -n ${{ env.K8S_NAMESPACE }} "$GATEWAY_POD" -- \
+              curl -s http://localhost:9000/actuator/health | grep -q "UP" \
+              || { echo "ERROR: Gateway健康检查失败"; exit 1; }
+            echo "✓ Gateway健康检查通过"
+          else
+            echo "WARN: 未找到Gateway Pod"
+          fi
+
+          PRODUCT_POD=$(kubectl get pods -n ${{ env.K8S_NAMESPACE }} \
+            -l app.kubernetes.io/name=tailor-is-product \
+            -o jsonpath='{.items[0].metadata.name}')
+          if [ -n "$PRODUCT_POD" ]; then
+            kubectl exec -n ${{ env.K8S_NAMESPACE }} "$PRODUCT_POD" -- \
+              curl -s http://localhost:8102/actuator/health | grep -q "UP" \
+              || { echo "ERROR: Product服务健康检查失败"; exit 1; }
+            echo "✓ Product服务健康检查通过"
+          else
+            echo "WARN: 未找到Product服务Pod"
+          fi
+
+          echo "=== API健康检查完成 ==="
 
       - name: 发送部署成功通知
         if: success()

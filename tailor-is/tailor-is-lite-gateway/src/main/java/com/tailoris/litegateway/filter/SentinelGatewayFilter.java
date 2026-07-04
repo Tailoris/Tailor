@@ -18,6 +18,9 @@ import org.springframework.http.MediaType;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
@@ -63,10 +66,11 @@ public class SentinelGatewayFilter implements GatewayFilter, Ordered {
         Entry entry = null;
         try {
             entry = SphU.entry(resourceName, EntryType.IN, 1);
+            final Entry entryRef = entry;
 
             return chain.filter(exchange).then(Mono.fromRunnable(() -> {
-                if (entry != null) {
-                    entry.exit();
+                if (entryRef != null) {
+                    entryRef.exit();
                 }
             }));
         } catch (BlockException e) {

@@ -13,10 +13,12 @@ import com.tailoris.payment.service.impl.AlipayServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.BufferedReader;
@@ -29,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
-@SaCheckLogin
+@Validated
 @Tag(name = "支付管理", description = "微信支付、支付宝支付")
 @RestController
 @RequestMapping("/api/v1/payment")
@@ -48,7 +50,7 @@ public class PayController {
 
     @Operation(summary = "微信支付", description = "创建微信支付订单")
     @PostMapping("/wechat")
-    public Result<Map<String, Object>> wechatPay(@RequestBody PayRequest request, HttpServletRequest httpRequest) {
+    public Result<Map<String, Object>> wechatPay(@Valid @RequestBody PayRequest request, HttpServletRequest httpRequest) {
         if (!StpUtil.isLogin()) {
             throw new BusinessException("用户未登录");
         }
@@ -76,7 +78,7 @@ public class PayController {
 
     @Operation(summary = "支付宝支付", description = "创建支付宝支付订单")
     @PostMapping("/alipay")
-    public Result<String> alipayPay(@RequestBody PayRequest request) {
+    public Result<String> alipayPay(@Valid @RequestBody PayRequest request) {
         if (!StpUtil.isLogin()) {
             throw new BusinessException("用户未登录");
         }
@@ -207,6 +209,7 @@ public class PayController {
         }
     }
 
+    @SaCheckLogin
     @Operation(summary = "查询支付状态", description = "根据支付编号查询支付状态")
     @GetMapping("/status")
     public Result<PaymentRecord> getPaymentStatus(@RequestParam String paymentNo) {
@@ -217,6 +220,7 @@ public class PayController {
         return Result.success(record);
     }
 
+    @SaCheckLogin
     @Operation(summary = "查询微信订单状态", description = "调用微信API查询订单状态")
     @GetMapping("/wechat/query")
     public Result<Map<String, Object>> queryWechatOrder(
@@ -226,6 +230,7 @@ public class PayController {
         return Result.success(result);
     }
 
+    @SaCheckLogin
     @Operation(summary = "查询支付宝订单状态", description = "调用支付宝API查询订单状态")
     @GetMapping("/alipay/query")
     public Result<Map<String, Object>> queryAlipayOrder(
@@ -235,10 +240,11 @@ public class PayController {
         return Result.success(result);
     }
 
-    @Operation(summary = "申请退款", description = "根据支付编号申请退款")
+    @Operation(summary = "申请退款", description = "根据支付编号或订单号申请退款")
     @PostMapping("/refund")
     public Result<Map<String, Object>> refund(
-            @RequestParam String paymentNo,
+            @RequestParam(defaultValue = "") String paymentNo,
+            @RequestParam(defaultValue = "") String orderNo,
             @RequestParam BigDecimal refundAmount,
             @RequestParam(required = false) String refundReason) {
         
@@ -246,7 +252,15 @@ public class PayController {
             throw new BusinessException("用户未登录");
         }
         
-        PaymentRecord record = paymentService.getPaymentByPaymentNo(paymentNo);
+        PaymentRecord record = null;
+        if (!paymentNo.isEmpty()) {
+            record = paymentService.getPaymentByPaymentNo(paymentNo);
+        } else if (!orderNo.isEmpty()) {
+            record = paymentService.getPaymentByOrderNo(orderNo);
+            if (record != null) {
+                paymentNo = record.getPaymentNo();
+            }
+        }
         if (record == null) {
             throw new BusinessException("支付记录不存在");
         }
@@ -280,7 +294,7 @@ public class PayController {
 
     @Operation(summary = "微信Native支付", description = "创建微信Native扫码支付订单")
     @PostMapping("/wechat/native")
-    public Result<Map<String, Object>> wechatNativePay(@RequestBody PayRequest request, HttpServletRequest httpRequest) {
+    public Result<Map<String, Object>> wechatNativePay(@Valid @RequestBody PayRequest request, HttpServletRequest httpRequest) {
         if (!StpUtil.isLogin()) {
             throw new BusinessException("用户未登录");
         }
@@ -307,7 +321,7 @@ public class PayController {
 
     @Operation(summary = "支付宝扫码支付", description = "创建支付宝扫码支付订单")
     @PostMapping("/alipay/qrcode")
-    public Result<String> alipayQrCodePay(@RequestBody PayRequest request) {
+    public Result<String> alipayQrCodePay(@Valid @RequestBody PayRequest request) {
         if (!StpUtil.isLogin()) {
             throw new BusinessException("用户未登录");
         }
@@ -332,7 +346,7 @@ public class PayController {
 
     @Operation(summary = "支付宝APP支付", description = "创建支付宝APP支付订单")
     @PostMapping("/alipay/app")
-    public Result<String> alipayAppPay(@RequestBody PayRequest request) {
+    public Result<String> alipayAppPay(@Valid @RequestBody PayRequest request) {
         if (!StpUtil.isLogin()) {
             throw new BusinessException("用户未登录");
         }

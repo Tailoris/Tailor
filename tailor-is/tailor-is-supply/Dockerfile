@@ -35,7 +35,6 @@ COPY tailor-is-pattern/pom.xml /build/tailor-is-pattern/pom.xml
 COPY tailor-is-admin/pom.xml /build/tailor-is-admin/pom.xml
 
 # 下载依赖（不编译源码）
-RUN mvn -f /build/pom.xml -pl tailor-is-supply -am dependency:go-offline -B -q || true
 
 # 复制源码
 # 复制源码（仅复制依赖模块和当前模块）
@@ -44,11 +43,11 @@ COPY tailor-is-common-web/src /build/tailor-is-common-web/src
 COPY tailor-is-supply/src /build/tailor-is-supply/src
 
 # 编译
-RUN mvn -f /build/pom.xml -pl tailor-is-supply -am clean package -DskipTests -B -q
+RUN mvn -f /build/pom.xml -pl tailor-is-supply -am clean package -Dmaven.test.skip=true -B -q
 RUN ls -la /build/tailor-is-supply/target/*.jar
 
 # -------- 阶段 2: 运行
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jre-jammy
 LABEL maintainer="Tailor IS Team"
 LABEL description="Tailor IS 供应服务"
 LABEL version="1.0.0"

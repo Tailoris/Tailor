@@ -16,15 +16,19 @@ import com.tailoris.ai.mapper.PatternIterationMapper;
 import com.tailoris.ai.mapper.PatternRecordMapper;
 import com.tailoris.ai.mapper.PatternVersionMapper;
 import com.tailoris.ai.service.PatternService;
+import com.tailoris.ai.mq.PatternTaskProducer;
+import com.tailoris.ai.model.PatternTask;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -38,6 +42,9 @@ public class PatternServiceImpl implements PatternService {
     private final BodySizeDataMapper bodySizeDataMapper;
     private final ObjectMapper objectMapper;
 
+    @Autowired(required = false)
+    private PatternTaskProducer patternTaskProducer;
+
     @Override
     @Transactional
     public PatternRecord generatePattern(Long userId, PatternGenerateRequest request) {
@@ -46,6 +53,52 @@ public class PatternServiceImpl implements PatternService {
             throw new BusinessException("体型数据不存在");
         }
 
+        // 尝试异步 MQ 调度（RocketMQ 可用时优先走异步批量任务调度）
+        if (patternTaskProducer != null) {
+            log.info("AI版型生成走异步MQ路径: userId={}, patternType={}", userId, request.getPatternType());
+
+            PatternRecord record = new PatternRecord();
+            record.setId(SnowflakeIdGenerator.getInstance().nextId());
+            record.setUserId(userId);
+            record.setPatternName(request.getPatternName());
+            record.setPatternType(request.getPatternType());
+            record.setBodySizeId(request.getBodySizeId());
+            record.setParameters(request.getParameters());
+            record.setExportFormat(request.getExportFormat());
+            record.setCheckStatus(0);
+            record.setStatus(0); // 0=排队中，等待异步处理
+            record.setVersion(1);
+            patternRecordMapper.insert(record);
+
+            PatternTask task = new PatternTask();
+            task.setTaskId(record.getId());
+            task.setUserId(userId);
+            task.setPatternType(request.getPatternType());
+            task.setParameters(request.getParameters());
+            task.setStatus("PENDING");
+            task.setProgress(0);
+            task.setCreateTime(LocalDateTime.now());
+            task.setUpdateTime(LocalDateTime.now());
+
+            try {
+                patternTaskProducer.sendPatternGenerateTaskAsync(task);
+                log.info("AI版型异步任务已发送: taskId={}, userId={}", task.getTaskId(), userId);
+            } catch (Exception e) {
+                log.error("AI版型异步任务发送失败，回退同步处理: taskId={}", task.getTaskId(), e);
+                // MQ 发送失败时回退到同步处理
+                String patternData = generatePatternData(bodySize, request.getPatternType(), request.getParameters());
+                record.setPatternData(patternData);
+                record.setStatus(1);
+                patternRecordMapper.updateById(record);
+                saveVersion(userId, record.getId(), "初始版本", "AI自动生成(同步回退)");
+                return record;
+            }
+
+            return record;
+        }
+
+        // 同步处理：RocketMQ 未部署时的兜底路径
+        log.info("AI版型生成走同步路径: userId={}, patternType={}", userId, request.getPatternType());
         String patternData = generatePatternData(bodySize, request.getPatternType(), request.getParameters());
 
         PatternRecord record = new PatternRecord();

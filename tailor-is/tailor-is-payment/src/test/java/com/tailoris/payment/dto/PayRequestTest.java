@@ -1,214 +1,116 @@
 package com.tailoris.payment.dto;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("支付请求DTO测试")
+/**
+ * PayRequest 单元测试 - 业务模块 payment-service
+ * 覆盖: DTO 校验 + 金额边界
+ */
 class PayRequestTest {
 
-    @Test
-    @DisplayName("支付请求 - 基本属性")
-    void testPayRequest_BasicProperties() {
-        PayRequest request = new PayRequest();
-        request.setOrderId(100L);
-        request.setAmount(new BigDecimal("99.99"));
-        request.setPayChannel(1);
-        request.setPayMethod("JSAPI");
-        request.setDeviceType(1);
-        request.setNotifyUrl("https://api.tailoris.com/payment/notify");
-        request.setRemark("订单支付");
-        request.setOpenId("oUpF8uMuAJO_M2pxb1Q9zNjWeS6o");
-        request.setBody("商品购买");
-        request.setSubject("定制服装");
+    private static Validator validator;
 
-        assertEquals(100L, request.getOrderId());
-        assertEquals(new BigDecimal("99.99"), request.getAmount());
-        assertEquals(1, request.getPayChannel());
-        assertEquals("JSAPI", request.getPayMethod());
-        assertEquals(1, request.getDeviceType());
-        assertEquals("https://api.tailoris.com/payment/notify", request.getNotifyUrl());
-        assertEquals("订单支付", request.getRemark());
-        assertEquals("oUpF8uMuAJO_M2pxb1Q9zNjWeS6o", request.getOpenId());
-        assertEquals("商品购买", request.getBody());
-        assertEquals("定制服装", request.getSubject());
+    @BeforeAll
+    static void setUp() {
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            validator = factory.getValidator();
+        }
     }
 
     @Test
-    @DisplayName("支付请求 - 订单ID")
-    void testPayRequest_OrderId() {
-        PayRequest request = new PayRequest();
-        request.setOrderId(100L);
+    @DisplayName("有效支付请求 - 应校验通过")
+    void validRequest_shouldPass() {
+        PayRequest req = new PayRequest();
+        req.setOrderId(123L);
+        req.setAmount(new BigDecimal("99.99"));
+        req.setPayChannel(1);
+        req.setPayMethod("WECHAT_JSAPI");
+        req.setDeviceType(3);
+        req.setSubject("测试商品");
 
-        assertEquals(100L, request.getOrderId());
+        var violations = validator.validate(req);
+        assertThat(violations).isEmpty();
     }
 
     @Test
-    @DisplayName("支付请求 - 支付金额")
-    void testPayRequest_Amount() {
-        PayRequest request = new PayRequest();
-        request.setAmount(new BigDecimal("100.00"));
+    @DisplayName("订单 ID 为 null - 应校验失败")
+    void nullOrderId_shouldFail() {
+        PayRequest req = new PayRequest();
+        req.setOrderId(null);
+        req.setAmount(new BigDecimal("10"));
+        req.setPayChannel(1);
 
-        assertEquals(new BigDecimal("100.00"), request.getAmount());
+        var violations = validator.validate(req);
+        assertThat(violations).anyMatch(v -> v.getMessage().contains("订单ID不能为空"));
     }
 
     @Test
-    @DisplayName("支付请求 - 最小金额")
-    void testPayRequest_MinAmount() {
-        PayRequest request = new PayRequest();
-        request.setAmount(new BigDecimal("0.01"));
+    @DisplayName("支付金额为 0 - 应校验失败（@DecimalMin）")
+    void zeroAmount_shouldFail() {
+        PayRequest req = new PayRequest();
+        req.setOrderId(1L);
+        req.setAmount(BigDecimal.ZERO);
+        req.setPayChannel(1);
 
-        assertEquals(new BigDecimal("0.01"), request.getAmount());
+        var violations = validator.validate(req);
+        assertThat(violations).anyMatch(v -> v.getMessage().contains("支付金额必须大于0"));
     }
 
     @Test
-    @DisplayName("支付请求 - 大金额")
-    void testPayRequest_LargeAmount() {
-        PayRequest request = new PayRequest();
-        request.setAmount(new BigDecimal("999999.99"));
+    @DisplayName("支付金额为负数 - 应校验失败")
+    void negativeAmount_shouldFail() {
+        PayRequest req = new PayRequest();
+        req.setOrderId(1L);
+        req.setAmount(new BigDecimal("-10.00"));
+        req.setPayChannel(1);
 
-        assertEquals(new BigDecimal("999999.99"), request.getAmount());
+        var violations = validator.validate(req);
+        assertThat(violations).anyMatch(v -> v.getMessage().contains("支付金额必须大于0"));
     }
 
     @Test
-    @DisplayName("支付请求 - 支付渠道")
-    void testPayRequest_PayChannel() {
-        PayRequest request = new PayRequest();
+    @DisplayName("支付金额为 0.01 - 应校验通过（边界）")
+    void minAmount_shouldPass() {
+        PayRequest req = new PayRequest();
+        req.setOrderId(1L);
+        req.setAmount(new BigDecimal("0.01"));
+        req.setPayChannel(1);
 
-        // 微信
-        request.setPayChannel(1);
-        assertEquals(1, request.getPayChannel());
-
-        // 支付宝
-        request.setPayChannel(2);
-        assertEquals(2, request.getPayChannel());
-
-        // 银行卡
-        request.setPayChannel(3);
-        assertEquals(3, request.getPayChannel());
-
-        // 余额
-        request.setPayChannel(4);
-        assertEquals(4, request.getPayChannel());
-
-        // Apple Pay
-        request.setPayChannel(5);
-        assertEquals(5, request.getPayChannel());
-
-        // 银联
-        request.setPayChannel(6);
-        assertEquals(6, request.getPayChannel());
+        var violations = validator.validate(req);
+        assertThat(violations).isEmpty();
     }
 
     @Test
-    @DisplayName("支付请求 - 支付方式")
-    void testPayRequest_PayMethod() {
-        PayRequest request = new PayRequest();
-        request.setPayMethod("JSAPI");
+    @DisplayName("支付渠道为 null - 应校验失败")
+    void nullPayChannel_shouldFail() {
+        PayRequest req = new PayRequest();
+        req.setOrderId(1L);
+        req.setAmount(new BigDecimal("10"));
+        req.setPayChannel(null);
 
-        assertEquals("JSAPI", request.getPayMethod());
+        var violations = validator.validate(req);
+        assertThat(violations).anyMatch(v -> v.getMessage().contains("支付渠道不能为空"));
     }
 
     @Test
-    @DisplayName("支付请求 - 设备类型")
-    void testPayRequest_DeviceType() {
-        PayRequest request = new PayRequest();
-
-        // PC
-        request.setDeviceType(1);
-        assertEquals(1, request.getDeviceType());
-
-        // H5
-        request.setDeviceType(2);
-        assertEquals(2, request.getDeviceType());
-
-        // 小程序
-        request.setDeviceType(3);
-        assertEquals(3, request.getDeviceType());
-
-        // APP
-        request.setDeviceType(4);
-        assertEquals(4, request.getDeviceType());
-    }
-
-    @Test
-    @DisplayName("支付请求 - 回调地址")
-    void testPayRequest_NotifyUrl() {
-        PayRequest request = new PayRequest();
-        request.setNotifyUrl("https://api.tailoris.com/payment/notify/wechat");
-
-        assertEquals("https://api.tailoris.com/payment/notify/wechat", request.getNotifyUrl());
-    }
-
-    @Test
-    @DisplayName("支付请求 - 备注")
-    void testPayRequest_Remark() {
-        PayRequest request = new PayRequest();
-        request.setRemark("VIP用户订单支付");
-
-        assertEquals("VIP用户订单支付", request.getRemark());
-    }
-
-    @Test
-    @DisplayName("支付请求 - 微信OpenID")
-    void testPayRequest_OpenId() {
-        PayRequest request = new PayRequest();
-        request.setOpenId("oUpF8uMuAJO_M2pxb1Q9zNjWeS6o");
-
-        assertEquals("oUpF8uMuAJO_M2pxb1Q9zNjWeS6o", request.getOpenId());
-    }
-
-    @Test
-    @DisplayName("支付请求 - 商品描述")
-    void testPayRequest_Body() {
-        PayRequest request = new PayRequest();
-        request.setBody("定制西装一套");
-
-        assertEquals("定制西装一套", request.getBody());
-    }
-
-    @Test
-    @DisplayName("支付请求 - 商品标题")
-    void testPayRequest_Subject() {
-        PayRequest request = new PayRequest();
-        request.setSubject("Tailor IS 定制服装");
-
-        assertEquals("Tailor IS 定制服装", request.getSubject());
-    }
-
-    @Test
-    @DisplayName("支付请求 - 可选属性为空")
-    void testPayRequest_OptionalFieldsNull() {
-        PayRequest request = new PayRequest();
-        request.setOrderId(100L);
-        request.setAmount(new BigDecimal("99.99"));
-        request.setPayChannel(1);
-
-        assertNotNull(request.getOrderId());
-        assertNotNull(request.getAmount());
-        assertNotNull(request.getPayChannel());
-        assertNull(request.getPayMethod());
-        assertNull(request.getDeviceType());
-        assertNull(request.getNotifyUrl());
-        assertNull(request.getRemark());
-        assertNull(request.getOpenId());
-        assertNull(request.getBody());
-        assertNull(request.getSubject());
-    }
-
-    @Test
-    @DisplayName("支付请求 - 仅必填字段")
-    void testPayRequest_RequiredFieldsOnly() {
-        PayRequest request = new PayRequest();
-        request.setOrderId(100L);
-        request.setAmount(new BigDecimal("99.99"));
-        request.setPayChannel(1);
-
-        assertNotNull(request.getOrderId());
-        assertNotNull(request.getAmount());
-        assertNotNull(request.getPayChannel());
+    @DisplayName("各支付渠道值 - 1~6 应全部接受")
+    void allPayChannels_shouldPass() {
+        for (int channel = 1; channel <= 6; channel++) {
+            PayRequest req = new PayRequest();
+            req.setOrderId(1L);
+            req.setAmount(new BigDecimal("10"));
+            req.setPayChannel(channel);
+            var violations = validator.validate(req);
+            assertThat(violations).isEmpty();
+        }
     }
 }

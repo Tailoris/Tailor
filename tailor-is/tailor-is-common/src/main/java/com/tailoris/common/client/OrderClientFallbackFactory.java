@@ -10,6 +10,16 @@ public class OrderClientFallbackFactory implements FallbackFactory<OrderClient> 
 
     @Override
     public OrderClient create(Throwable cause) {
-        return orderId -> com.tailoris.common.result.Result.fail("订单服务暂时不可用，请稍后重试");
+        return new OrderClient() {
+            @Override
+            public com.tailoris.common.result.Result<Map<String, Object>> getOrderDetail(Long orderId) {
+                return com.tailoris.common.result.Result.fail("订单服务暂时不可用，请稍后重试");
+            }
+
+            @Override
+            public com.tailoris.common.result.Result<Boolean> updatePaymentStatus(String paymentNo, String status) {
+                return com.tailoris.common.result.Result.fail("订单服务暂时不可用，请稍后重试");
+            }
+        };
     }
 }

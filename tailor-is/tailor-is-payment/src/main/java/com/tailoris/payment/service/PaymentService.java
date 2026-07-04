@@ -15,4 +15,6 @@ public interface PaymentService {
     PaymentRecord getPaymentStatus(Long paymentId);
 
     PaymentRecord getPaymentByPaymentNo(String paymentNo);
+
+    PaymentRecord getPaymentByOrderNo(String orderNo);
 }

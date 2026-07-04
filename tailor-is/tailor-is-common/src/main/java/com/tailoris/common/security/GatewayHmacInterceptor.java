@@ -62,6 +62,10 @@ public class GatewayHmacInterceptor implements HandlerInterceptor {
     @Value("${GATEWAY_HMAC_SECRET:}")
     private String hmacSecret;
 
+    /** 是否强制启用 HMAC 签名校验（生产环境应设为 true） */
+    @Value("${GATEWAY_HMAC_STRICT_MODE:false}")
+    private boolean strictMode;
+
     private final ObjectMapper objectMapper;
 
     @Override
@@ -83,9 +87,15 @@ public class GatewayHmacInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // 未配置密钥 → 跳过校验（兼容开发环境）
+        // 未配置密钥 → 严格模式下拒绝请求，开发模式跳过校验
         if (hmacSecret == null || hmacSecret.isBlank()) {
-            log.debug("GATEWAY_HMAC_SECRET 未配置，跳过 HMAC 签名校验");
+            if (strictMode) {
+                log.error("HMAC签名校验失败: GATEWAY_HMAC_SECRET 未配置, path={}, ip={}",
+                        request.getRequestURI(), getClientIp(request));
+                writeForbidden(response, "HMAC 签名密钥未配置");
+                return false;
+            }
+            log.warn("GATEWAY_HMAC_SECRET 未配置，跳过 HMAC 签名校验（仅开发模式）");
             return true;
         }
 

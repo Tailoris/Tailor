@@ -20,6 +20,11 @@ public class ProductClientFallbackFactory implements FallbackFactory<ProductClie
             public com.tailoris.common.result.Result<Map<String, Object>> checkStock(Long skuId, Integer quantity) {
                 return com.tailoris.common.result.Result.fail("商品服务暂时不可用，请稍后重试");
             }
+
+            @Override
+            public com.tailoris.common.result.Result<Map<String, Object>> restoreStock(Long skuId, Integer quantity) {
+                return com.tailoris.common.result.Result.fail("商品服务暂时不可用，请稍后重试");
+            }
         };
     }
 }

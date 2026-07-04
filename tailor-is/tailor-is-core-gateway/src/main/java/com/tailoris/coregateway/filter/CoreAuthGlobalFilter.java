@@ -54,9 +54,18 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
     private static final List<String> DEFAULT_EXCLUDED_PATHS = Arrays.asList(
             "/api/auth/login",
             "/api/auth/register",
+            "/api/auth/register/email",
             "/api/auth/sms-code",
+            "/api/auth/email-code",
             "/api/auth/refresh",
             "/api/auth/reset-password",
+            "/api/auth/login/code",
+            "/api/auth/wechat-login",
+            "/api/products/**",
+            "/api/product/**",
+            "/api/categories/**",
+            "/api/community/**",
+            "/api/merchant/**",
             "/api/public/**",
             "/actuator/health",
             "/doc.html",
@@ -123,6 +132,7 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
                             headers.add("X-User-Id-Signature", signature);
                         }
                         headers.add("X-Token-Validated", "true");
+                        headers.add("X-Gateway-Token", token);
                     })
                     .build();
             // TODO[安全]: 下游服务需校验 X-User-Id-Signature = HMAC-SHA256(X-User-Id, GATEWAY_HMAC_SECRET)，

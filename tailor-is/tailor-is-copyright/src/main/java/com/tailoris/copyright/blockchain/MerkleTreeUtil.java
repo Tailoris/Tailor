@@ -1,15 +1,6 @@
 package com.tailoris.copyright.blockchain;
 
 import lombok.extern.slf4j.Slf4j;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -111,7 +102,9 @@ public class MerkleTreeUtil {
     public String buildMerkleTreeStreaming(Stream<byte[]> dataStream, int batchSize) {
         List<MerkleNode> currentLevel = new ArrayList<>();
 
-        dataStream.forEach(data -> {
+        java.util.Iterator<byte[]> iterator = dataStream.iterator();
+        while (iterator.hasNext()) {
+            byte[] data = iterator.next();
             String hash = hashBytes(data);
             currentLevel.add(new MerkleNode(hash, null, null));
 
@@ -120,7 +113,7 @@ public class MerkleTreeUtil {
                 currentLevel.clear();
                 currentLevel.addAll(reduced);
             }
-        });
+        }
 
         // 最终归并剩余节点
         while (currentLevel.size() > 1) {
@@ -150,12 +143,6 @@ public class MerkleTreeUtil {
      * @param batchSize 每批处理数量
      * @return Merkle Root 哈希
      */
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    @Warmup(iterations = 3, time = 1)
-    @Measurement(iterations = 5, time = 1)
-    @OutputTimeUnit(TimeUnit.SECONDS)
-    @Fork(1)
     public String computeBatchMerkleRoot(List<byte[]> hashes, int batchSize) {
         if (hashes == null || hashes.isEmpty()) {
             return null;

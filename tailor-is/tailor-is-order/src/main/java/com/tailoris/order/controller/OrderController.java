@@ -14,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @SaCheckLogin
+/**
+ * TODO P3-L-07: 清理计划 — 确认所有客户端已迁移至 /api/v1/order 后，在 v1.1.0 中移除此控制器
+ */
 @Deprecated
 @Tag(name = "订单管理", description = "已弃用，请使用 /api/v1/order")
 @RestController
@@ -77,5 +80,14 @@ public class OrderController {
             @RequestParam String reason) {
         orderService.cancelOrder(userId, orderNo, reason);
         return Result.success();
+    }
+
+    @Operation(summary = "更新支付状态", description = "支付服务回调，更新订单支付状态")
+    @PostMapping("/payment/status/update")
+    public Result<Boolean> updatePaymentStatus(
+            @RequestParam String paymentNo,
+            @RequestParam String status) {
+        orderService.updatePaymentStatus(paymentNo, status);
+        return Result.success(true);
     }
 }

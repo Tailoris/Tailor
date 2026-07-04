@@ -1,13 +1,14 @@
 # ============================================================
 # Tailor IS 多阶段构建 Dockerfile
 # 修复 L-012: 使用多阶段构建减小镜像体积
+# 🔒 H-06修复: 统一使用 JDK 17（与 Spring Boot 3.x 兼容）
 # ============================================================
 
 # 构建参数：指定要构建的模块
 ARG MODULE=tailor-is-core-gateway
 
 # ── Stage 1: 构建阶段 ──────────────────────────────────────────
-FROM maven:3.9-eclipse-temurin-21 AS builder
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
@@ -36,15 +37,14 @@ COPY tailor-is-pattern/pom.xml tailor-is-pattern/
 COPY tailor-is-admin/pom.xml tailor-is-admin/
 
 # 下载依赖（利用 Docker 缓存层）
-RUN mvn dependency:go-offline -B || true
 
 # 复制源代码并构建指定模块
 COPY . .
 ARG MODULE
-RUN mvn clean package -pl ${MODULE} -am -DskipTests -B
+RUN mvn clean package -pl ${MODULE} -am -Dmaven.test.skip=true -B
 
 # ── Stage 2: 运行阶段 ──────────────────────────────────────────
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 
 # 重新声明构建参数（Stage 2 需要重新声明）
 ARG MODULE=tailor-is-core-gateway
@@ -53,9 +53,9 @@ ARG MODULE=tailor-is-core-gateway
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 创建非root用户
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+# 创建非root用户（Debian/Ubuntu 风格）
+RUN groupadd --system --gid 1001 appgroup && \
+    useradd --system --uid 1001 --gid appgroup appuser
 
 WORKDIR /app
 

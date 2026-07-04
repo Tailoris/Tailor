@@ -309,6 +309,15 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRecordMapper.selectOne(query);
     }
 
+    @Override
+    public PaymentRecord getPaymentByOrderNo(String orderNo) {
+        LambdaQueryWrapper<PaymentRecord> query = new LambdaQueryWrapper<>();
+        query.eq(PaymentRecord::getOrderNo, orderNo);
+        query.orderByDesc(PaymentRecord::getCreateTime);
+        query.last("LIMIT 1");
+        return paymentRecordMapper.selectOne(query);
+    }
+
     private String getClientIp() {
         try {
             Object clientIp = StpUtil.getExtra("clientIp");

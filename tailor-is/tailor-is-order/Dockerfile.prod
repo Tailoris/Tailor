@@ -1,0 +1,27 @@
+FROM eclipse-temurin:17-jre-jammy
+LABEL maintainer="Tailor IS Team"
+LABEL description="Tailor IS tailor-is-order"
+LABEL version="1.0.0"
+
+WORKDIR /app
+
+RUN apt-get update -y     && apt-get install -y --no-install-recommends curl ca-certificates     && rm -rf /var/lib/apt/lists/*
+
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENV JVM_XMX=1024m
+ENV JVM_XMS=512m
+ENV SERVER_PORT=8103
+ENV SPRING_PROFILES_ACTIVE=prod
+
+EXPOSE 8103
+
+COPY tailor-is-order/target/*.jar /app/app.jar
+
+RUN groupadd --system tailor     && useradd --system -g tailor tailor     && chown -R tailor:tailor /app
+USER tailor
+
+ENTRYPOINT [ "sh", "-c", "java     -Duser.timezone=${TZ}     -Dserver.port=${SERVER_PORT}     -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}     -Xmx${JVM_XMX} -Xms${JVM_XMS}     -jar /app/app.jar" ]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3     CMD curl -fsS http://127.0.0.1:8103/actuator/health || exit 1

@@ -61,9 +61,12 @@ public class CsrfTokenFilter extends OncePerRequestFilter {
     private static final String[] EXCLUDED_PATHS = {
             "/api/auth/login",
             "/api/auth/register",
+            "/api/auth/register/email",
             "/api/auth/sms-code",
+            "/api/auth/email-code",
             "/api/auth/refresh",
-            "/api/auth/reset-password"
+            "/api/auth/reset-password",
+            "/api/auth/login/code"
     };
 
     private final ObjectMapper objectMapper;

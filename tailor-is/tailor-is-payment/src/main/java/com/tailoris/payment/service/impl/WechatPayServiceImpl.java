@@ -291,9 +291,13 @@ public class WechatPayServiceImpl implements WechatPayService {
     public boolean verifyCallback(String body, String signature, String timestamp,
                                    String nonce, String serialNo) {
         try {
-            // 构建签名串
             String signStr = timestamp + "\n" + nonce + "\n" + body + "\n";
-            return verifyRsaSign(signStr, signature, wechatPayConfig.getApiV3Key());
+            String publicKey = wechatPayConfig.getPlatformPublicKey();
+            if (publicKey == null || publicKey.isBlank()) {
+                log.error("微信支付平台公钥未配置，验签失败");
+                return false;
+            }
+            return verifyRsaSign(signStr, signature, publicKey);
         } catch (Exception e) {
             log.error("微信回调验签异常", e);
             return false;

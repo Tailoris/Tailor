@@ -6,6 +6,8 @@ import com.tailoris.product.dto.ProductQueryRequest;
 import com.tailoris.product.dto.ProductUpdateRequest;
 import com.tailoris.product.entity.Product;
 
+import java.util.List;
+
 public interface ProductService {
 
     Long createProduct(ProductCreateRequest request);
@@ -25,4 +27,6 @@ public interface ProductService {
     Page<Product> getProductByType(Integer productType, ProductQueryRequest request);
 
     void auditProduct(Long id, Integer auditStatus, String auditRemark, Long auditBy);
+
+List<Product> listProductsByWrapper(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Product> wrapper);
 }

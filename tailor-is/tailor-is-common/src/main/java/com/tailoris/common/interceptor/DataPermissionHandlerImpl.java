@@ -1,7 +1,6 @@
 package com.tailoris.common.interceptor;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.metadata.TableInfo;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.handler.DataPermissionHandler;
@@ -9,7 +8,6 @@ import com.tailoris.common.constant.CommonConstants;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
-import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.schema.Column;
@@ -23,7 +21,7 @@ import java.util.Set;
 public class DataPermissionHandlerImpl implements DataPermissionHandler {
 
     private static final Set<String> DATA_SCOPE_TABLES = new HashSet<>(Arrays.asList(
-            "sys_user", "order_info", "product", "merchant", "community_post",
+            "order_info", "product", "merchant", "community_post",
             "supply_demand_post", "coupon_template", "copyright_record"
     ));
 
@@ -46,20 +44,20 @@ public class DataPermissionHandlerImpl implements DataPermissionHandler {
 
             Long userId = StpUtil.getLoginIdAsLong();
             String userType = StpUtil.getLoginDevice();
+            boolean isMerchant = CommonConstants.USER_TYPE_MERCHANT.equals(userType);
 
-            Table table = getSelectTable(where);
-
-            Expression scopeExpression = null;
-
-            if (CommonConstants.USER_TYPE_MERCHANT.equals(userType) && table != null) {
-                scopeExpression = buildMerchantScope(table, userId);
+            Table table = getSelectTable(mappedStatementId);
+            if (table == null) {
+                return where;
             }
 
-            if (table != null && DATA_SCOPE_TABLES.contains(table.getName().toLowerCase())) {
-                Expression userScope = buildUserScope(table, userId);
-                scopeExpression = scopeExpression != null
-                        ? new AndExpression(scopeExpression, userScope)
-                        : userScope;
+            String tableName = table.getName().toLowerCase();
+            Expression scopeExpression = null;
+
+            if (isMerchant && MERCHANT_SCOPE_TABLES.contains(tableName)) {
+                scopeExpression = buildMerchantScope(table, userId);
+            } else if (!isMerchant && DATA_SCOPE_TABLES.contains(tableName)) {
+                scopeExpression = buildUserScope(table, userId);
             }
 
             if (scopeExpression != null) {
@@ -87,7 +85,38 @@ public class DataPermissionHandlerImpl implements DataPermissionHandler {
         return equalsTo;
     }
 
-    private Table getSelectTable(Expression where) {
+    /**
+     * 获取当前操作的表对象。
+     * 优先通过 MyBatis Plus 的 TableInfoHelper 从 mappedStatementId 反查表名，
+     * 如果无法识别，则尝试从 DataPermissionContext（ThreadLocal）获取。
+     *
+     * @param mappedStatementId MyBatis MappedStatement ID，格式如 com.xxx.mapper.ProductMapper.selectPage
+     * @return Table 对象，如果无法识别表名则返回 null
+     */
+    private Table getSelectTable(String mappedStatementId) {
+        // 方案一：通过 mappedStatementId 匹配 TableInfo 获取表名
+        if (mappedStatementId != null) {
+            for (TableInfo tableInfo : TableInfoHelper.getTableInfos()) {
+                String namespace = tableInfo.getCurrentNamespace();
+                if (namespace != null && mappedStatementId.startsWith(namespace + ".")) {
+                    Table table = new Table();
+                    table.setName(tableInfo.getTableName());
+                    log.debug("数据权限 - 通过 mappedStatementId 识别到表: {}", tableInfo.getTableName());
+                    return table;
+                }
+            }
+        }
+
+        // 方案二：从 ThreadLocal 上下文获取表名（兜底机制）
+        String contextTableName = DataPermissionContext.getCurrentTable();
+        if (contextTableName != null) {
+            Table table = new Table();
+            table.setName(contextTableName);
+            log.debug("数据权限 - 通过 ThreadLocal 上下文获取到表: {}", contextTableName);
+            return table;
+        }
+
+        log.debug("数据权限 - 无法识别当前操作的表名，mappedStatementId: {}", mappedStatementId);
         return null;
     }
 }

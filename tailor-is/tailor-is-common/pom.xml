@@ -118,6 +118,12 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 </dependency>
 
 <dependency>
+<groupId>cn.dev33</groupId>
+<artifactId>sa-token-redis-jackson</artifactId>
+<scope>provided</scope>
+</dependency>
+
+<dependency>
 <groupId>com.github.jsqlparser</groupId>
 <artifactId>jsqlparser</artifactId>
 <version>4.6</version>

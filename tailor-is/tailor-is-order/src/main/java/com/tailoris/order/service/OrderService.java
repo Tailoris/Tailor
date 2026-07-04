@@ -11,6 +11,8 @@ public interface OrderService {
 
     String createOrder(Long userId, CreateOrderRequest request);
 
+    void updatePaymentStatus(String paymentNo, String status);
+
     void payOrder(Long userId, String orderNo, Integer payType);
 
     void confirmReceive(Long userId, String orderNo);

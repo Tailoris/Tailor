@@ -1,10 +1,10 @@
 # ============================================================
 # Tailor IS 核心网关 (core-gateway) - 精简版 Dockerfile
-# 前置条件: 已在 tailor-is 目录执行 `mvn clean package -DskipTests`
+# 前置条件: 已在 tailor-is 目录执行 `mvn clean package -Dmaven.test.skip=true`
 # 生成: tailor-is-core-gateway/target/tailor-is-core-gateway-1.0.0.jar
 # ============================================================
 
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jre-jammy
 LABEL maintainer="Tailor IS Team"
 LABEL description="Tailor IS 核心网关 - 路由/限流/鉴权"
 LABEL version="1.0.0"

@@ -54,6 +54,14 @@ serverless:
         securityGroupId: "${SECURITY_GROUP_ID}"
 
       # 触发器配置
+      # ⚠️ 安全警告: authType 设置为 anonymous 表示函数 HTTP 触发器不验证调用方身份。
+      # 生产环境必须通过以下方式之一进行访问控制:
+      #   1. 将 authType 改为 "function" 并通过签名认证调用
+      #   2. 在 API Gateway 层配置 JWT/Bearer Token 认证
+      #   3. 使用阿里云 API 网关的签名机制 (HMAC-SHA256)
+      #   4. 配置 IP 白名单限制访问来源
+      #   5. 在 Spring Security 层面配置完整的认证授权链
+      # 当前 anonymous 配置仅适用于开发/测试环境，生产环境部署前务必修改。
       triggers:
         - name: http-trigger
           type: http

@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 9000
 
 spring:
   application:
@@ -9,48 +9,43 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:}
-        register-enabled: true
-        watch:
-          enabled: false
-        fail-fast: false
-        auth:
-          username: ${NACOS_USERNAME:nacos}
-          password: ${NACOS_PASSWORD:nacos}
+        enabled: false
       config:
-        server-addr: ${NACOS_ADDR:localhost:8848}
         enabled: false
     sentinel:
-      enabled: true
-      transport:
-        dashboard: ${SENTINEL_DASHBOARD_ADDR:localhost:8080}
-        port: 8719
-      eager: true
-      filter:
-        enabled: true
-      # Sentinel 规则数据源: 当前未配置动态规则; 如需从 Nacos 拉取规则, 可按下方模板配置
-      #   flow:
-      #     nacos:
-      #       server-addr: ${NACOS_ADDR:localhost:8848}
-      #       data-id: ${spring.application.name}-flow-rules
-      #       group-id: SENTINEL_GROUP
-      #       rule-type: flow
-      datasource: {}
+      enabled: false
     gateway:
       discovery:
         locator:
           enabled: true
           lower-case-service-id: true
       globalcors:
-        cors-configurations:
-          '[/**]':
-            allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,https://www.tailoris.com}
-            allowed-methods: "*"
-            allowed-headers: "*"
-            allow-credentials: true
-            max-age: 3600
-      # 路由权威定义位于: com.tailoris.coregateway.config.CoreGatewayRouteConfig
+        enabled: false
+      # ============================================================
+      # 路由策略: 双模路由（Nacos 动态路由 + Java Config 硬编码兜底）
+      #
+      # 当前阶段: 路由权威定义位于 CoreGatewayRouteConfig (Java Config)
+      # 后续迁移: 在 Nacos 中创建 data-id=gateway-routes.yaml 的动态路由配置
+      #           当 Nacos 可用时优先使用动态路由，不可用时回退到硬编码路由
+      #
+      # Nacos 动态路由配置示例 (gateway-routes.yaml):
+      #   spring:
+      #     cloud:
+      #       gateway:
+      #         routes:
+      #           - id: user-route
+      #             uri: lb://tailor-is-user
+      #             predicates:
+      #               - Path=/api/user/**,/api/auth/**
+      #             filters:
+      #               - StripPrefix=0
+      #           - id: product-route
+      #             uri: lb://tailor-is-product
+      #             predicates:
+      #               - Path=/api/product/**,/api/favorite/**
+      #             filters:
+      #               - StripPrefix=0
+      # ============================================================
 
   data:
     redis:
@@ -68,13 +63,23 @@ spring:
           min-idle: 2
           max-wait: 2000ms
 
+sa-token:
+  token-name: Authorization
+  timeout: 1800
+  active-timeout: 7200
+  is-concurrent: true
+  is-share: true
+  token-style: uuid
+  is-log: false
+  is-redis: true
+
 # ============================================================
 # Core Gateway: 核心业务服务路由 (user, merchant, product, order, payment, marketing, ai, copyright, admin, pattern)
 # ============================================================
 tailoris:
   gateway:
     auth:
-      excluded-paths: /api/auth/login,/api/auth/register,/api/auth/sms-code,/api/auth/refresh,/api/auth/reset-password
+      excluded-paths: /api/auth/login,/api/auth/register,/api/auth/sms-code,/api/auth/refresh,/api/auth/reset-password,/api/auth/login/code,/api/auth/register/email,/api/auth/email-code,/api/auth/userinfo
     ratelimit:
       enabled: true
       default-permits-per-second: 200   # 核心网关: 200 req/s per IP (高于 lite)

@@ -19,11 +19,15 @@ import com.tailoris.order.mapper.OrderInfoMapper;
 import com.tailoris.order.mapper.OrderItemMapper;
 import com.tailoris.order.mapper.ShoppingCartMapper;
 import com.tailoris.common.client.SettlementClient;
+import com.tailoris.order.config.RabbitMQConfig;
 import com.tailoris.order.service.InventoryService;
 import com.tailoris.order.service.OrderService;
+import com.tailoris.order.cache.HotOrderCache;
+import com.tailoris.order.service.OrderShardingService;
+import com.tailoris.order.service.ShoppingCartService;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
-import com.tailoris.order.service.ShoppingCartService;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -70,6 +74,8 @@ public class OrderServiceImpl implements OrderService {
     private final SpringSnowflakeIdGenerator snowflakeIdGenerator;
     @Nullable
     private final SettlementClient settlementClient;
+    private final HotOrderCache hotOrderCache;
+    private final OrderShardingService orderShardingService;
 
     public OrderServiceImpl(OrderInfoMapper orderInfoMapper,
                             OrderItemMapper orderItemMapper,
@@ -80,7 +86,9 @@ public class OrderServiceImpl implements OrderService {
                             InventoryService inventoryService,
                             StringRedisTemplate stringRedisTemplate,
                             SpringSnowflakeIdGenerator snowflakeIdGenerator,
-                            @Nullable SettlementClient settlementClient) {
+                            @Nullable SettlementClient settlementClient,
+                            HotOrderCache hotOrderCache,
+                            OrderShardingService orderShardingService) {
         this.orderInfoMapper = orderInfoMapper;
         this.orderItemMapper = orderItemMapper;
         this.shoppingCartMapper = shoppingCartMapper;
@@ -91,6 +99,8 @@ public class OrderServiceImpl implements OrderService {
         this.stringRedisTemplate = stringRedisTemplate;
         this.snowflakeIdGenerator = snowflakeIdGenerator;
         this.settlementClient = settlementClient;
+        this.hotOrderCache = hotOrderCache;
+        this.orderShardingService = orderShardingService;
     }
 
     /** 🔒 B-C07 幂等Key前缀（防止重复下单） */
@@ -116,6 +126,7 @@ public class OrderServiceImpl implements OrderService {
     private BigDecimal defaultFreightAmount;
 
     @Override
+    @GlobalTransactional(timeoutMills = 300000, name = "createOrder")
     @Transactional(rollbackFor = Exception.class)
     @SentinelResource(value = "createOrder", blockHandler = "createOrderBlockHandler", fallback = "createOrderFallback")
     public String createOrder(Long userId, CreateOrderRequest request) {
@@ -181,6 +192,11 @@ public class OrderServiceImpl implements OrderService {
     private void processSingleShopOrder(Long userId, Long shopId, List<ShoppingCart> shopCarts,
                                         CreateOrderRequest request, List<String> orderNos) {
         ShoppingCart firstCart = shopCarts.get(0);
+        Long merchantId = firstCart.getMerchantId();
+
+        // C-BE-04: 分片路由 - 确定订单所属分片
+        int shardIndex = orderShardingService.getShardIndex(merchantId);
+        log.debug("订单分片路由: merchantId={}, shardIndex={}", merchantId, shardIndex);
 
         OrderInfo order = new OrderInfo();
         String orderNo = generateOrderNo();
@@ -251,6 +267,7 @@ public class OrderServiceImpl implements OrderService {
         final String orderNoForMq = orderNo;
         final LocalDateTime expireTimeForMq = order.getExpireTime();
         final List<OrderItem> finalItems = orderItems;
+        final Long finalMerchantId = merchantId;
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
@@ -258,6 +275,8 @@ public class OrderServiceImpl implements OrderService {
                 sendOrderTimeoutMessage(orderNoForMq, expireTimeForMq);
                 shoppingCartMapper.deleteBatchIds(cartIdsToRemoveNow);
                 shoppingCartService.clearCartCache(userId);
+                // C-BE-04: 记录商户订单量，用于动态判断高频商户分片
+                orderShardingService.recordOrder(finalMerchantId);
             }
 
             @Override
@@ -308,9 +327,9 @@ public class OrderServiceImpl implements OrderService {
             }
             // B-M37修复: 使用状态机验证状态转换
             OrderStateMachine.verifyTransition(
-                    order.getStatus(), OrderConstants.ORDER_STATUS_PAID);
+                    order.getStatus(), OrderConstants.ORDER_STATUS_PENDING_DELIVERY);
 
-            order.setStatus(OrderConstants.ORDER_STATUS_PAID);
+            order.setStatus(OrderConstants.ORDER_STATUS_PENDING_DELIVERY);
             order.setPayStatus(OrderConstants.PAY_STATUS_PAID);
             order.setPayType(payType);
             order.setPayTime(LocalDateTime.now());
@@ -319,6 +338,12 @@ public class OrderServiceImpl implements OrderService {
             // 支付成功，将已锁定库存确认为实际扣减
             List<OrderItem> items = getOrderItems(orderNo);
             inventoryService.confirmDeduct(items);
+
+            // C-BE-03: 订单支付后失效热门订单缓存
+            evictHotOrderCache(items);
+
+            // 发送消息推送通知
+            sendMessagePushNotification(userId, orderNo, OrderConstants.ORDER_STATUS_PAID, "您的订单已支付成功");
 
             log.info("订单支付成功, userId: {}, orderNo: {}, payType: {}", userId, orderNo, payType);
         } catch (BusinessException e) {
@@ -351,6 +376,13 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderConstants.ORDER_STATUS_COMPLETED);
         order.setConfirmReceiveTime(LocalDateTime.now());
         orderInfoMapper.updateById(order);
+
+        // C-BE-03: 确认收货时失效热门订单缓存
+        List<OrderItem> confirmItems = getOrderItems(orderNo);
+        evictHotOrderCache(confirmItems);
+
+        // 发送消息推送通知
+        sendMessagePushNotification(userId, orderNo, OrderConstants.ORDER_STATUS_COMPLETED, "您的订单已确认收货");
 
         final Long finalOrderId = order.getId();
         final Long finalMerchantId = order.getMerchantId();
@@ -402,6 +434,13 @@ public class OrderServiceImpl implements OrderService {
         order.setShipTime(LocalDateTime.now());
         orderInfoMapper.updateById(order);
 
+        // C-BE-03: 订单发货时失效热门订单缓存
+        List<OrderItem> items = getOrderItems(orderNo);
+        evictHotOrderCache(items);
+
+        // 发送消息推送通知
+        sendMessagePushNotification(order.getUserId(), orderNo, OrderConstants.ORDER_STATUS_SHIPPED, "您的订单已发货");
+
         log.info("订单发货, userId: {}, orderNo: {}, logisticsNo: {}", userId, orderNo, logisticsNo);
     }
 
@@ -424,18 +463,28 @@ public class OrderServiceImpl implements OrderService {
         order.setCancelTime(LocalDateTime.now());
         orderInfoMapper.updateById(order);
 
-        // 取消订单成功后释放库存（在事务提交后执行，库存释放失败不回滚订单取消）
+        // C-BE-03: 订单取消时失效热门订单缓存
         final List<OrderItem> items = getOrderItems(orderNo);
+        evictHotOrderCache(items);
+
+        // 取消订单成功后释放库存（在事务提交后执行，库存释放失败不回滚订单取消）
+        final List<OrderItem> finalItems = items;
+        final OrderInfo finalOrder = order;
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
                 try {
-                    inventoryService.releaseStock(items);
-                    log.info("订单取消库存释放成功, orderNo: {}, itemSize: {}", orderNo, items.size());
+                    inventoryService.releaseStock(finalItems);
+                    log.info("订单取消库存释放成功, orderNo: {}, itemSize: {}", orderNo, finalItems.size());
                 } catch (Exception e) {
                     // 库存释放失败不回滚订单取消，但记录日志以便后续补偿
                     log.error("订单取消库存释放失败, orderNo: {}, 需人工补偿", orderNo, e);
                 }
+                // 发送库存释放MQ消息
+                sendInventoryReleaseMessages(finalItems);
+                // 发送消息推送通知
+                sendMessagePushNotification(finalOrder.getUserId(), orderNo,
+                        finalOrder.getStatus(), "您的订单已取消" + (reason != null ? "：" + reason : ""));
             }
         });
 
@@ -452,6 +501,13 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getUserId().equals(userId)) {
             throw new BusinessException("无权访问该订单");
         }
+
+        // C-BE-03: 记录商品访问热度，用于热门商品排行
+        recordProductAccessForOrder(order);
+
+        // P1-03: 热门订单缓存回写
+        cacheHotOrder(order);
+
         return order;
     }
 
@@ -652,6 +708,83 @@ public class OrderServiceImpl implements OrderService {
         return defaultFreightAmount;
     }
 
+    // ==================== C-BE-03: 热门订单缓存辅助方法 ====================
+
+    /**
+     * 记录订单中所有商品的访问热度，用于热门商品排行榜。
+     *
+     * <p>每次订单详情查询时调用，逐步累积商品热度数据。</p>
+     */
+    private void recordProductAccessForOrder(OrderInfo order) {
+        if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
+            return;
+        }
+        try {
+            for (OrderItem item : order.getOrderItems()) {
+                if (item.getProductId() != null) {
+                    hotOrderCache.recordProductAccess(item.getProductId());
+                }
+            }
+            log.debug("热门商品访问记录完成: orderNo={}, itemCount={}",
+                    order.getOrderNo(), order.getOrderItems().size());
+        } catch (Exception e) {
+            log.warn("记录商品访问热度失败: orderNo={}", order.getOrderNo(), e);
+        }
+    }
+
+    /**
+     * 失效订单中所有商品的热门订单缓存。
+     *
+     * <p>当订单状态变更（支付、发货、取消、确认收货）时调用，
+     * 确保缓存数据与数据库一致。</p>
+     */
+    private void evictHotOrderCache(List<OrderItem> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        try {
+            List<Long> productIds = items.stream()
+                    .map(OrderItem::getProductId)
+                    .filter(id -> id != null)
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (!productIds.isEmpty()) {
+                hotOrderCache.evictBatch(productIds);
+                log.debug("热门订单缓存失效完成: productIds={}", productIds);
+            }
+        } catch (Exception e) {
+            log.warn("热门订单缓存失效失败: itemCount={}", items.size(), e);
+        }
+    }
+
+    /**
+     * P1-03: 缓存热门订单信息到 Redis.
+     *
+     * <p>读取订单后将订单信息按商品维度回写到热门缓存中，
+     * 后续相同商品的订单查询可直接走缓存。</p>
+     */
+    private void cacheHotOrder(OrderInfo order) {
+        if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
+            return;
+        }
+        try {
+            for (OrderItem item : order.getOrderItems()) {
+                if (item.getProductId() != null) {
+                    List<OrderInfo> cached = hotOrderCache.get(item.getProductId());
+                    List<OrderInfo> orders = new ArrayList<>();
+                    if (cached != null) {
+                        orders.addAll(cached);
+                    }
+                    orders.add(order);
+                    hotOrderCache.put(item.getProductId(), orders);
+                }
+            }
+            log.debug("热门订单缓存回写完成: orderNo={}", order.getOrderNo());
+        } catch (Exception e) {
+            log.warn("热门订单缓存回写失败: orderNo={}", order.getOrderNo(), e);
+        }
+    }
+
     // ==================== Sentinel 限流/降级处理 ====================
 
     /**
@@ -684,5 +817,80 @@ public class OrderServiceImpl implements OrderService {
     public void payOrderFallback(Long userId, String orderNo, Integer payType, Throwable ex) {
         log.error("订单支付降级: orderNo={}", LogMaskUtils.maskOrderNo(orderNo), ex);
         throw new BusinessException("支付服务暂不可用，请稍后再试");
+    }
+
+    // ==================== MQ消息发送辅助方法 ====================
+
+    /**
+     * 发送库存释放MQ消息到 inventory.release.queue.
+     *
+     * <p>订单取消时，为每个订单项发送库存释放消息，通知商品服务恢复库存。</p>
+     */
+    private void sendInventoryReleaseMessages(List<OrderItem> items) {
+        if (CollectionUtils.isEmpty(items)) {
+            return;
+        }
+        try {
+            for (OrderItem item : items) {
+                Map<String, Object> message = new HashMap<>();
+                message.put("skuId", item.getSkuId());
+                message.put("quantity", item.getQuantity());
+                String jsonMsg = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(message);
+                rabbitTemplate.convertAndSend(
+                        RabbitMQConfig.INVENTORY_RELEASE_EXCHANGE,
+                        RabbitMQConfig.INVENTORY_RELEASE_ROUTING_KEY,
+                        jsonMsg);
+            }
+            log.info("库存释放MQ消息已发送: itemCount={}", items.size());
+        } catch (Exception e) {
+            log.error("发送库存释放MQ消息失败（非致命）: itemCount={}", items.size(), e);
+        }
+    }
+
+    /**
+     * 发送消息推送通知到 message.push.queue.
+     *
+     * <p>订单状态变更时，发送系统消息通知用户。</p>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updatePaymentStatus(String paymentNo, String status) {
+        LambdaQueryWrapper<OrderInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(OrderInfo::getOrderNo, paymentNo);
+        OrderInfo order = orderInfoMapper.selectOne(queryWrapper);
+        if (order == null) {
+            log.warn("支付回调更新订单状态失败，订单不存在: paymentNo={}", paymentNo);
+            return;
+        }
+        if ("PAID".equals(status) && order.getStatus() == OrderConstants.ORDER_STATUS_PENDING_PAY) {
+            order.setStatus(OrderConstants.ORDER_STATUS_PENDING_DELIVERY);
+            order.setPayTime(LocalDateTime.now());
+            order.setUpdateTime(LocalDateTime.now());
+            orderInfoMapper.updateById(order);
+            log.info("支付回调更新订单状态成功: orderNo={}, status=PAID", paymentNo);
+        } else {
+            log.info("支付回调无需更新订单状态: orderNo={}, currentStatus={}, targetStatus={}", paymentNo, order.getStatus(), status);
+        }
+    }
+
+    private void sendMessagePushNotification(Long userId, String orderNo, Integer newStatus, String content) {
+        try {
+            Map<String, Object> message = new HashMap<>();
+            message.put("type", "system");
+            message.put("userId", userId);
+            message.put("title", "订单状态更新");
+            message.put("content", content);
+            message.put("msgType", 2); // 订单消息
+            message.put("relatedType", "order");
+            message.put("businessNo", orderNo);
+            String jsonMsg = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(message);
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.MESSAGE_PUSH_EXCHANGE,
+                    RabbitMQConfig.MESSAGE_PUSH_ROUTING_KEY,
+                    jsonMsg);
+            log.info("消息推送MQ已发送: userId={}, orderNo={}, status={}", userId, orderNo, newStatus);
+        } catch (Exception e) {
+            log.error("发送消息推送MQ失败（非致命）: userId={}, orderNo={}", userId, orderNo, e);
+        }
     }
 }

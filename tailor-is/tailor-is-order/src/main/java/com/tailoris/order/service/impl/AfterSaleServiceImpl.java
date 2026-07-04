@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tailoris.common.client.PaymentClient;
+import com.tailoris.common.client.ProductClient;
 import com.tailoris.common.exception.BusinessException;
 import com.tailoris.common.util.SnowflakeIdGenerator;
 import com.tailoris.order.constant.OrderConstants;
@@ -26,6 +28,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 售后处理服务实现
@@ -45,6 +48,8 @@ public class AfterSaleServiceImpl implements AfterSaleService {
     private final OrderInfoMapper orderInfoMapper;
     private final OrderItemMapper orderItemMapper;
     private final ObjectMapper objectMapper;
+    private final PaymentClient paymentClient;
+    private final ProductClient productClient;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -136,6 +141,44 @@ public class AfterSaleServiceImpl implements AfterSaleService {
         if (!Integer.valueOf(OrderConstants.TICKET_STATUS_PENDING).equals(ticket.getStatus())
                 && !Integer.valueOf(OrderConstants.TICKET_STATUS_PROCESSING).equals(ticket.getStatus())) {
             throw new BusinessException("售后工单状态异常");
+        }
+
+        // 执行实际退款
+        try {
+            com.tailoris.common.result.Result<Map<String, Object>> refundResult =
+                    paymentClient.refund(ticket.getOrderNo(), ticket.getRefundAmount(), remark);
+            if (refundResult.getCode() == 200) {
+                log.info("退款成功, ticketId: {}, orderNo: {}, refundAmount: {}",
+                        ticketId, ticket.getOrderNo(), ticket.getRefundAmount());
+            } else {
+                log.error("退款失败, ticketId: {}, orderNo: {}, refundAmount: {}, error: {}",
+                        ticketId, ticket.getOrderNo(), ticket.getRefundAmount(), refundResult.getMessage());
+            }
+        } catch (Exception e) {
+            log.error("调用退款接口异常, ticketId: {}, orderNo: {}, refundAmount: {}",
+                    ticketId, ticket.getOrderNo(), ticket.getRefundAmount(), e);
+        }
+
+        // 恢复库存
+        try {
+            OrderItem orderItem = orderItemMapper.selectById(ticket.getOrderItemId());
+            if (orderItem != null && orderItem.getSkuId() != null && orderItem.getSkuId() > 0) {
+                com.tailoris.common.result.Result<Map<String, Object>> stockResult =
+                        productClient.restoreStock(orderItem.getSkuId(), ticket.getRefundQuantity());
+                if (stockResult.getCode() == 200) {
+                    log.info("库存恢复成功, ticketId: {}, skuId: {}, quantity: {}",
+                            ticketId, orderItem.getSkuId(), ticket.getRefundQuantity());
+                } else {
+                    log.error("库存恢复失败, ticketId: {}, skuId: {}, quantity: {}, error: {}",
+                            ticketId, orderItem.getSkuId(), ticket.getRefundQuantity(), stockResult.getMessage());
+                }
+            } else {
+                log.warn("无法恢复库存：订单明细不存在或SKU ID无效, ticketId: {}, orderItemId: {}",
+                        ticketId, ticket.getOrderItemId());
+            }
+        } catch (Exception e) {
+            log.error("调用库存恢复接口异常, ticketId: {}, orderItemId: {}",
+                    ticketId, ticket.getOrderItemId(), e);
         }
 
         ticket.setStatus(OrderConstants.TICKET_STATUS_COMPLETED);

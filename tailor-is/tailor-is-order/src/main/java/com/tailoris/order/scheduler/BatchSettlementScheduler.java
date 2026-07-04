@@ -3,12 +3,16 @@ package com.tailoris.order.scheduler;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tailoris.common.client.SettlementClient;
+import com.tailoris.common.mq.MessageRoutingStrategy;
 import com.tailoris.order.entity.OrderInfo;
 import com.tailoris.order.mapper.OrderInfoMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -30,9 +34,14 @@ import java.util.stream.Collectors;
  * <ol>
  *   <li>查询最近 N 天状态为已完成（COMPLETED）且未结算的订单</li>
  *   <li>按商户分组，计算每个商户的佣金和分账金额</li>
- *   <li>通过 RocketMQ 发送批量结算任务到支付服务</li>
+ *   <li>通过 MQ 发送批量结算任务到支付服务（优先 RocketMQ，回退 RabbitMQ）</li>
  *   <li>更新订单结算状态，防止重复结算</li>
  * </ol>
+ *
+ * <h3>MQ 选型说明</h3>
+ * <p>架构方案要求批量结算使用 RocketMQ 处理批量异步场景（高吞吐、事务消息、消息回溯），
+ * 实时支付回调使用 RabbitMQ（低延迟、简单路由）。参考 MessageRoutingStrategy 路由策略。</p>
+ * <p>当前实现: 如果 RocketMQ 依赖可用则优先使用 RocketMQ，否则回退到 RabbitMQ。</p>
  *
  * @author Tailor IS Team
  * @since 2.0.0
@@ -46,6 +55,23 @@ public class BatchSettlementScheduler {
     private final SettlementClient settlementClient;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
+
+    /**
+     * RocketMQ 模板（可选依赖）.
+     *
+     * <p>架构方案要求批量结算使用 RocketMQ 处理批量异步场景。
+     * 当 RocketMQ 依赖可用时优先使用，否则回退到 RabbitMQ。</p>
+     */
+    @Nullable
+    private final RocketMQTemplate rocketMQTemplate;
+
+    /** 是否启用 RocketMQ（由依赖是否可用决定） */
+    private final boolean rocketMQAvailable;
+
+    /** RocketMQ 批量结算 Topic */
+    private static final String ROCKETMQ_SETTLEMENT_TOPIC = "settlement-batch-topic";
+    /** RocketMQ 批量结算 Tag */
+    private static final String ROCKETMQ_SETTLEMENT_TAG = "batch-settle";
 
     /** 批次大小：每批处理的订单数 */
     @Value("${tailoris.order.settlement.batch-size:500}")
@@ -72,14 +98,22 @@ public class BatchSettlementScheduler {
     private boolean schedulerEnabled;
 
     public BatchSettlementScheduler(OrderInfoMapper orderInfoMapper,
-                                    @Nullable SettlementClient settlementClient,
-                                    RabbitTemplate rabbitTemplate,
-                                    ObjectMapper objectMapper) {
-        this.orderInfoMapper = orderInfoMapper;
-        this.settlementClient = settlementClient;
-        this.rabbitTemplate = rabbitTemplate;
-        this.objectMapper = objectMapper;
+                                @Nullable SettlementClient settlementClient,
+                                RabbitTemplate rabbitTemplate,
+                                ObjectMapper objectMapper,
+                                @Nullable RocketMQTemplate rocketMQTemplate) {
+    this.orderInfoMapper = orderInfoMapper;
+    this.settlementClient = settlementClient;
+    this.rabbitTemplate = rabbitTemplate;
+    this.objectMapper = objectMapper;
+    this.rocketMQTemplate = rocketMQTemplate;
+    this.rocketMQAvailable = rocketMQTemplate != null;
+    if (rocketMQAvailable) {
+        log.info("批量结算 MQ 选型: RocketMQ（批量异步场景）");
+    } else {
+        log.info("批量结算 MQ 选型: RabbitMQ（RocketMQ 依赖不可用，回退到 RabbitMQ）");
     }
+}
 
     /**
      * 定时批量结算任务
@@ -204,26 +238,64 @@ public class BatchSettlementScheduler {
     }
 
     /**
-     * 通过 MQ 发送结算任务消息
+     * 通过 MQ 发送结算任务消息.
+     *
+     * <p>MQ 选型: 优先使用 RocketMQ（批量异步场景），不可用时回退到 RabbitMQ。</p>
      */
     private void sendSettlementMessage(OrderInfo order) {
         try {
-            Map<String, Object> message = new HashMap<>();
-            message.put("orderId", order.getId());
-            message.put("orderNo", order.getOrderNo());
-            message.put("merchantId", order.getMerchantId());
-            message.put("shopId", order.getShopId());
-            message.put("orderAmount", order.getPayAmount());
-            message.put("platformFeeRate", platformFeeRate);
-            message.put("settlementTime", LocalDateTime.now().toString());
-            message.put("taskId", "BATCH_" + System.currentTimeMillis() + "_" + order.getId());
+            String taskId = "BATCH_" + System.currentTimeMillis() + "_" + order.getId();
 
-            String jsonMessage = objectMapper.writeValueAsString(message);
-            rabbitTemplate.convertAndSend(settlementExchange, settlementRoutingKey, jsonMessage);
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("orderId", order.getId());
+            payload.put("orderNo", order.getOrderNo());
+            payload.put("merchantId", order.getMerchantId());
+            payload.put("shopId", order.getShopId());
+            payload.put("orderAmount", order.getPayAmount());
+            payload.put("platformFeeRate", platformFeeRate);
+            payload.put("settlementTime", LocalDateTime.now().toString());
+            payload.put("taskId", taskId);
 
-            log.debug("发送结算 MQ 消息: orderId={}, taskId={}", order.getId(), message.get("taskId"));
+            if (rocketMQAvailable && rocketMQTemplate != null) {
+                sendViaRocketMQ(payload, taskId, order.getId());
+            } else {
+                sendViaRabbitMQ(payload, taskId, order.getId());
+            }
         } catch (Exception e) {
             log.error("发送结算 MQ 消息失败: orderId={}", order.getId(), e);
+        }
+    }
+
+    /**
+     * 通过 RocketMQ 发送批量结算任务.
+     *
+     * <p>使用 syncSend 确保消息可靠投递，topic:tag 格式路由。</p>
+     */
+    private void sendViaRocketMQ(Map<String, Object> payload, String taskId, Long orderId) {
+        try {
+            String destination = ROCKETMQ_SETTLEMENT_TOPIC + ":" + ROCKETMQ_SETTLEMENT_TAG;
+            String jsonPayload = objectMapper.writeValueAsString(payload);
+            Message<String> message = MessageBuilder.withPayload(jsonPayload).build();
+            rocketMQTemplate.syncSend(destination, message);
+            log.debug("RocketMQ 发送结算消息: orderId={}, taskId={}, destination={}",
+                    orderId, taskId, destination);
+        } catch (Exception e) {
+            log.error("RocketMQ 发送结算消息失败，回退到 RabbitMQ: orderId={}", orderId, e);
+            // RocketMQ 发送失败时回退到 RabbitMQ
+            sendViaRabbitMQ(payload, taskId, orderId);
+        }
+    }
+
+    /**
+     * 通过 RabbitMQ 发送批量结算任务（兜底方案）.
+     */
+    private void sendViaRabbitMQ(Map<String, Object> payload, String taskId, Long orderId) {
+        try {
+            String jsonPayload = objectMapper.writeValueAsString(payload);
+            rabbitTemplate.convertAndSend(settlementExchange, settlementRoutingKey, jsonPayload);
+            log.debug("RabbitMQ 发送结算消息: orderId={}, taskId={}", orderId, taskId);
+        } catch (Exception e) {
+            log.error("RabbitMQ 发送结算消息失败: orderId={}", orderId, e);
         }
     }
 

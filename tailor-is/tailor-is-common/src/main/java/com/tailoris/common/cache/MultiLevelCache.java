@@ -3,14 +3,16 @@ package com.tailoris.common.cache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -41,6 +43,12 @@ import java.util.function.Function;
  *    └─ 返回
  * </pre>
  *
+ * <h3>安全修复</h3>
+ * <ul>
+ *   <li><b>H-21</b>: 修复构造函数注入缺陷，使用构造函数注入配置参数</li>
+ *   <li><b>H-22</b>: 使用 SCAN 命令替代 KEYS 命令，避免阻塞 Redis</li>
+ * </ul>
+ *
  * @author Tailor IS Team
  * @since Sprint 9
  */
@@ -50,24 +58,32 @@ public class MultiLevelCache<K, V> {
 
     private final Cache<K, V> l1Cache;
     private final RedisTemplate<String, V> redisTemplate;
+    // 🔒 L-03修复: 移除未使用的默认 TTL 字段（仅被未被调用的 3 参数 get 方法使用）
 
-    @Value("${cache.l2.default-ttl-seconds:300}")
-    private long defaultTtlSeconds;
-
-    @Value("${cache.l1.maximum-size:10000}")
-    private long maximumSize;
-
-    @Value("${cache.l1.expire-minutes:5}")
-    private long l1ExpireMinutes;
-
-    public MultiLevelCache(RedisTemplate<String, V> redisTemplate) {
+    /**
+     * 构造函数注入（修复 H-21）
+     * 
+     * @param redisTemplate Redis 模板
+     * @param l2DefaultTtlSeconds 默认过期时间（秒）
+     * @param maximumSize L1 缓存最大条目数
+     * @param l1ExpireMinutes L1 缓存过期时间（分钟）
+     */
+    public MultiLevelCache(RedisTemplate<String, V> redisTemplate,
+                          @org.springframework.beans.factory.annotation.Value("${cache.l2.default-ttl-seconds:300}") long l2DefaultTtlSeconds,
+                          @org.springframework.beans.factory.annotation.Value("${cache.l1.maximum-size:10000}") long maximumSize,
+                          @org.springframework.beans.factory.annotation.Value("${cache.l1.expire-minutes:5}") long l1ExpireMinutes) {
         this.redisTemplate = redisTemplate;
-        // BE-H-9: 使用 @Value 注入的配置，替代硬编码值
+        // 🔒 L-03修复: 移除未使用的默认 TTL 字段及其赋值
+
+        // 使用构造函数注入的配置（修复 H-21）
         this.l1Cache = Caffeine.newBuilder()
                 .maximumSize(maximumSize > 0 ? maximumSize : 10_000)
                 .expireAfterWrite(l1ExpireMinutes > 0 ? l1ExpireMinutes : 5, TimeUnit.MINUTES)
                 .recordStats()
                 .build();
+
+        log.info("MultiLevelCache initialized: L1 maxSize={}, L1 expire={}min, L2 defaultTtl={}s",
+                maximumSize, l1ExpireMinutes, l2DefaultTtlSeconds);
     }
 
     /**
@@ -136,19 +152,57 @@ public class MultiLevelCache<K, V> {
 
     /**
      * 失效所有相关缓存（按前缀）
+     * 
+     * 🔒 修复 H-22: 使用 SCAN 命令替代 KEYS 命令，避免阻塞 Redis
      */
     public void invalidateByPrefix(String l2KeyPrefix) {
         try {
-            // Redis 模糊删除
-            java.util.Set<String> keys = redisTemplate.keys(l2KeyPrefix + ":*");
+            // 使用 SCAN 命令替代 KEYS 命令（修复 H-22）
+            String pattern = l2KeyPrefix + ":*";
+            Set<String> keys = scanKeys(pattern);
+            
             if (keys != null && !keys.isEmpty()) {
+                log.debug("Invalidating {} keys with pattern {}", keys.size(), pattern);
                 redisTemplate.delete(keys);
             }
-            // L1 全清（简单粗暴）
+            
+            // L1 全清
             l1Cache.invalidateAll();
         } catch (Exception e) {
             log.error("Invalidate by prefix failed: {}", l2KeyPrefix, e);
         }
+    }
+
+    /**
+     * 使用 SCAN 命令扫描匹配的 key（修复 H-22）
+     * 
+     * @param pattern 匹配模式
+     * @return 匹配的 key 集合
+     */
+    private Set<String> scanKeys(String pattern) {
+        return redisTemplate.execute((RedisCallback<Set<String>>) connection -> {
+            Set<String> keys = new HashSet<>();
+            ScanOptions options = ScanOptions.scanOptions()
+                    .match(pattern)
+                    .count(1000)
+                    .build();
+            
+            try (Cursor<byte[]> cursor = connection.scan(options)) {
+                while (cursor.hasNext()) {
+                    byte[] keyBytes = cursor.next();
+                    String key = new String(keyBytes, StandardCharsets.UTF_8);
+                    keys.add(key);
+                    
+                    // 防止一次性扫描过多 key
+                    if (keys.size() > 10000) {
+                        log.warn("SCAN found more than 10000 keys, stopping scan");
+                        break;
+                    }
+                }
+            }
+            
+            return keys;
+        });
     }
 
     /**

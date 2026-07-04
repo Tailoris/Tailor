@@ -49,7 +49,7 @@ class WechatPayServiceImplTest {
         lenient().when(wechatPayConfig.getAppId()).thenReturn("wx_test_appid");
         lenient().when(wechatPayConfig.getMchId()).thenReturn("1234567890");
         lenient().when(wechatPayConfig.getApiKey()).thenReturn("test_api_key_1234567890123456");
-        lenient().when(wechatPayConfig.getSignType()).thenReturn("MD5");
+        lenient().when(wechatPayConfig.getSignType()).thenReturn("HMAC-SHA256");
         lenient().when(wechatPayConfig.getTradeType()).thenReturn("JSAPI");
         lenient().when(wechatPayConfig.getUnifiedOrderUrl()).thenReturn("https://api.mch.weixin.qq.com/pay/unifiedorder");
         lenient().when(wechatPayConfig.getOrderQueryUrl()).thenReturn("https://api.mch.weixin.qq.com/pay/orderquery");
@@ -199,7 +199,7 @@ class WechatPayServiceImplTest {
     }
 
     @Test
-    @DisplayName("验证回调签名-默认MD5类型")
+    @DisplayName("验证回调签名-默认HMAC-SHA256类型")
     void testVerifyCallback_DefaultSignType() {
         String body = "{\"out_trade_no\":\"PAY123456\"}";
         boolean result = wechatPayService.verifyCallback(body, "VALID_SIGN", "1234567890", "nonce123", "SERIAL001");

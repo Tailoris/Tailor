@@ -63,6 +63,12 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 <artifactId>spring-cloud-alibaba-sentinel-gateway</artifactId>
 </dependency>
 
+<!-- Sentinel Nacos 数据源: 持久化网关流控规则至 Nacos -->
+<dependency>
+<groupId>com.alibaba.csp</groupId>
+<artifactId>sentinel-datasource-nacos</artifactId>
+</dependency>
+
 <!-- SA-Token for authentication -->
 <dependency>
 <groupId>cn.dev33</groupId>

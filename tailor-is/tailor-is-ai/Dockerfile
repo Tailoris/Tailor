@@ -43,12 +43,11 @@ COPY tailor-is-common/src /build/tailor-is-common/src
 COPY tailor-is-common-web/src /build/tailor-is-common-web/src
 COPY tailor-is-ai/src /build/tailor-is-ai/src
 
-# 编译 AI 服务（依赖会在编译时自动下载，避免 dependency:go-offline 卡死）
-RUN mvn -f /build/pom.xml -pl tailor-is-ai -am clean package -DskipTests -B -U
+RUN mvn -f /build/pom.xml -pl tailor-is-ai -am clean package -Dmaven.test.skip=true -B -U
 RUN ls -la /build/tailor-is-ai/target/*.jar
 
 # -------- 阶段 2: 运行
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jre-jammy
 LABEL maintainer="Tailor IS Team"
 LABEL description="Tailor IS AI 服务 - 智能推荐/AI 能力"
 LABEL version="1.0.0"

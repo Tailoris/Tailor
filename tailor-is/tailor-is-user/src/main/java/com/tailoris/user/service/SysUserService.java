@@ -134,4 +134,13 @@ public interface SysUserService {
      * @param phone 手机号
      */
     void sendSmsCode(String phone);
+
+    /**
+     * 更新用户密码.
+     *
+     * @param userId 用户ID
+     * @param oldPassword 旧密码
+     * @param newPassword 新密码
+     */
+    void updatePassword(Long userId, String oldPassword, String newPassword);
 }

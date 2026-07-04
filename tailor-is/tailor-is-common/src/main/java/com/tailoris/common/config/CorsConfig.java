@@ -31,7 +31,10 @@ public class CorsConfig {
             "https://www.tailor-is.com",
             "https://admin.tailor-is.com",
             "https://merchant.tailor-is.com",
-            "https://m.tailor-is.com"
+            "https://m.tailor-is.com",
+            "http://localhost:3001",
+            "http://localhost:5173",
+            "http://localhost:8080"
     );
 
     @Bean
@@ -41,7 +44,7 @@ public class CorsConfig {
 
         // 🔒 B-H29: 明确白名单，不使用 *
         List<String> allowedOrigins = getAllowedOrigins();
-        config.setAllowedOrigins(allowedOrigins);
+        config.setAllowedOriginPatterns(allowedOrigins);
 
         // 允许的HTTP方法
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
@@ -57,8 +60,8 @@ public class CorsConfig {
                 "X-Total-Count", "X-RateLimit-Limit", "X-RateLimit-Remaining"
         ));
 
-        // 不允许携带凭据（除非明确配置）
-        config.setAllowCredentials(false);
+        // 允许携带凭据
+        config.setAllowCredentials(true);
 
         // 预检请求缓存时间
         config.setMaxAge(3600L);

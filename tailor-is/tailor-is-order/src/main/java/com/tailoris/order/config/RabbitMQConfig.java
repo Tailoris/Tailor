@@ -7,6 +7,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.CustomExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -31,6 +32,21 @@ import java.util.Map;
 @Configuration
 public class RabbitMQConfig {
 
+    /** 批量结算交换机 */
+    public static final String SETTLEMENT_BATCH_EXCHANGE = "settlement.batch.exchange";
+
+    /** 库存释放交换机 */
+    public static final String INVENTORY_RELEASE_EXCHANGE = "inventory.release.exchange";
+
+    /** 库存释放路由键 */
+    public static final String INVENTORY_RELEASE_ROUTING_KEY = "inventory.release";
+
+    /** 消息推送交换机 */
+    public static final String MESSAGE_PUSH_EXCHANGE = "message.push.exchange";
+
+    /** 消息推送路由键 */
+    public static final String MESSAGE_PUSH_ROUTING_KEY = "message.push";
+
     /**
      * 声明订单超时队列（始终创建，即使延迟交换机不可用）.
      */
@@ -45,6 +61,14 @@ public class RabbitMQConfig {
     @Bean
     public Queue orderStatusSyncQueue() {
         return new Queue(OrderStatusSyncConsumer.ORDER_STATUS_SYNC_QUEUE, true);
+    }
+
+    /**
+     * 声明批量结算交换机（生产者端声明，确保交换机先于队列存在）.
+     */
+    @Bean
+    public TopicExchange settlementBatchExchange() {
+        return new TopicExchange(SETTLEMENT_BATCH_EXCHANGE, true, false);
     }
 
     /**
@@ -109,5 +133,51 @@ public class RabbitMQConfig {
         template.setMandatory(true);
 
         return template;
+    }
+
+    /**
+     * 声明库存释放交换机.
+     */
+    @Bean
+    public TopicExchange inventoryReleaseExchange() {
+        return new TopicExchange(INVENTORY_RELEASE_EXCHANGE, true, false);
+    }
+
+    /**
+     * 声明库存释放队列（生产者端声明，确保队列先于生产者存在）.
+     */
+    @Bean
+    public Queue inventoryReleaseQueue() {
+        return new Queue("inventory.release.queue", true);
+    }
+
+    @Bean
+    public Binding inventoryReleaseBinding() {
+        return BindingBuilder.bind(inventoryReleaseQueue())
+                .to(inventoryReleaseExchange())
+                .with(INVENTORY_RELEASE_ROUTING_KEY);
+    }
+
+    /**
+     * 声明消息推送交换机.
+     */
+    @Bean
+    public TopicExchange messagePushExchange() {
+        return new TopicExchange(MESSAGE_PUSH_EXCHANGE, true, false);
+    }
+
+    /**
+     * 声明消息推送队列（生产者端声明，确保队列先于生产者存在）.
+     */
+    @Bean
+    public Queue messagePushQueue() {
+        return new Queue("message.push.queue", true);
+    }
+
+    @Bean
+    public Binding messagePushBinding() {
+        return BindingBuilder.bind(messagePushQueue())
+                .to(messagePushExchange())
+                .with(MESSAGE_PUSH_ROUTING_KEY);
     }
 }

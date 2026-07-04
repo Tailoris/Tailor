@@ -44,12 +44,11 @@ COPY tailor-is-common/src /build/tailor-is-common/src
 COPY tailor-is-common-web/src /build/tailor-is-common-web/src
 COPY tailor-is-order/src /build/tailor-is-order/src
 
-# 编译订单服务（依赖会在编译时自动下载，避免 dependency:go-offline 卡死）
-RUN mvn -f /build/pom.xml -pl tailor-is-order -am clean package -DskipTests -B -U
+RUN mvn -f /build/pom.xml -pl tailor-is-order -am clean package -Dmaven.test.skip=true -B -U
 RUN ls -la /build/tailor-is-order/target/*.jar
 
 # -------- 阶段 2: 运行
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jre-jammy
 LABEL maintainer="Tailor IS Team"
 LABEL description="Tailor IS 订单服务 - 订单管理/状态流转"
 LABEL version="1.0.0"

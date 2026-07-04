@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
   `email` VARCHAR(128) DEFAULT NULL COMMENT '邮箱地址',
   `avatar` VARCHAR(512) DEFAULT NULL COMMENT '头像URL',
   `real_name` VARCHAR(64) DEFAULT NULL COMMENT '真实姓名',
-  `id_card` VARCHAR(18) DEFAULT NULL COMMENT '身份证号码',
+  `id_card` VARCHAR(255) DEFAULT NULL COMMENT '身份证号码（加密存储）',
   `gender` TINYINT DEFAULT 0 COMMENT '性别：0-未知，1-男，2-女',
   `birthday` DATE DEFAULT NULL COMMENT '生日',
   `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.math.BigDecimal;
 import java.util.Map;
 
-@FeignClient(name = "tailor-is-payment", path = "/api/payment", fallbackFactory = PaymentClientFallbackFactory.class)
+@FeignClient(name = "tailor-is-payment", path = "/api/v1/payment", fallbackFactory = PaymentClientFallbackFactory.class)
 public interface PaymentClient {
 
     @GetMapping("/status")
@@ -20,4 +20,9 @@ public interface PaymentClient {
     Result<Map<String, Object>> createPayment(@RequestParam Long orderId,
                                               @RequestParam BigDecimal amount,
                                               @RequestParam String channel);
+
+    @PostMapping("/refund")
+    Result<Map<String, Object>> refund(@RequestParam String orderNo,
+                                       @RequestParam BigDecimal refundAmount,
+                                       @RequestParam String reason);
 }

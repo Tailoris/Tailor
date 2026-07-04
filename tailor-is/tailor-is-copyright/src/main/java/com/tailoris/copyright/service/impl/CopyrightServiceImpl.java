@@ -25,8 +25,11 @@ import com.tailoris.copyright.mapper.CopyrightRecordMapper;
 import com.tailoris.copyright.service.CopyrightService;
 import com.tailoris.copyright.service.SimilarityCheckService;
 import com.tailoris.copyright.service.SimilarityCheckService.SimilarityResult;
+import com.tailoris.copyright.service.HashGenerationService;
+import com.tailoris.copyright.scheduler.BatchChainScheduler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,16 +73,34 @@ public class CopyrightServiceImpl implements CopyrightService {
     private final StringRedisTemplate stringRedisTemplate;
     private final AesGcmCrypto aesGcmCrypto;
     private final ObjectMapper objectMapper;
+    private final HashGenerationService hashGenerationService;
+    private final BatchChainScheduler batchChainScheduler;
 
-    @Value("${copyright.aes.key:t8V4kL0mN2pR6sQ9wX3yZ7aB1cD5eF0hI4jK8lM2nO6pQ0rS4tU8vW0xY2zA4bC}")
+    @Value("${copyright.aes.key}")
     private String aesKey;
 
     @Value("${copyright.verify.base-url:https://verify.tailoris.com}")
     private String verifyBaseUrl;
 
+    @Value("${copyright.batch-chain.enabled:true}")
+    private boolean batchChainEnabled;
+
+    @Value("${copyright.batch-chain.threshold:100}")
+    private int batchThreshold;
+
     private static final String COPYRIGHT_CACHE_KEY = "copyright:";
     private static final long MAX_FILE_SIZE = 100L * 1024 * 1024; // 100MB
     private static final long CACHE_TTL_MIN = 30;
+
+    @PostConstruct
+    public void validateKey() {
+        if (aesKey == null || aesKey.isBlank()) {
+            throw new IllegalStateException("copyright.aes.key 未配置，服务无法启动");
+        }
+        if (aesKey.length() != 32 && aesKey.length() != 64) {
+            throw new IllegalStateException("copyright.aes.key 长度必须为 32 或 64 字符");
+        }
+    }
 
     @Override
     @Transactional
@@ -136,8 +157,40 @@ public class CopyrightServiceImpl implements CopyrightService {
         // 5. 保存相似度检测记录
         similarityCheckService.saveRecord(record.getId(), simResult, null, null);
 
-        // 6. 上链存证
+        // 6. 上链存证：批量上链优先，单条上链作为兜底
+        if (batchChainEnabled) {
+            log.info("批量上链已启用，将版权记录加入待上链队列: recordId={}, hash={}", record.getId(), record.getFileHash());
+            hashGenerationService.addToPendingQueue(record.getFileHash(), record.getId());
+            record.setStatus(0); // 0=等待批量上链
+            copyrightRecordMapper.updateById(record);
+
+            // 检查是否达到阈值，触发批量上链
+            long pendingCount = hashGenerationService.getPendingCount();
+            if (pendingCount >= getBatchThreshold()) {
+                log.info("待上链数量达到阈值，触发批量上链: pendingCount={}, threshold={}", pendingCount, getBatchThreshold());
+                try {
+                    batchChainScheduler.triggerBatchChain();
+                } catch (Exception e) {
+                    log.error("触发批量上链失败，将回退到单条上链: recordId={}", record.getId(), e);
+                    // 批量上链触发失败，回退到单条上链并清理 pending 队列
+                    hashGenerationService.removeFromPendingQueue(record.getFileHash());
+                    return uploadToBlockchain(record, request);
+                }
+            }
+
+            return record;
+        }
+
+        // 批量上链未启用，走单条上链
+        log.info("批量上链未启用，走单条上链: recordId={}", record.getId());
         return uploadToBlockchain(record, request);
+    }
+
+    /**
+     * 获取批量上链阈值配置
+     */
+    private int getBatchThreshold() {
+        return batchThreshold;
     }
 
     /**

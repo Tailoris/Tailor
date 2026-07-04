@@ -1,36 +1,17 @@
 server:
-  port: 8103
+  port: 8203
 
 spring:
   application:
     name: tailor-is-order
-  # ============================================================
-  # Profile 激活配置（按需启用）
-  # ============================================================
-  # profiles:
-  #   include: tidb      # 启用 TiDB 数据源（需部署 TiDB 集群）
-  #   include: sharding  # 启用 ShardingSphere 分库分表（需先执行分片 DDL）
-  # ============================================================
   main:
     allow-bean-definition-overriding: true
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:}
-        register-enabled: true
-        watch:
-          enabled: false
-        fail-fast: false
-        auth:
-          username: ${NACOS_USERNAME:nacos}
-          password: ${NACOS_PASSWORD:nacos}
+        enabled: false
       config:
-        server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:}
-        file-extension: yaml
-        import-check:
-          enabled: false
+        enabled: false
     sentinel:
       enabled: true
       transport:
@@ -40,9 +21,9 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USERNAME:root}
-    password: ${MYSQL_PASSWORD:}
+    password: ${MYSQL_PASSWORD:mysql_ZmY2sr}
     druid:
       initial-size: 5
       min-idle: 5
@@ -56,28 +37,25 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       username: default
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD:redis_jD2N8n}
       database: 0
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    username: default
+    password: ${REDIS_PASSWORD:redis_jD2N8n}
+    database: 0
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:}
-    password: ${RABBITMQ_PASSWORD:}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
     virtual-host: /
-    publisher-confirm-type: correlated
-    publisher-returns: true
-    template:
-      mandatory: true
+    publisher-confirm-type: none
+    publisher-returns: false
     listener:
       simple:
-        acknowledge-mode: manual
-        prefetch: 10
-        retry:
-          enabled: true
-          max-attempts: 3
-          initial-interval: 1000
-          multiplier: 2
-          max-interval: 10000
+        auto-startup: false
 
 # ============================================================
 # 缓存分层 + 交易优化配置（Task 8）
@@ -85,6 +63,10 @@ spring:
 # 启用方式: 设置 REDIS_MODE=cluster 环境变量
 # ============================================================
 tailoris:
+  crypto:
+    aes-key: ${AES_KEY:0123456789abcdef0123456789abcdef}
+  oss:
+    local-fallback-path: ${LOCAL_STORAGE_PATH:./data/upload}
   redis:
     mode: ${REDIS_MODE:standalone}
     password: ${REDIS_PASSWORD:}
@@ -154,6 +136,7 @@ sa-token:
   is-share: true
   token-style: uuid
   is-log: false
+  is-redis: true
 
 springdoc:
   api-docs:
@@ -168,21 +151,27 @@ knife4j:
     language: zh_cn
 
 # Disable Seata distributed transaction (Seata server not deployed)
+# 启用方式: 部署 Seata Server 后设置环境变量 SEATA_ENABLED=true
+# 当 SEATA_ENABLED=false 时，@GlobalTransactional 降级为本地事务，不报错
 seata:
-  enabled: false
+  enabled: ${SEATA_ENABLED:false}
 
 # ============================================================
 # TiDB 数据源配置（配合 tidb profile 使用）
 # ============================================================
-# 激活方式: 启动时添加 --spring.profiles.include=tidb
-# 或在 application.yml 中取消 spring.profiles.include: tidb 的注释
+# 激活方式: 设置环境变量 TIDB_ENABLED=tidb 即可激活 TiDB 数据源
+#   例: export TIDB_ENABLED=tidb && java -jar tailor-is-order.jar
+#   或在 docker-compose 中: environment.TIDB_ENABLED: tidb
+# 前置条件: 部署 TiDB 集群，确保 TiDB 端口可访问
+# 注意: 激活 TiDB 后，MySQL 主库仅用于配置存储，业务数据走 TiDB
 # ============================================================
-# tidb:
-#   enabled: true
+# tidb profile 配置（当 TIDB_ENABLED=tidb 时生效）：
+# ---
+# spring.config.activate.on-profile: tidb
 # spring:
 #   datasource:
 #     tidb:
-#       url: jdbc:mysql://${TIDB_HOST:localhost}:${TIDB_PORT:4000}/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048
+#       url: jdbc:mysql://${TIDB_HOST:localhost}:${TIDB_PORT:4000}/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048
 #       username: ${TIDB_USERNAME:root}
 #       password: ${TIDB_PASSWORD:}
 #       driver-class-name: com.mysql.cj.jdbc.Driver
@@ -190,8 +179,9 @@ seata:
 # ============================================================
 # ShardingSphere 分库分表配置（配合 sharding profile 使用）
 # ============================================================
-# 激活方式: 启动时添加 --spring.profiles.include=sharding
-# 或在 application.yml 中取消 spring.profiles.include: sharding 的注释
+# 激活方式:
+#   方式1（推荐）: 设置环境变量 SHARDING_ENABLED=true，启动脚本自动映射
+#   方式2: 启动参数 --spring.profiles.active=sharding
 # 前置条件: 先执行 db/sharding-schema.sql 创建分片表
 # ============================================================
 

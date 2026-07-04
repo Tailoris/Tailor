@@ -207,12 +207,63 @@ public class BatchChainScheduler {
             }
         } else {
             log.error("批量上链失败: {}", result.getErrorMessage());
-            // 将失败的记录回退到 pending 队列
-            for (CopyrightRecord record : records) {
+            // 批量上链失败，回退到单条上链兜底
+            log.warn("批量上链失败，回退到单条上链: batchSize={}, error={}", records.size(), result.getErrorMessage());
+            fallbackToSingleChain(records, hashes, client);
+        }
+    }
+
+    /**
+     * 批量上链失败时的单条上链兜底
+     * 对每条记录逐个尝试上链，确保数据不丢失
+     */
+    private void fallbackToSingleChain(List<CopyrightRecord> records, Set<String> hashes, BlockchainClient client) {
+        int successCount = 0;
+        int failCount = 0;
+        for (CopyrightRecord record : records) {
+            try {
+                BlockchainClient.EvidenceRequest er = new BlockchainClient.EvidenceRequest();
+                er.setBizId(record.getId().toString());
+                er.setBizType("COPYRIGHT");
+                er.setFileHash(record.getFileHash());
+                er.setAuthorId(record.getUserId().toString());
+                er.setAuthorName(record.getAuthorRealName() == null ? "" : record.getAuthorRealName());
+                er.setCreationTime(record.getCreationEndTime() == null ? LocalDateTime.now() : record.getCreationEndTime());
+                er.setMetadata(record.getEvidenceChain());
+
+                BlockchainClient.BlockchainSubmitResult result = client.submitEvidence(er);
+                if (result.isSuccess()) {
+                    record.setBlockchainPlatform(client.platformCode());
+                    record.setBlockchainTxHash(result.getTxHash());
+                    record.setBlockchainTxTime(LocalDateTime.now());
+                    record.setBlockchainBlockHeight(result.getBlockHeight() != null ? result.getBlockHeight().longValue() : null);
+                    record.setBlockchainNode(result.getNode());
+                    record.setStatus(1);
+                    record.setRegisteredAt(LocalDateTime.now());
+                    copyrightRecordMapper.updateById(record);
+                    hashGenerationService.removeFromPendingQueue(record.getFileHash());
+                    successCount++;
+                    log.info("单条上链兜底成功: id={}, txHash={}", record.getId(), result.getTxHash());
+                } else {
+                    record.setStatus(3);
+                    record.setFailReason("单条上链兜底失败: " + result.getErrorMessage());
+                    copyrightRecordMapper.updateById(record);
+                    failCount++;
+                    log.error("单条上链兜底失败: id={}, error={}", record.getId(), result.getErrorMessage());
+                }
+            } catch (Exception e) {
                 record.setStatus(3);
-                record.setFailReason("批量上链失败: " + result.getErrorMessage());
+                record.setFailReason("单条上链兜底异常: " + e.getMessage());
                 copyrightRecordMapper.updateById(record);
+                failCount++;
+                log.error("单条上链兜底异常: id={}", record.getId(), e);
             }
+        }
+        log.info("单条上链兜底完成: success={}, fail={}, total={}", successCount, failCount, records.size());
+
+        // 清理 remaining hashes
+        for (String hash : hashes) {
+            hashGenerationService.removeFromPendingQueue(hash);
         }
     }
 

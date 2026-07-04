@@ -6,7 +6,6 @@ import com.tailoris.common.dto.PageRequest;
 import com.tailoris.common.dto.PageResponse;
 import com.tailoris.user.dto.LoginRequest;
 import com.tailoris.user.dto.LoginResponse;
-import com.tailoris.user.dto.PasswordChangeRequest;
 import com.tailoris.user.dto.RegisterRequest;
 import com.tailoris.user.dto.RealNameAuthRequest;
 import com.tailoris.user.dto.UserUpdateRequest;

@@ -18,6 +18,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
  * 如仅需简单 AES 加密，可使用 {@link AesEncryptUtils} (已经内置 AES-256-GCM)。</p>
  *
  * @deprecated 请迁移到 {@link com.tailoris.common.crypto.AesGcmCrypto} 或 {@link AesEncryptUtils}
+ *
+ * <p>TODO P3-L-07: 清理计划 — 确认所有调用方已迁移后，在 v1.1.0 中删除此类。
+ * 当前已知调用方: (待确认)
+ * 迁移完成检查清单: ① 搜索 EncryptUtils 引用 ② 逐个替换为 AesGcmCrypto ③ 删除此文件</p>
  */
 @Deprecated
 public final class EncryptUtils {

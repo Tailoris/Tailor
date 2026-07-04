@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * TODO P3-L-07: 清理计划 — 确认所有客户端已迁移至 /api/v1/product 后，在 v1.1.0 中移除此控制器
+ */
 @Deprecated
 @Tag(name = "商品管理", description = "已弃用，请使用 /api/v1/product")
 @RestController

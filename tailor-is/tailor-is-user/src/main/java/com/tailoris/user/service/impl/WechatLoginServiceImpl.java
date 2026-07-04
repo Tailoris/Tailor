@@ -102,8 +102,8 @@ public class WechatLoginServiceImpl implements WechatLoginService {
         // 2. 根据 openid 查/建用户
         SysUser user = findOrCreateWechatUser(openid, unionid);
 
-        // 3. 校验用户状态
-        if (user.getStatus() != null && user.getStatus() == 0) {
+        // 3. 校验用户状态（正常用户 status=0 放行，非零状态拦截）
+        if (user.getStatus() != null && user.getStatus() != 0) {
             throw new BusinessException("账号已被禁用，请联系管理员");
         }
 

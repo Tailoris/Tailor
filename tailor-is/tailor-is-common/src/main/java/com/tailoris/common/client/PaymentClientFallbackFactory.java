@@ -21,6 +21,11 @@ public class PaymentClientFallbackFactory implements FallbackFactory<PaymentClie
             public com.tailoris.common.result.Result<Map<String, Object>> createPayment(Long orderId, BigDecimal amount, String channel) {
                 return com.tailoris.common.result.Result.fail("支付服务暂时不可用，请稍后重试");
             }
+
+            @Override
+            public com.tailoris.common.result.Result<Map<String, Object>> refund(String orderNo, BigDecimal refundAmount, String reason) {
+                return com.tailoris.common.result.Result.fail("支付服务暂时不可用，请稍后重试");
+            }
         };
     }
 }

@@ -1,5 +1,13 @@
+# ============================================================
+# TODO [架构对齐]: 架构方案要求非核心模块采用 SpringBoot 单体 + 插件化架构
+# 当前为独立微服务部署，后续版本需重构为：
+# 1. 合并至单一 SpringBoot 应用（如 tailor-is-lite）
+# 2. 按功能模块插件化（community/academy/supply 作为独立 Maven 模块）
+# 3. 共享数据库连接池和缓存
+# 参考: docs/architecture/Tailor IS（裁智云）服装全产业平台架构优化方案.md
+# ============================================================
 server:
-  port: 8108
+  port: 8208
 spring:
   application:
     name: tailor-is-community
@@ -8,27 +16,15 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:}
-        register-enabled: true
-        watch:
-          enabled: false
-        fail-fast: false
-        auth:
-          username: ${NACOS_USERNAME:nacos}
-          password: ${NACOS_PASSWORD:nacos}
+        enabled: false
       config:
-        server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:}
-        file-extension: yaml
-        import-check:
-          enabled: false
+        enabled: false
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_community?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_community?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USERNAME:root}
-    password: ${MYSQL_PASSWORD:}
+    password: ${MYSQL_PASSWORD:mysql_ZmY2sr}
     druid:
       initial-size: 5
       min-idle: 5
@@ -41,14 +37,23 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD:redis_jD2N8n}
       database: 0
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:}
-    password: ${RABBITMQ_PASSWORD:}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
     virtual-host: /
+    listener:
+      simple:
+        auto-startup: false
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    username: default
+    password: ${REDIS_PASSWORD:redis_jD2N8n}
+    database: 0
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.tailoris.community.entity
@@ -69,6 +74,7 @@ sa-token:
   is-share: true
   token-style: uuid
   is-log: false
+  is-redis: true
 springdoc:
   api-docs:
     enabled: true
@@ -86,6 +92,10 @@ knife4j:
 # 更轻量：小连接池、短超时
 # ============================================================
 tailoris:
+  crypto:
+    aes-key: ${AES_KEY:0123456789abcdef0123456789abcdef}
+  oss:
+    local-fallback-path: ${LOCAL_STORAGE_PATH:./data/upload}
   redis:
     mode: ${REDIS_MODE:standalone}
     standalone:

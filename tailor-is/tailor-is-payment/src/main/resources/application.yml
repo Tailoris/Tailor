@@ -17,8 +17,8 @@ spring:
           enabled: false
         fail-fast: false
         auth:
-          username: ${NACOS_USERNAME:nacos}
-          password: ${NACOS_PASSWORD:nacos}
+          username: ${NACOS_USERNAME:}
+          password: ${NACOS_PASSWORD:}
       config:
         server-addr: ${NACOS_ADDR:localhost:8848}
         namespace: ${NACOS_NAMESPACE:}
@@ -34,7 +34,7 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_payment?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_payment?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:}
     druid:
@@ -80,6 +80,7 @@ sa-token:
   is-share: true
   token-style: uuid
   is-log: false
+  is-redis: true
 
 springdoc:
   api-docs:
@@ -140,9 +141,13 @@ wechat:
     app-id: ${WECHAT_PAY_APP_ID:}
     mch-id: ${WECHAT_PAY_MCH_ID:}
     api-key: ${WECHAT_PAY_API_KEY:}
+    api-v3-key: ${WECHAT_PAY_API_V3_KEY:}
+    certificate-serial-no: ${WECHAT_PAY_CERT_SERIAL:}
+    private-key: ${WECHAT_PAY_PRIVATE_KEY:}
     notify-url: ${WECHAT_PAY_NOTIFY_URL:https://api.tailoris.com/api/v1/payment/wechat/callback}
     trade-type: JSAPI
-    sign-type: MD5
+    # 🔒 M-04修复: MD5 -> HMAC-SHA256
+    sign-type: ${WECHAT_PAY_SIGN_TYPE:-HMAC-SHA256}
     unified-order-url: https://api.mch.weixin.qq.com/pay/unifiedorder
     order-query-url: https://api.mch.weixin.qq.com/pay/orderquery
     refund-url: https://api.mch.weixin.qq.com/secapi/pay/refund
@@ -157,8 +162,13 @@ alipay:
   sign-type: RSA2
   charset: UTF-8
 
+# ============================================================
+# Seata 分布式事务配置
+# 启用方式: 部署 Seata Server 后设置环境变量 SEATA_ENABLED=true
+# 当 SEATA_ENABLED=false 时，@GlobalTransactional 降级为本地事务，不报错
+# ============================================================
 seata:
-  enabled: false
+  enabled: ${SEATA_ENABLED:true}
   application-id: ${spring.application.name}
   tx-service-group: default_tx_group
   service:

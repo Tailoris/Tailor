@@ -1,0 +1,222 @@
+# ==============================================================================
+# Tailor IS - RocketMQ 消息队列
+# ==============================================================================
+# 版本: RocketMQ 5.x
+# 部署模式: 单 NameServer + 单 Broker (生产环境应升级为高可用集群)
+# 端口: 9876 (NameServer), 10911 (Broker), 10909 (VIP)
+#
+# 使用说明:
+#   1. 生产环境需要至少 2 个 NameServer + 2 主 2 从 Broker
+#   2. 若使用 RabbitMQ 作为主要消息队列，RocketMQ 可作为可选组件
+#   3. Broker 需要持久化存储卷
+#
+# ⚠️ 高可用警告: 当前为生产环境最低配置。高流量场景请升级为:
+#   - NameServer: 2 节点
+#   - Broker: 2 主 2 从 (DLedger 模式)
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rocketmq-nameserver
+  namespace: tailor-is-prod
+  labels:
+    app: rocketmq
+    component: nameserver
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9876
+      targetPort: 9876
+      protocol: TCP
+  selector:
+    app: rocketmq
+    component: nameserver
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rocketmq-nameserver
+  namespace: tailor-is-prod
+  labels:
+    app: rocketmq
+    component: nameserver
+    app.kubernetes.io/name: rocketmq-nameserver
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rocketmq
+      component: nameserver
+  template:
+    metadata:
+      labels:
+        app: rocketmq
+        component: nameserver
+    spec:
+      containers:
+        - name: nameserver
+          image: apache/rocketmq:5.2.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "mqnamesrv"]
+          ports:
+            - name: http
+              containerPort: 9876
+              protocol: TCP
+          env:
+            - name: JAVA_OPT_EXT
+              value: "-server -Xms512m -Xmx512m -Xmn256m"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            tcpSocket:
+              port: 9876
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 9876
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rocketmq-broker
+  namespace: tailor-is-prod
+  labels:
+    app: rocketmq
+    component: broker
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless Service for StatefulSet
+  ports:
+    - name: broker
+      port: 10911
+      targetPort: 10911
+      protocol: TCP
+    - name: vip
+      port: 10909
+      targetPort: 10909
+      protocol: TCP
+  selector:
+    app: rocketmq
+    component: broker
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rocketmq-broker
+  namespace: tailor-is-prod
+  labels:
+    app: rocketmq
+    component: broker
+    app.kubernetes.io/name: rocketmq-broker
+    app.kubernetes.io/part-of: tailor-is
+spec:
+  serviceName: rocketmq-broker
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rocketmq
+      component: broker
+  template:
+    metadata:
+      labels:
+        app: rocketmq
+        component: broker
+    spec:
+      containers:
+        - name: broker
+          image: apache/rocketmq:5.2.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "mqbroker"]
+          args:
+            - "-n"
+            - "rocketmq-nameserver:9876"
+            - "-c"
+            - "/home/rocketmq/rocketmq-5.2.0/conf/broker.conf"
+          ports:
+            - name: broker
+              containerPort: 10911
+              protocol: TCP
+            - name: vip
+              containerPort: 10909
+              protocol: TCP
+          env:
+            - name: JAVA_OPT_EXT
+              value: "-server -Xms1g -Xmx1g -Xmn512m"
+            - name: NAMESRV_ADDR
+              value: "rocketmq-nameserver:9876"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          livenessProbe:
+            tcpSocket:
+              port: 10911
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            tcpSocket:
+              port: 10911
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            tcpSocket:
+              port: 10911
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          volumeMounts:
+            - name: broker-store
+              mountPath: /home/rocketmq/store
+            - name: broker-logs
+              mountPath: /home/rocketmq/logs
+  volumeClaimTemplates:
+    - metadata:
+        name: broker-store
+        labels:
+          app: rocketmq
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: tailor-is-storage
+        resources:
+          requests:
+            storage: 50Gi
+    - metadata:
+        name: broker-logs
+        labels:
+          app: rocketmq
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: tailor-is-storage
+        resources:
+          requests:
+            storage: 20Gi

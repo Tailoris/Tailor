@@ -16,8 +16,8 @@ spring:
           enabled: false
         fail-fast: false
         auth:
-          username: ${NACOS_USERNAME:nacos}
-          password: ${NACOS_PASSWORD:nacos}
+          username: ${NACOS_USERNAME:}
+          password: ${NACOS_PASSWORD:}
       config:
         server-addr: ${NACOS_ADDR:localhost:8848}
         enabled: false
@@ -66,7 +66,7 @@ spring:
 tailoris:
   gateway:
     auth:
-      excluded-paths: /api/auth/login,/api/auth/register,/api/auth/sms-code,/api/auth/refresh,/api/auth/reset-password
+      excluded-paths: /api/auth/login,/api/auth/register,/api/auth/register/email,/api/auth/sms-code,/api/auth/email-code,/api/auth/refresh,/api/auth/reset-password,/api/auth/login/code,/api/auth/wechat-login
     ratelimit:
       enabled: true
       default-permits-per-second: 50    # 轻量网关: 50 req/s per IP (低于 core)

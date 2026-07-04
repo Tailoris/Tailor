@@ -3,6 +3,7 @@ package com.tailoris.payment.mq;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tailoris.common.client.OrderClient;
 import com.tailoris.common.exception.BusinessException;
+import com.tailoris.payment.config.RabbitMQConfig;
 import com.tailoris.payment.service.PaymentService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -94,10 +95,11 @@ public class PaymentCallbackAsyncHandler {
      * @param merchantId     商户 ID
      */
     public void sendCallbackMessage(String paymentNo, String transactionId,
-                                    String channelResponse, Long merchantId) {
+                                    String channelResponse, Long merchantId,
+                                    String sign, String signType) {
         if (!asyncEnabled) {
             log.info("异步回调已禁用，使用同步模式处理: paymentNo={}", paymentNo);
-            paymentService.payCallback(paymentNo, transactionId, channelResponse, merchantId);
+            paymentService.payCallback(paymentNo, transactionId, channelResponse, sign, signType);
             return;
         }
 
@@ -107,6 +109,8 @@ public class PaymentCallbackAsyncHandler {
             message.put("transactionId", transactionId);
             message.put("channelResponse", channelResponse);
             message.put("merchantId", merchantId);
+            message.put("sign", sign);
+            message.put("signType", signType);
             message.put("timestamp", System.currentTimeMillis());
             message.put("retryCount", 0);
             message.put("requestId", paymentNo + "_" + System.currentTimeMillis());
@@ -120,7 +124,7 @@ public class PaymentCallbackAsyncHandler {
             log.error("发送支付回调 MQ 消息失败: paymentNo={}", paymentNo, e);
             // 降级：直接同步处理
             try {
-                paymentService.payCallback(paymentNo, transactionId, channelResponse, merchantId);
+                paymentService.payCallback(paymentNo, transactionId, channelResponse, sign, signType);
                 log.info("降级为同步处理成功: paymentNo={}", paymentNo);
             } catch (Exception ex) {
                 log.error("降级同步处理也失败: paymentNo={}", paymentNo, ex);
@@ -144,6 +148,8 @@ public class PaymentCallbackAsyncHandler {
             String paymentNo = (String) message.get("paymentNo");
             String transactionId = (String) message.get("transactionId");
             String channelResponse = (String) message.get("channelResponse");
+            String sign = (String) message.get("sign");
+            String signType = (String) message.get("signType");
             Object merchantIdObj = message.get("merchantId");
             Long merchantId = merchantIdObj != null ? ((Number) merchantIdObj).longValue() : null;
             int retryCount = message.get("retryCount") != null
@@ -161,13 +167,16 @@ public class PaymentCallbackAsyncHandler {
 
             try {
                 // 处理支付回调
-                paymentService.payCallback(paymentNo, transactionId, channelResponse, merchantId);
+                paymentService.payCallback(paymentNo, transactionId, channelResponse, sign, signType);
 
                 // 标记处理成功
                 stringRedisTemplate.opsForValue().set(lockKey, "SUCCESS", Duration.ofHours(24));
 
                 // 异步通知订单服务更新状态
                 notifyOrderService(paymentNo, merchantId);
+
+                // 发送支付通知消息到 payment.notify.queue
+                sendPaymentNotification(paymentNo, transactionId);
 
                 log.info("异步支付回调处理成功: paymentNo={}, transactionId={}",
                         paymentNo, transactionId);
@@ -224,7 +233,7 @@ public class PaymentCallbackAsyncHandler {
     }
 
     /**
-     * 通知订单服务更新订单状态
+     * 通知订单服务更新订单支付状态
      */
     private void notifyOrderService(String paymentNo, Long merchantId) {
         if (orderClient == null) {
@@ -233,10 +242,40 @@ public class PaymentCallbackAsyncHandler {
         }
 
         try {
-            orderClient.getOrderDetail(Long.parseLong(paymentNo.replaceAll("\\D+", "")));
-            log.debug("已通知订单服务: paymentNo={}", paymentNo);
+            com.tailoris.common.result.Result<Boolean> result =
+                    orderClient.updatePaymentStatus(paymentNo, "PAID");
+            if (result.getCode() == 200 && Boolean.TRUE.equals(result.getData())) {
+                log.info("已通知订单服务更新支付状态: paymentNo={}, status=PAID", paymentNo);
+            } else {
+                log.warn("通知订单服务更新支付状态返回异常: paymentNo={}, code={}, message={}",
+                        paymentNo, result.getCode(), result.getMessage());
+            }
         } catch (Exception e) {
             log.warn("通知订单服务失败（非致命）: paymentNo={}", paymentNo, e);
+        }
+    }
+
+    /**
+     * 发送支付通知消息到 payment.notify.queue.
+     *
+     * <p>支付回调处理成功后，通知 PaymentNotificationConsumer 更新支付记录状态。</p>
+     */
+    private void sendPaymentNotification(String paymentNo, String transactionId) {
+        try {
+            Map<String, Object> notifyMsg = new HashMap<>();
+            notifyMsg.put("paymentNo", paymentNo);
+            notifyMsg.put("payStatus", 1); // 支付成功
+            notifyMsg.put("transactionId", transactionId);
+            notifyMsg.put("notifyTime", java.time.LocalDateTime.now().toString());
+
+            String jsonMsg = objectMapper.writeValueAsString(notifyMsg);
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.PAYMENT_NOTIFY_EXCHANGE,
+                    RabbitMQConfig.PAYMENT_NOTIFY_ROUTING_KEY,
+                    jsonMsg);
+            log.info("支付通知消息已发送: paymentNo={}, transactionId={}", paymentNo, transactionId);
+        } catch (Exception e) {
+            log.error("发送支付通知消息失败（非致命）: paymentNo={}", paymentNo, e);
         }
     }
 }

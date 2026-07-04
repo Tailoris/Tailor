@@ -1,5 +1,7 @@
 package com.tailoris.payment.mq;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tailoris.payment.entity.PaymentRecord;
 import com.tailoris.payment.mapper.PaymentRecordMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -10,7 +12,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @DisplayName("PaymentNotificationConsumer 测试")
@@ -19,6 +23,9 @@ class PaymentNotificationConsumerTest {
 
     @Mock
     private PaymentRecordMapper paymentRecordMapper;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private PaymentNotificationConsumer paymentNotificationConsumer;
@@ -35,22 +42,38 @@ class PaymentNotificationConsumerTest {
 
     @Test
     @DisplayName("支付记录不存在 - 记录警告并返回")
-    void handlePaymentNotification_PaymentNotFound_ShouldReturn() {
-        when(paymentRecordMapper.selectById(PAYMENT_NO)).thenReturn(null);
+    void handlePaymentNotification_PaymentNotFound_ShouldReturn() throws Exception {
+        Map<String, Object> message = Map.of("paymentNo", PAYMENT_NO, "payStatus", 1);
+        String jsonMessage = "{\"paymentNo\":\"PAY202606130001\",\"payStatus\":1}";
 
-        paymentNotificationConsumer.handlePaymentNotification(PAYMENT_NO);
+        when(objectMapper.readValue(eq(jsonMessage), any(TypeReference.class)))
+                .thenReturn(message);
+        when(paymentRecordMapper.selectById(PAYMENT_NO)).thenReturn(null);
+        when(paymentRecordMapper.selectOne(any())).thenReturn(null);
+
+        paymentNotificationConsumer.handlePaymentNotification(jsonMessage);
 
         verify(paymentRecordMapper).selectById(PAYMENT_NO);
+        verify(paymentRecordMapper, never()).updateById(any());
     }
 
     @Test
-    @DisplayName("支付记录存在 - 通知处理成功")
-    void handlePaymentNotification_PaymentExists_ShouldProcess() {
-        PaymentRecord payment = buildPayment(2); // 已支付
+    @DisplayName("支付记录存在 - 通知处理成功并更新状态")
+    void handlePaymentNotification_PaymentExists_ShouldProcess() throws Exception {
+        PaymentRecord payment = buildPayment(0); // 待支付
+        Map<String, Object> message = Map.of("paymentNo", PAYMENT_NO, "payStatus", 1,
+                "transactionId", "TXN123456");
+        String jsonMessage = "{\"paymentNo\":\"PAY202606130001\",\"payStatus\":1,\"transactionId\":\"TXN123456\"}";
+
+        when(objectMapper.readValue(eq(jsonMessage), any(TypeReference.class)))
+                .thenReturn(message);
         when(paymentRecordMapper.selectById(PAYMENT_NO)).thenReturn(payment);
 
-        paymentNotificationConsumer.handlePaymentNotification(PAYMENT_NO);
+        paymentNotificationConsumer.handlePaymentNotification(jsonMessage);
 
-        verify(paymentRecordMapper).selectById(PAYMENT_NO);
+        verify(paymentRecordMapper).updateById(argThat(p ->
+                ((PaymentRecord) p).getPayStatus() == 1
+                        && "TXN123456".equals(((PaymentRecord) p).getTransactionId())
+        ));
     }
 }

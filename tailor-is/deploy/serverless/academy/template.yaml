@@ -1,0 +1,177 @@
+# ==============================================================================
+# Tailor IS Academy - Serverless 部署模板 (阿里云 FC 3.0 / SAM)
+# ==============================================================================
+# 部署方式:
+#   1. 安装 Serverless Devs 工具: npm install @serverless-devs/s -g
+#   2. 配置阿里云密钥: s config add
+#   3. 执行部署: s deploy --template-file template.yaml
+#
+# 前置条件:
+#   - 已开通阿里云函数计算 (FC)
+#   - 已开通容器镜像服务 (ACR) 并推送了 Docker 镜像
+#   - 已配置 VPC 网络（函数需访问内网 RDS/Redis）
+#   - MySQL、Redis 等基础设施保持不变
+#
+# 参考文档: tailor-is/docs/SERVERLESS-MIGRATION-GUIDE.md
+# ==============================================================================
+
+edition: 3.0.0
+name: tailor-is-academy-serverless
+access: default
+
+vars:
+  region: cn-shanghai
+  serviceName: tailor-is-academy-service
+  # 函数配置
+  functionName: academy-api
+  memorySize: 1024          # MB
+  timeout: 60               # 秒
+  diskSize: 512             # 临时磁盘 MB
+  # 预留实例配置
+  provisionMin: 1           # 最低预留实例数
+  provisionMax: 15          # 最大弹性实例数
+  # 镜像配置
+  imageRegistry: registry.cn-shanghai.aliyuncs.com
+  imageNamespace: tailoris
+  imageRepo: academy
+  imageTag: latest
+
+resources:
+  # ---- 服务定义 ----
+  academy_service:
+    component: fc3
+    props:
+      region: ${vars.region}
+      serviceName: ${vars.serviceName}
+      description: "学堂服务 - Serverless 部署"
+      # 日志配置
+      logConfig:
+        project: tailor-is-log
+        logstore: academy-fc-log
+      # NAS 挂载（可选）
+      nasConfig:
+        mountPoints:
+          - serverAddr: "${env.NAS_SERVER_ADDR}"
+            mountDir: /mnt/nas
+
+      # ---- 函数定义 ----
+      functionName: ${vars.functionName}
+      description: "学堂 API 入口函数"
+      runtime: custom-container
+      handler: com.tailoris.academy.serverless.AcademyFunctionHandler::handleRequest
+      # 镜像配置
+      customContainerConfig:
+        image: ${vars.imageRegistry}/${vars.imageNamespace}/${vars.imageRepo}:${vars.imageTag}
+        command: []
+        args: []
+      # 资源配置
+      memorySize: ${vars.memorySize}
+      timeout: ${vars.timeout}
+      diskSize: ${vars.diskSize}
+      # 环境变量
+      environmentVariables:
+        SPRING_PROFILES_ACTIVE: serverless
+        SERVER_PORT: "9000"
+        JAVA_TOOL_OPTIONS: >-
+          -XX:+UseContainerSupport
+          -XX:MaxRAMPercentage=75.0
+          -XX:+UseG1GC
+          -XX:+TieredCompilation
+          -XX:TieredStopAtLevel=1
+          -Dspring.main.lazy-initialization=true
+          -Dspring.cloud.nacos.discovery.register-enabled=false
+          -Dspring.cloud.nacos.config.import-check.enabled=false
+        MYSQL_HOST: "${env.MYSQL_HOST}"
+        MYSQL_PORT: "${env.MYSQL_PORT:-3306}"
+        MYSQL_USERNAME: "${env.MYSQL_USERNAME}"
+        MYSQL_PASSWORD: "${env.MYSQL_PASSWORD}"
+        REDIS_HOST: "${env.REDIS_HOST}"
+        REDIS_PASSWORD: "${env.REDIS_PASSWORD}"
+        MYSQL_ACADEMY_URL: "jdbc:mysql://${env.MYSQL_HOST}:${env.MYSQL_PORT:-3306}/tailor_is_academy?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai"
+
+      # VPC 配置
+      vpcConfig:
+        vpcId: "${env.VPC_ID}"
+        vSwitchIds:
+          - "${env.VSWITCH_ID}"
+        securityGroupId: "${env.SECURITY_GROUP_ID}"
+
+      # ---- 触发器配置 ----
+      triggers:
+        - triggerName: http-trigger
+          triggerType: http
+          triggerConfig:
+            # ⚠️ 安全: 生产环境应改为 "function" 认证
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - HEAD
+              - OPTIONS
+
+      # ---- 预留实例配置 ----
+      provisionConfig:
+        # 默认至少保留 1 个实例，消除冷启动
+        reservedInstances:
+          - name: academy-ri-always
+            instanceCount: ${vars.provisionMin}
+            targetTrackingPolicies: []
+        # 高峰时段扩缩容
+        scheduledInstances:
+          - name: academy-ri-peak-morning
+            instanceCount: 2
+            startTime: "08:00"
+            endTime: "10:00"
+            daysOfWeek:
+              - MONDAY
+              - TUESDAY
+              - WEDNESDAY
+              - THURSDAY
+              - FRIDAY
+          - name: academy-ri-peak-evening
+            instanceCount: 3
+            startTime: "20:00"
+            endTime: "23:30"
+            daysOfWeek:
+              - MONDAY
+              - TUESDAY
+              - WEDNESDAY
+              - THURSDAY
+              - FRIDAY
+              - SATURDAY
+              - SUNDAY
+
+      # ---- 弹性伸缩配置 ----
+      scalingConfig:
+        minInstances: 0
+        maxInstances: ${vars.provisionMax}
+        targetTrackingScalingPolicies:
+          - policyName: academy-concurrent-scaling
+            metricType: FunctionInstanceConcurrency
+            targetValue: 8
+            minCapacity: 1
+            maxCapacity: ${vars.provisionMax}
+
+      # ---- 日志与监控 ----
+      logConfig:
+        enableInstanceMetrics: true
+        enableRequestMetrics: true
+      tracingConfig:
+        type: Jaeger
+        endpoint: "${env.JAEGER_ENDPOINT}"
+
+# ---- 部署命令 ----
+# s deploy --template-file template.yaml \
+#   --region cn-shanghai \
+#   --env VPC_ID=vpc-xxx \
+#   --env VSWITCH_ID=vsw-xxx \
+#   --env SECURITY_GROUP_ID=sg-xxx \
+#   --env MYSQL_HOST=rm-xxx.mysql.rds.aliyuncs.com \
+#   --env MYSQL_USERNAME=tailor \
+#   --env MYSQL_PASSWORD=your-password \
+#   --env REDIS_HOST=r-xxx.redis.rds.aliyuncs.com \
+#   --env REDIS_PASSWORD=your-password \
+#   --env JAEGER_ENDPOINT=http://jaeger:14268/api/traces

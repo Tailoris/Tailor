@@ -28,6 +28,16 @@ public class PostController {
     @Operation(summary = "发布帖子", description = "发布新帖子")
     @PostMapping("/create")
     public Result<CommunityPost> createPost(@Valid @RequestBody PostCreateRequest request) {
+        return doCreatePost(request);
+    }
+
+    @Operation(summary = "发布帖子（RESTful风格）", description = "发布新帖子")
+    @PostMapping("/../posts")
+    public Result<CommunityPost> createPostRestful(@Valid @RequestBody PostCreateRequest request) {
+        return doCreatePost(request);
+    }
+
+    private Result<CommunityPost> doCreatePost(PostCreateRequest request) {
         if (!StpUtil.isLogin()) {
             throw new BusinessException("用户未登录");
         }

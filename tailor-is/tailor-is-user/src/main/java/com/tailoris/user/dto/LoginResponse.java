@@ -22,6 +22,10 @@ public class LoginResponse implements Serializable {
     @Schema(description = "是否新用户（首次登录）")
     private Boolean isNewUser;
 
+    /** 🔒 H-03修复: CSRF Token，用于后续写操作的安全校验 */
+    @Schema(description = "CSRF Token（用于POST/PUT/DELETE请求的安全校验）")
+    private String csrfToken;
+
     @Data
     @Schema(description = "用户信息")
     public static class UserInfo implements Serializable {

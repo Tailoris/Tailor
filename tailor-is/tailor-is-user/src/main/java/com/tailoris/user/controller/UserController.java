@@ -8,6 +8,7 @@ import com.tailoris.common.dto.PageResponse;
 import com.tailoris.common.exception.BusinessException;
 import com.tailoris.common.result.Result;
 import com.tailoris.user.dto.LoginResponse;
+import com.tailoris.user.dto.PasswordUpdateRequest;
 import com.tailoris.user.dto.RealNameAuthRequest;
 import com.tailoris.user.dto.UserUpdateRequest;
 import com.tailoris.user.entity.SysUser;
@@ -22,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * TODO P3-L-07: 清理计划 — 确认所有客户端已迁移至 /api/v1/user 后，在 v1.1.0 中移除此控制器
+ */
 @Deprecated
 @SaCheckLogin
 @Tag(name = "用户管理", description = "已弃用，请使用 /api/v1/user")
@@ -65,5 +69,21 @@ public class UserController {
     public Result<PageResponse<SysUser>> listUsers(PageRequest pageRequest) {
         PageResponse<SysUser> response = sysUserService.listUsers(pageRequest);
         return Result.success(response);
+    }
+
+    @Operation(summary = "更新用户资料", description = "更新当前用户的昵称、头像、性别、生日、邮箱")
+    @PutMapping("/profile")
+    public Result<Void> updateProfile(@Valid @RequestBody UserUpdateRequest request) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        sysUserService.updateUser(userId, request);
+        return Result.success();
+    }
+
+    @Operation(summary = "修改密码", description = "验证旧密码后修改为新密码")
+    @PutMapping("/password")
+    public Result<Void> updatePassword(@Valid @RequestBody PasswordUpdateRequest request) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        sysUserService.updatePassword(userId, request.getOldPassword(), request.getNewPassword());
+        return Result.success();
     }
 }

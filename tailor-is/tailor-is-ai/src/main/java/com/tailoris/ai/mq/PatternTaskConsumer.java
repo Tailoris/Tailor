@@ -11,6 +11,7 @@ import org.apache.rocketmq.spring.annotation.ConsumeMode;
 import org.apache.rocketmq.spring.annotation.MessageModel;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -18,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "rocketmq.enabled", havingValue = "true", matchIfMissing = false)
 @RocketMQMessageListener(
         topic = MessageRoutingStrategy.ROCKETMQ_AI_PATTERN_TOPIC,
         consumerGroup = MessageRoutingStrategy.ROCKETMQ_AI_PATTERN_CONSUMER_GROUP,

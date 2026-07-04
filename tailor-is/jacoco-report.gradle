@@ -1,0 +1,129 @@
+plugins {
+    id 'jacoco'
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+    // 应用到所有覆盖率任务
+    applyTo all
+}
+
+tasks.withType(Test) {
+    jacoco.includeNoLocationClasses = true
+    jacoco.excludes = ['jdk.internal.*']
+}
+
+// ===================== M-05: 覆盖率门禁 =====================
+// 单元测试覆盖率阈值 - 渐进式提升
+// 目标: 60% (持续质量优化阶段)
+// 规则: 覆盖率未达标则 build 失败
+ext {
+    coverageThresholds = [
+        line: 0.60,         // 行覆盖率 60%
+        branch: 0.50,       // 分支覆盖率 50%
+        method: 0.60,       // 方法覆盖率 60%
+        class: 0.70         // 类覆盖率 70%
+    ]
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = file("${buildDir}/reports/jacoco")
+        csv.required = false
+    }
+
+    // 验证覆盖率
+    doLast {
+        def coverage = evaluateCoverage()
+        if (coverage == null) {
+            logger.warn('未生成覆盖率数据, 跳过检查')
+            return
+        }
+        logCoverage(coverage)
+
+        def failures = []
+        coverage.each { key, value ->
+            def threshold = coverageThresholds[key]
+            if (threshold != null && value < threshold) {
+                failures.add("${key}: ${(value * 100).round(2)}% < ${(threshold * 100).round(2)}%")
+            }
+        }
+
+        if (failures) {
+            def msg = "单元测试覆盖率未达标:\n  " + failures.join("\n  ") +
+                "\n\n请补充单元测试后重试. 参考 docs/test-coverage-plan.md"
+            logger.error(msg)
+            throw new RuntimeException(msg)
+        }
+    }
+}
+
+/**
+ * 解析 JaCoCo XML 报告
+ */
+def evaluateCoverage() {
+    def xmlFile = file("${buildDir}/reports/jacoco/jacocoTestReport.xml")
+    if (!xmlFile.exists()) {
+        return null
+    }
+    def report = new XmlSlurper().parse(xmlFile)
+    def counters = report.'counter'
+
+    def coverage = [:]
+    counters.each { counter ->
+        def type = counter.@type.toString()
+        def missed = counter.@missed.toString().toInteger()
+        def covered = counter.@covered.toString().toInteger()
+        def total = missed + covered
+        if (total > 0) {
+            coverage[type] = (double) covered / total
+        }
+    }
+    return coverage
+}
+
+def logCoverage(coverage) {
+    logger.lifecycle("=" * 60)
+    logger.lifecycle("单元测试覆盖率报告")
+    logger.lifecycle("=" * 60)
+    coverage.each { key, value ->
+        def threshold = coverageThresholds[key]
+        def status = (threshold != null && value < threshold) ? '❌' : '✅'
+        logger.lifecycle("${status} ${key.padRight(10)}: ${(value * 100).round(2)}%" +
+            (threshold != null ? " (阈值: ${(threshold * 100).round(2)}%)" : ''))
+    }
+    logger.lifecycle("=" * 60)
+}
+
+task jacocoRootReport(type: JacocoReport) {
+    dependsOn subprojects.test
+
+    subprojects.each { subproject ->
+        sourceSets subproject.sourceSets.main
+    }
+
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/test.exec")
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = file("${project.buildDir}/reports/jacoco")
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/entity/**',
+                '**/dto/**',
+                '**/config/**',
+                '**/Application.java',
+                '**/*Controller.java',
+                '**/*Mapper.java'
+            ])
+        }))
+    }
+}

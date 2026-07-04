@@ -353,7 +353,7 @@ class PayControllerTest {
         paramMap.put("result_code", new String[]{"SUCCESS"});
         paramMap.put("transaction_id", new String[]{"TXN123456"});
         paramMap.put("sign", new String[]{"VALID_SIGN"});
-        paramMap.put("sign_type", new String[]{"MD5"});
+        paramMap.put("sign_type", new String[]{"HMAC-SHA256"});
 
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         when(mockRequest.getInputStream()).thenReturn(new jakarta.servlet.ServletInputStream() {

@@ -1,100 +1,178 @@
 package com.tailoris.coregateway.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Core Gateway 路由权威配置.
- *
- * <p>本类为核心业务域服务的唯一路由定义来源, 包含:
- * user, merchant, product, order, payment, marketing, ai, copyright, admin, pattern.
- *
- * <h3>设计决策</h3>
- * <ul>
- *   <li>StripPrefix=0: 下游 Controller 直接使用 /api/xxx/** 映射，保持 path 完整传递</li>
- *   <li>所有 uri 使用 lb:// 服务发现: 禁止写死 http://localhost:port</li>
- * </ul>
- *
- * <p>核心网关服务端口标准:
- * <ul>
- *   <li>core-gateway: 8080</li>
- *   <li>admin: 8100</li>
- *   <li>user: 8101</li>
- *   <li>product: 8102</li>
- *   <li>order: 8103</li>
- *   <li>payment: 8104</li>
- *   <li>marketing: 8105</li>
- *   <li>ai: 8106</li>
- *   <li>copyright: 8107</li>
- *   <li>merchant: 8110</li>
- *   <li>pattern: 8115</li>
- * </ul>
- */
 @Configuration
 public class CoreGatewayRouteConfig {
+
+    @Value("${USER_SERVICE_HOST:localhost}")
+    private String userServiceHost;
+
+    @Value("${USER_SERVICE_PORT:8101}")
+    private String userServicePort;
+
+    @Value("${PRODUCT_SERVICE_HOST:localhost}")
+    private String productServiceHost;
+
+    @Value("${PRODUCT_SERVICE_PORT:8102}")
+    private String productServicePort;
+
+    @Value("${ORDER_SERVICE_HOST:localhost}")
+    private String orderServiceHost;
+
+    @Value("${ORDER_SERVICE_PORT:8103}")
+    private String orderServicePort;
+
+    @Value("${PAYMENT_SERVICE_HOST:localhost}")
+    private String paymentServiceHost;
+
+    @Value("${PAYMENT_SERVICE_PORT:8104}")
+    private String paymentServicePort;
+
+    @Value("${MARKETING_SERVICE_HOST:localhost}")
+    private String marketingServiceHost;
+
+    @Value("${MARKETING_SERVICE_PORT:8105}")
+    private String marketingServicePort;
+
+    @Value("${AI_SERVICE_HOST:localhost}")
+    private String aiServiceHost;
+
+    @Value("${AI_SERVICE_PORT:8106}")
+    private String aiServicePort;
+
+    @Value("${COPYRIGHT_SERVICE_HOST:localhost}")
+    private String copyrightServiceHost;
+
+    @Value("${COPYRIGHT_SERVICE_PORT:8107}")
+    private String copyrightServicePort;
+
+    @Value("${COMMUNITY_SERVICE_HOST:localhost}")
+    private String communityServiceHost;
+
+    @Value("${COMMUNITY_SERVICE_PORT:8108}")
+    private String communityServicePort;
+
+    @Value("${SUPPLY_SERVICE_HOST:localhost}")
+    private String supplyServiceHost;
+
+    @Value("${SUPPLY_SERVICE_PORT:8109}")
+    private String supplyServicePort;
+
+    @Value("${MERCHANT_SERVICE_HOST:localhost}")
+    private String merchantServiceHost;
+
+    @Value("${MERCHANT_SERVICE_PORT:8110}")
+    private String merchantServicePort;
+
+    @Value("${MESSAGE_SERVICE_HOST:localhost}")
+    private String messageServiceHost;
+
+    @Value("${MESSAGE_SERVICE_PORT:8111}")
+    private String messageServicePort;
+
+    @Value("${ACADEMY_SERVICE_HOST:localhost}")
+    private String academyServiceHost;
+
+    @Value("${ACADEMY_SERVICE_PORT:8112}")
+    private String academyServicePort;
+
+    @Value("${IM_SERVICE_HOST:localhost}")
+    private String imServiceHost;
+
+    @Value("${IM_SERVICE_PORT:8114}")
+    private String imServicePort;
+
+    @Value("${ADMIN_SERVICE_HOST:localhost}")
+    private String adminServiceHost;
+
+    @Value("${ADMIN_SERVICE_PORT:8100}")
+    private String adminServicePort;
+
+    @Value("${PATTERN_SERVICE_HOST:localhost}")
+    private String patternServiceHost;
+
+    @Value("${PATTERN_SERVICE_PORT:8115}")
+    private String patternServicePort;
+
+    @Value("${ANALYTICS_SERVICE_HOST:localhost}")
+    private String analyticsServiceHost;
+
+    @Value("${ANALYTICS_SERVICE_PORT:8116}")
+    private String analyticsServicePort;
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                // ===== 核心业务域 =====
-
-                // 用户服务 - /api/user/** 与 /api/auth/**
                 .route("user-route", r -> r.path("/api/user/**", "/api/auth/**")
                         .filters(f -> f.stripPrefix(0))
-                        .uri("lb://tailor-is-user"))
+                        .uri("http://" + userServiceHost + ":" + userServicePort))
 
-                // 商品服务 - /api/product/**, /api/favorite/**
-                .route("product-route", r -> r.path("/api/product/**", "/api/favorite/**")
+                .route("product-route", r -> r.path("/api/product/**", "/api/products/**", "/api/favorite/**")
                         .filters(f -> f.stripPrefix(0))
-                        .uri("lb://tailor-is-product"))
+                        .uri("http://" + productServiceHost + ":" + productServicePort))
 
-                // 订单服务 - /api/order/**, /api/cart/**
                 .route("order-route", r -> r.path("/api/order/**", "/api/cart/**")
                         .filters(f -> f.stripPrefix(0))
-                        .uri("lb://tailor-is-order"))
+                        .uri("http://" + orderServiceHost + ":" + orderServicePort))
 
-                // 支付服务 - /api/payment/**, /api/settlement/**, /api/account/**, /api/sandbox/**
                 .route("payment-route", r -> r.path("/api/payment/**", "/api/settlement/**",
                                 "/api/account/**", "/api/sandbox/**")
                         .filters(f -> f.stripPrefix(0))
-                        .uri("lb://tailor-is-payment"))
+                        .uri("http://" + paymentServiceHost + ":" + paymentServicePort))
 
-                // 营销服务 - /api/marketing/**, /api/coupon/**, /api/points/**, /api/seckill/**
                 .route("marketing-route", r -> r.path("/api/marketing/**", "/api/coupon/**",
                                 "/api/points/**", "/api/seckill/**")
                         .filters(f -> f.stripPrefix(0))
-                        .uri("lb://tailor-is-marketing"))
+                        .uri("http://" + marketingServiceHost + ":" + marketingServicePort))
 
-                // AI 服务 - /api/ai/**, /api/body-size/**
-                .route("ai-route", r -> r.path("/api/ai/**", "/api/body-size/**")
+                .route("ai-route", r -> r.path("/api/ai/**", "/api/body-size/**", "/api/v1/ai/**")
                         .filters(f -> f.stripPrefix(0))
-                        .uri("lb://tailor-is-ai"))
+                        .uri("http://" + aiServiceHost + ":" + aiServicePort))
 
-                // 版权服务 - /api/copyright/**
-                .route("copyright-route", r -> r.path("/api/copyright/**")
+                .route("copyright-route", r -> r.path("/api/copyright/**", "/api/v1/copyright/**")
                         .filters(f -> f.stripPrefix(0))
-                        .uri("lb://tailor-is-copyright"))
+                        .uri("http://" + copyrightServiceHost + ":" + copyrightServicePort))
 
-                // 商家服务 - /api/merchant/**, /api/shop/**
-                .route("merchant-route", r -> r.path("/api/merchant/**", "/api/shop/**")
+                .route("community-route", r -> r.path("/api/community/**")
                         .filters(f -> f.stripPrefix(0))
-                        .uri("lb://tailor-is-merchant"))
+                        .uri("http://" + communityServiceHost + ":" + communityServicePort))
 
-                // ===== 管理域 =====
+                .route("supply-route", r -> r.path("/api/supply/**")
+                        .filters(f -> f.stripPrefix(0))
+                        .uri("http://" + supplyServiceHost + ":" + supplyServicePort))
 
-                // 管理后台 - /api/admin/**
+                .route("merchant-route", r -> r.path("/api/merchant/**", "/api/shop/**", "/api/v1/merchant/**")
+                        .filters(f -> f.stripPrefix(0))
+                        .uri("http://" + merchantServiceHost + ":" + merchantServicePort))
+
+                .route("message-route", r -> r.path("/api/message/**")
+                        .filters(f -> f.stripPrefix(0))
+                        .uri("http://" + messageServiceHost + ":" + messageServicePort))
+
+                .route("academy-route", r -> r.path("/api/academy/**", "/api/v1/academy/**")
+                        .filters(f -> f.stripPrefix(0))
+                        .uri("http://" + academyServiceHost + ":" + academyServicePort))
+
+                .route("im-route", r -> r.path("/api/im/**", "/api/v1/im/**")
+                        .filters(f -> f.stripPrefix(0))
+                        .uri("http://" + imServiceHost + ":" + imServicePort))
+
                 .route("admin-route", r -> r.path("/api/admin/**")
                         .filters(f -> f.stripPrefix(0))
-                        .uri("lb://tailor-is-admin"))
+                        .uri("http://" + adminServiceHost + ":" + adminServicePort))
 
-                // ===== 增值域 (按需启用) =====
-
-                // 图案/纸样 - /api/pattern/**
-                .route("pattern-route", r -> r.path("/api/pattern/**")
+                .route("pattern-route", r -> r.path("/api/pattern/**", "/api/v1/pattern/**")
                         .filters(f -> f.stripPrefix(0))
-                        .uri("lb://tailor-is-pattern"))
+                        .uri("http://" + patternServiceHost + ":" + patternServicePort))
+
+                .route("analytics-route", r -> r.path("/api/analytics/**", "/api/v1/analytics/**")
+                        .filters(f -> f.stripPrefix(0))
+                        .uri("http://" + analyticsServiceHost + ":" + analyticsServicePort))
 
                 .build();
     }

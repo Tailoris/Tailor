@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
+import org.springframework.beans.factory.annotation.Value;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -108,6 +109,9 @@ public class SysUserServiceImpl implements SysUserService {
     private final SysRoleService sysRoleService;
     private final SysPermissionService sysPermissionService;
     private final ObjectMapper objectMapper;
+
+    @Value("${tailoris.user.default-role-id:}")
+    private Long defaultRoleId;
 
     // 静态属性定义顺序：实例属性在后（B-M08修复）
     @Override
@@ -222,9 +226,18 @@ public class SysUserServiceImpl implements SysUserService {
         user.setUsername(phone);
         user.setPhone(phone);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setStatus(USER_STATUS_DISABLED);
+        user.setStatus(USER_STATUS_NORMAL);
         user.setNickName("用户_" + phone.substring(PHONE_MASK_PREFIX_LENGTH));
         sysUserMapper.insert(user);
+
+        if (defaultRoleId != null) {
+            try {
+                sysRoleService.assignRoleToUser(user.getId(), defaultRoleId);
+                log.info("默认角色分配成功: userId={}, roleId={}", user.getId(), defaultRoleId);
+            } catch (Exception e) {
+                log.warn("默认角色分配失败: userId={}, roleId={}", user.getId(), defaultRoleId, e);
+            }
+        }
 
         log.info("用户注册成功: phone={}, userId={}", LogMaskUtils.maskPhone(phone), user.getId());
     }
@@ -236,7 +249,8 @@ public class SysUserServiceImpl implements SysUserService {
         // BE-M-29: 使用 SecureRandom 替代 Math.random() 生成密码学安全的验证码
         String code = String.valueOf(100000 + SECURE_RANDOM.nextInt(900000));
         loginSecurityService.storeSmsCode(phone, code);
-        log.info("短信验证码已发送: phone={}", phone);
+        // 🔒 M-05修复: 手机号脱敏后再输出日志，避免 PII 泄露
+        log.info("短信验证码已发送: phone={}", LogMaskUtils.maskPhone(phone));
         // 注意：实际生产不应将code写入日志
     }
 
@@ -483,5 +497,25 @@ public class SysUserServiceImpl implements SysUserService {
         } catch (Exception e) {
             log.warn("清理用户缓存失败: userId={}", userId, e);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updatePassword(Long userId, String oldPassword, String newPassword) {
+        SysUser user = sysUserMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(USER_NOT_FOUND_MSG);
+        }
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new BusinessException("旧密码不正确");
+        }
+        if (oldPassword.equals(newPassword)) {
+            throw new BusinessException("新密码不能与旧密码相同");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        sysUserMapper.updateById(user);
+        invalidateUserCache(userId);
+        StpUtil.logout(userId);
+        log.info("用户修改密码成功, userId: {}", userId);
     }
 }

@@ -55,7 +55,9 @@ public class AesGcmCrypto {
 
     @PostConstruct
     public void init() {
-        // 密钥从配置中心读取，不再硬编码
+        log.info("AES密钥配置检查 - configuredKey: '{}', 长度: {}", 
+                configuredKey != null ? configuredKey : "null", 
+                configuredKey != null ? configuredKey.length() : 0);
         byte[] keyBytes = loadKey();
         if (keyBytes == null || keyBytes.length != KEY_LENGTH) {
             throw new IllegalStateException(
@@ -74,26 +76,48 @@ public class AesGcmCrypto {
      *   <li>配置中心 Nacos 的 tailoris.crypto.aes-key</li>
      *   <li>本地配置文件 application.yml</li>
      * </ol>
+     * 
+     * <p>密钥格式：支持直接32字节字符串或Base64编码的32字节密钥</p>
      */
     private byte[] loadKey() {
         // 1. 优先从环境变量
         String envKey = System.getenv("AES_KEY");
         if (envKey != null && !envKey.isEmpty()) {
-            return envKey.getBytes(StandardCharsets.UTF_8);
+            return decodeKey(envKey);
         }
 
         // 2. 从配置属性
         if (configuredKey != null && !configuredKey.isEmpty()) {
-            // 支持Base64编码的密钥
-            try {
-                return Base64.getDecoder().decode(configuredKey);
-            } catch (IllegalArgumentException e) {
-                return configuredKey.getBytes(StandardCharsets.UTF_8);
-            }
+            return decodeKey(configuredKey);
         }
 
         log.error("AES密钥未配置！请设置环境变量 AES_KEY 或配置 tailoris.crypto.aes-key");
         return null;
+    }
+
+    /**
+     * 🔒 C-03修复: 解码密钥 - 优先使用 Base64 解码，支持原始字符串回退
+     *
+     * <p>密钥格式：
+     *   - Base64 编码格式（推荐，生产环境）
+     *   - 原始32字节字符串（开发环境）</p>
+     *
+     * @param key 密钥字符串
+     * @return 解码后的密钥字节
+     */
+    private byte[] decodeKey(String key) {
+        if (key == null) {
+            return null;
+        }
+        try {
+            byte[] decoded = Base64.getDecoder().decode(key);
+            if (decoded.length == KEY_LENGTH) {
+                return decoded;
+            }
+        } catch (IllegalArgumentException e) {
+            // 不是有效的Base64
+        }
+        return key.getBytes(StandardCharsets.UTF_8);
     }
 
     /**
