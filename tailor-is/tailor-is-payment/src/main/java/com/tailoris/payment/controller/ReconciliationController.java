@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -17,7 +18,7 @@ import java.util.List;
 
 @Tag(name = "资金对账管理", description = "支付资金对账、差异处理、对账记录查询等接口")
 @RestController
-@RequestMapping("/api/v1/payment/reconciliation")
+@RequestMapping(RoutePortConstant.ROUTE_PAYMENT_RECONCILIATION)
 @RequiredArgsConstructor
 public class ReconciliationController {
 

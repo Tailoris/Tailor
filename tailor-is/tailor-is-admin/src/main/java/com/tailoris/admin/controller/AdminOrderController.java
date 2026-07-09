@@ -2,6 +2,7 @@ package com.tailoris.admin.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.tailoris.api.admin.dto.ArbitrateRequest;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.api.admin.dto.OrderQueryRequest;
 import com.tailoris.admin.service.AdminOrderService;
 import com.tailoris.common.dto.PageResponse;
@@ -13,10 +14,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-@SaCheckRole("admin")
+@SaCheckRole({"SUPER_ADMIN", "PLATFORM_ADMIN"})
 @Tag(name = "平台订单管理")
 @RestController
-@RequestMapping("/api/admin/order")
+@RequestMapping(RoutePortConstant.ROUTE_ADMIN_ORDER)
 @RequiredArgsConstructor
 public class AdminOrderController {
 

@@ -3,7 +3,7 @@ import type { ProductReview, PageResponse } from '@/types'
 
 export function getProductReviews(productId: number, params?: { pageNum?: number; pageSize?: number }) {
   return request<Record<string, unknown>, PageResponse<ProductReview>>({
-    url: `/product/review/${productId}`,
+    url: `/api/v1/product/review/${productId}`,
     method: 'get',
     params: {
       pageNum: params?.pageNum ?? 1,
@@ -23,7 +23,7 @@ export function createReview(data: {
   isAnonymous?: number
 }) {
   return request<Record<string, unknown>, number>({
-    url: '/product/review',
+    url: '/api/v1/product/review',
     method: 'post',
     data
   })

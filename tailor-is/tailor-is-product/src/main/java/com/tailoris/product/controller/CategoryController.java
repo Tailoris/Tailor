@@ -2,6 +2,7 @@ package com.tailoris.product.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.tailoris.common.exception.BusinessException;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.product.dto.CategoryRequest;
 import com.tailoris.product.entity.ProductCategory;
@@ -18,7 +19,7 @@ import java.util.List;
 @SaCheckLogin
 @Tag(name = "商品分类管理")
 @RestController
-@RequestMapping("/api/product/category")
+@RequestMapping(RoutePortConstant.ROUTE_PRODUCT_CATEGORY)
 @RequiredArgsConstructor
 public class CategoryController {
 

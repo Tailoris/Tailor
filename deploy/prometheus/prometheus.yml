@@ -1,149 +1,39 @@
-# ==============================================================================
-# Tailor IS Prometheus 核心配置
-# ==============================================================================
-# 端口分配规范: 8101-8115 (与 K8s Deployment containerPort 一致)
-# 8101: user, 8102: product, 8103: order, 8104: payment, 8105: marketing
-# 8106: ai, 8107: copyright, 8108: message, 8109: message-im, 8110: merchant
-# 8111: community, 8112: academy, 8113: supply, 8114: admin, 8115: analytics
-# ==============================================================================
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
-  scrape_timeout: 10s
-  external_labels:
-    cluster: tailor-is-prod
-    environment: production
 
-# ========== 告警管理器 ==========
 alerting:
   alertmanagers:
     - static_configs:
-      - targets: ['localhost:9093']
+        - targets: ['localhost:9093']
 
-# ========== 规则文件 ==========
 rule_files:
-  - "alert-rules.yml"
-  - "alert-rules-extended.yml"
+  - "alerts.yml"
 
-# ==============================================================================
-# 抓取目标配置
-# ==============================================================================
 scrape_configs:
-  # ----- Prometheus自身 -----
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
-        labels: { service: prometheus, tier: monitoring }
-
-  # ----- 节点/主机监控 (🔒 H-13修复: exporter 已集成主 compose) -----
-  - job_name: 'node-exporter'
+  - job_name: 'node'
     static_configs:
       - targets: ['localhost:9100']
-        labels: { service: node-exporter, tier: monitoring }
 
-  # ----- MySQL (🔒 H-13修复: mysqld-exporter 已集成主 compose) -----
-  - job_name: 'mysql'
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['localhost:9104']
-        labels: { service: mysql, tier: database }
-
-  # ----- Redis (🔒 H-13修复: redis-exporter 已集成主 compose) -----
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['localhost:9121']
-        labels: { service: redis, tier: cache }
-
-  # ----- RabbitMQ -----
-  - job_name: 'rabbitmq'
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['localhost:15692']
-        labels: { service: rabbitmq, tier: message }
-
-  # ----- Spring Boot Actuator -----
-  - job_name: 'spring-boot-services'
-    metrics_path: /actuator/prometheus
-    scrape_interval: 30s
-    scrape_timeout: 10s
+  - job_name: 'tailor-is-services'
+    metrics_path: '/actuator/prometheus'
     static_configs:
       - targets:
-        - localhost:9000
-        - localhost:8081
-        labels: { service: spring-boot, tier: application }
-
-  # ----- Tailor IS 用户服务 (业务指标: admin_login_count / failed_login_attempts / abnormal_login_rate 等) -----
-  - job_name: 'tailor-is-user'
-    metrics_path: /actuator/prometheus
-    scrape_interval: 15s
-    scrape_timeout: 10s
-    static_configs:
-      - targets:
-        - localhost:8101
-        labels: { service: tailor-is-user, tier: auth }
-
-  # ----- Tailor IS 业务服务 (订单/支付/AI/商户/商品) -----
-  - job_name: 'tailor-is-business'
-    metrics_path: /actuator/prometheus
-    scrape_interval: 15s
-    scrape_timeout: 10s
-    static_configs:
-      - targets: ['localhost:8103']
-        labels: { service: tailor-is-order, tier: order }
-      - targets: ['localhost:8104']
-        labels: { service: tailor-is-payment, tier: payment }
-      - targets: ['localhost:8106']
-        labels: { service: tailor-is-ai, tier: ai }
-      - targets: ['localhost:8110']
-        labels: { service: tailor-is-merchant, tier: merchant }
-      - targets: ['localhost:8102']
-        labels: { service: tailor-is-product, tier: product }
-      - targets: ['localhost:8105']
-        labels: { service: tailor-is-marketing, tier: marketing }
-      - targets: ['localhost:8107']
-        labels: { service: tailor-is-copyright, tier: copyright }
-      - targets: ['localhost:8111']
-        labels: { service: tailor-is-message, tier: message }
-      - targets: ['localhost:8114']
-        labels: { service: tailor-is-message-im, tier: message }
-      - targets: ['localhost:8108']
-        labels: { service: tailor-is-community, tier: community }
-      - targets: ['localhost:8112']
-        labels: { service: tailor-is-academy, tier: academy }
-      - targets: ['localhost:8109']
-        labels: { service: tailor-is-supply, tier: supply }
-      - targets: ['localhost:8100']
-        labels: { service: tailor-is-admin, tier: admin }
-      - targets: ['localhost:8113']
-        labels: { service: tailor-is-analytics, tier: analytics }
-
-  # ----- Nginx -----
-  - job_name: 'nginx'
-    static_configs:
-      - targets: ['localhost:9113']
-        labels: { service: nginx, tier: frontend }
-
-  # ----- GraphQL Gateway -----
-  - job_name: 'graphql-gateway'
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['localhost:4000']
-        labels: { service: graphql, tier: frontend }
-
-  # ----- Blackbox exporter (HTTP监控) -----
-  - job_name: 'blackbox-http'
-    metrics_path: /probe
-    params:
-      module: [http_2xx]
-    static_configs:
-      - targets:
-        - https://www.tailoris.com
-        - https://api.tailoris.com/health
-        - https://admin.tailoris.com
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: localhost:9115
+        - 'localhost:8100'  # admin
+        - 'localhost:8101'  # user
+        - 'localhost:8102'  # product
+        - 'localhost:8103'  # order
+        - 'localhost:8104'  # payment
+        - 'localhost:8105'  # marketing
+        - 'localhost:8106'  # ai
+        - 'localhost:8107'  # copyright
+        - 'localhost:8108'  # community
+        - 'localhost:8109'  # supply
+        - 'localhost:8110'  # merchant
+        - 'localhost:8111'  # message
+        - 'localhost:8112'  # academy
+        - 'localhost:8113'  # analytics
+        - 'localhost:8114'  # message-im
+        - 'localhost:8115'  # pattern
+        - 'localhost:9000'  # core-gateway
+        - 'localhost:8081'  # lite-gateway

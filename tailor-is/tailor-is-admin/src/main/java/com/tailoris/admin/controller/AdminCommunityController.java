@@ -2,6 +2,7 @@ package com.tailoris.admin.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.tailoris.api.admin.dto.ReportProcessRequest;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.admin.service.AdminCommunityService;
 import com.tailoris.common.dto.PageResponse;
 import com.tailoris.common.dto.PageRequest;
@@ -13,10 +14,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-@SaCheckRole("admin")
+@SaCheckRole({"SUPER_ADMIN", "PLATFORM_ADMIN"})
 @Tag(name = "平台社区管理")
 @RestController
-@RequestMapping("/api/admin/community")
+@RequestMapping(RoutePortConstant.ROUTE_ADMIN_COMMUNITY)
 @RequiredArgsConstructor
 public class AdminCommunityController {
 

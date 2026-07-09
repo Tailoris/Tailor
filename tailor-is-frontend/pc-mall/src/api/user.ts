@@ -11,7 +11,7 @@ interface UpdateProfileData {
 
 export function updateProfile(data: UpdateProfileData) {
   return request<Record<string, unknown>, User>({
-    url: '/user/profile',
+    url: '/api/v1/user/profile',
     method: 'put',
     data
   })
@@ -19,7 +19,7 @@ export function updateProfile(data: UpdateProfileData) {
 
 export function updatePassword(oldPassword: string, newPassword: string) {
   return request<Record<string, unknown>, boolean>({
-    url: '/user/password',
+    url: '/api/v1/user/password',
     method: 'put',
     data: { oldPassword, newPassword }
   })
@@ -27,28 +27,42 @@ export function updatePassword(oldPassword: string, newPassword: string) {
 
 export function getFavorites() {
   return request<Record<string, unknown>, PageResponse<Product>>({
-    url: '/user/favorites',
+    url: '/api/v1/favorite/list',
     method: 'get'
   })
 }
 
 export function getPoints() {
   return request<Record<string, unknown>, { points: number; records: { id: number; points: number; type: number; description: string; createdAt: string }[] }>({
-    url: '/user/points',
+    url: '/api/v1/user/points',
     method: 'get'
   })
 }
 
 export function addFavorite(productId: number) {
   return request<Record<string, unknown>, boolean>({
-    url: `/user/favorites/${productId}`,
+    url: `/api/v1/favorite/${productId}`,
     method: 'post'
   })
 }
 
 export function removeFavorite(productId: number) {
   return request<Record<string, unknown>, boolean>({
-    url: `/user/favorites/${productId}`,
-    method: 'delete'
+    url: `/api/v1/favorite/cancel/${productId}`,
+    method: 'post'
+  })
+}
+
+export function checkFavorite(productId: number) {
+  return request<Record<string, unknown>, boolean>({
+    url: `/api/v1/favorite/check/${productId}`,
+    method: 'get'
+  })
+}
+
+export function getUserInfo() {
+  return request<Record<string, unknown>, User>({
+    url: '/api/v1/user/info',
+    method: 'get'
   })
 }

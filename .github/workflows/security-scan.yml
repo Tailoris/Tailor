@@ -10,7 +10,17 @@ on:
   schedule:
     # 每日凌晨 3:00 UTC (北京时间 11:00)
     - cron: '0 3 * * *'
+    # 每周一凌晨 4:00 UTC 全量扫描
+    - cron: '0 4 * * 1'
   workflow_dispatch:  # 允许手动触发
+  pull_request:
+    paths:
+      # 关键安全路径变更时触发 PR 扫描
+      - 'tailor-is/**/pom.xml'
+      - 'tailor-is/**/Dockerfile'
+      - 'tailor-is/**/application*.yml'
+      - 'tailor-is/tailor-is-common/src/main/java/com/tailoris/common/security/**'
+      - 'tailor-is/tailor-is-core-gateway/src/main/java/com/tailoris/coregateway/filter/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -108,6 +118,10 @@ jobs:
           - tailor-is-marketing
           - tailor-is-community
           - tailor-is-ai
+          - tailor-is-copyright
+          - tailor-is-pattern
+          - tailor-is-core-gateway
+          - tailor-is-admin
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.List;
 @SaCheckLogin
 @Tag(name = "体型数据管理", description = "体型数据录入、查询、搜索等接口")
 @RestController
-@RequestMapping("/api/v1/ai/size")
+@RequestMapping(RoutePortConstant.ROUTE_AI_SIZE)
 @RequiredArgsConstructor
 public class BodySizeController {
 

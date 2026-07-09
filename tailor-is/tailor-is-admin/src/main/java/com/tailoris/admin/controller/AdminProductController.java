@@ -2,6 +2,7 @@ package com.tailoris.admin.controller;
 
 import com.tailoris.api.admin.dto.ProductAuditRequest;
 import com.tailoris.admin.service.AdminProductService;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.dto.PageResponse;
 import com.tailoris.common.dto.PageRequest;
 import com.tailoris.common.result.Result;
@@ -15,9 +16,9 @@ import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "平台商品管理")
 @RestController
-@RequestMapping("/api/admin/product")
+@RequestMapping(RoutePortConstant.ROUTE_ADMIN_PRODUCT)
 @RequiredArgsConstructor
-@SaCheckRole("admin")
+@SaCheckRole({"SUPER_ADMIN", "PLATFORM_ADMIN"})
 public class AdminProductController {
 
     private final AdminProductService adminProductService;

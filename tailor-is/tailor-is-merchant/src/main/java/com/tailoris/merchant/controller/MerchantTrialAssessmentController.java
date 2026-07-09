@@ -2,6 +2,7 @@ package com.tailoris.merchant.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckRole;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.merchant.entity.MerchantTrialAssessment;
 import com.tailoris.merchant.service.IMerchantTrialAssessmentService;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 @Tag(name = "Merchant Trial Assessment API", description = "商家试运营考核接口 - MER-006")
 @RestController
-@RequestMapping("/api/v1/merchant/trial")
+@RequestMapping(RoutePortConstant.ROUTE_MERCHANT_TRIAL)
 @RequiredArgsConstructor
 @Validated
 public class MerchantTrialAssessmentController {

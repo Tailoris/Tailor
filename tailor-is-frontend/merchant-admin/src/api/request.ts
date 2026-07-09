@@ -62,8 +62,10 @@ function sleep(ms: number): Promise<void> {
 const request: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 30000,
+  responseEncoding: 'utf8',
   headers: {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json;charset=UTF-8',
+    'Accept': 'application/json;charset=UTF-8'
   },
 })
 

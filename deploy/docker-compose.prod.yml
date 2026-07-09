@@ -1,7 +1,7 @@
 # ==============================================================================
-# Tailor IS 生产环境 Docker Compose 配置
+# Tailor IS 生产环境 Docker Compose 配置 (v4.0 规范)
 # ==============================================================================
-# 版本: v2.0 (微服务集群版)
+# 版本: v4.0
 # 启动所有微服务一键拉起:
 #   docker compose -f docker-compose.prod.yml up -d --build
 # 停止: docker compose -f docker-compose.prod.yml down
@@ -9,19 +9,15 @@
 # 查看日志: docker compose -f docker-compose.prod.yml logs -f
 # 单独构建某服务: docker compose -f docker-compose.prod.yml build <service>
 #
-# 注意: 当前配置使用 localhost 连接宿主机上的中间件服务。
-# 如需在纯 Docker 环境中运行（中间件也在容器内），请将 localhost
-# 替换为对应的 Docker 服务名:
-#   localhost → mysql       (MySQL)
-#   localhost → redis       (Redis)
-#   localhost → rabbitmq    (RabbitMQ)
-#   localhost → nacos       (Nacos)
-# 健康检查中的 localhost 也应改为 localhost
+# 端口规范:
+#   网关层: core-gateway=9000, lite-gateway=8081
+#   核心业务: admin=8100, user=8101, product=8102, order=8103, payment=8104
+#             marketing=8105, ai=8106, copyright=8107, merchant=8110, pattern=8115
+#   轻量业务: community=8108, supply=8109, message=8111, academy=8112
+#             analytics=8113, message-im=8114
 # ==============================================================================
 
-
 volumes:
-  # ============ 数据卷: 持久化存储 ============
   prometheus-data: { name: tailor-is-prometheus-data }
   alertmanager-data: { name: tailor-is-alertmanager-data }
   grafana-data: { name: tailor-is-grafana-data }
@@ -52,9 +48,36 @@ x-charset-config: &charset-config
   SPRING_HTTP_ENCODING_CHARSET: "UTF-8"
   SPRING_HTTP_ENCODING_FORCE: "true"
 
-# ==============================================================================
-# 基础设施层 (Infrastructure)
-# ==============================================================================
+x-java-opts: &java-opts
+  JAVA_OPTS: "-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=40 -Dserver.tomcat.threads.min-spare=5 -Dserver.tomcat.max-connections=200 -Dserver.tomcat.accept-count=50"
+
+x-java-opts-gateway: &java-opts-gateway
+  JAVA_OPTS: "-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=60 -Dserver.tomcat.threads.min-spare=10 -Dserver.tomcat.max-connections=500 -Dserver.tomcat.accept-count=100"
+
+x-java-ai-opts: &java-ai-opts
+  JAVA_OPTS: "-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=40 -Dserver.tomcat.threads.min-spare=5"
+
+x-java-common: &java-common
+  JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
+  SPRING_HTTP_ENCODING_ENABLED: "true"
+  SPRING_HTTP_ENCODING_CHARSET: "UTF-8"
+  SPRING_HTTP_ENCODING_FORCE: "true"
+  JAVA_OPTS: "-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=40 -Dserver.tomcat.threads.min-spare=5 -Dserver.tomcat.max-connections=200 -Dserver.tomcat.accept-count=50"
+
+x-java-common-gateway: &java-common-gateway
+  JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
+  SPRING_HTTP_ENCODING_ENABLED: "true"
+  SPRING_HTTP_ENCODING_CHARSET: "UTF-8"
+  SPRING_HTTP_ENCODING_FORCE: "true"
+  JAVA_OPTS: "-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=60 -Dserver.tomcat.threads.min-spare=10 -Dserver.tomcat.max-connections=500 -Dserver.tomcat.accept-count=100"
+
+x-java-common-ai: &java-common-ai
+  JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
+  SPRING_HTTP_ENCODING_ENABLED: "true"
+  SPRING_HTTP_ENCODING_CHARSET: "UTF-8"
+  SPRING_HTTP_ENCODING_FORCE: "true"
+  JAVA_OPTS: "-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=40 -Dserver.tomcat.threads.min-spare=5"
+
 services:
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -70,7 +93,6 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=15d
       - --web.enable-lifecycle
-    
     <<: *restart-policy
     logging: *default-logging
     user: "65534:65534"
@@ -79,7 +101,7 @@ services:
         limits: { cpus: '0.25', memory: 1024M }
         reservations: { cpus: '0.1', memory: 128M }
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9200/-/healthy"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -96,7 +118,6 @@ services:
     command:
       - --config.file=/etc/alertmanager/alertmanager.yml
       - --storage.path=/alertmanager
-    
     <<: *restart-policy
     logging: *default-logging
     deploy:
@@ -104,7 +125,7 @@ services:
         limits: { cpus: '0.1', memory: 256M }
         reservations: { cpus: '0.05', memory: 64M }
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9202/-/healthy"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -130,15 +151,57 @@ services:
         limits: { cpus: '0.25', memory: 512M }
         reservations: { cpus: '0.1', memory: 128M }
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:9201/api/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 30s
 
-# ==============================================================================
-# 认证/用户服务 (微服务模块)
-# ==============================================================================
+  admin-service:
+    image: tailor-is/admin-service:latest
+    container_name: tailor-is-admin-service
+    hostname: admin-service
+    network_mode: host
+    build:
+      context: ../tailor-is
+      dockerfile: ./tailor-is-admin/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Shanghai
+      JVM_XMX: 220m
+      JVM_XMS: 128m
+      SERVER_PORT: "8100"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: localhost:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/tailor_is_user?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: localhost
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SPRING_RABBITMQ_HOST: localhost
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      AES_KEY: ${AES_KEY}
+      <<: *java-common
+    <<: *restart-policy
+    logging: *default-logging
+    deploy:
+      resources:
+        limits: { cpus: '0.20', memory: 384M }
+        reservations: { cpus: '0.05', memory: 128M }
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
   user-service:
     image: tailor-is/user-service:latest
     container_name: tailor-is-user-service
@@ -147,11 +210,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-user/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 320m
+      JVM_XMS: 160m
       SERVER_PORT: "8101"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -171,149 +237,15 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.30', memory: 512M }
+        reservations: { cpus: '0.10', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8101/actuator/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
-
-# ==============================================================================
-# API 网关层 (API Gateway)
-# ==============================================================================
-  core-gateway:
-    image: tailor-is/core-gateway:latest
-    container_name: tailor-is-core-gateway
-    hostname: core-gateway
-    network_mode: host
-    build:
-      context: ../tailor-is
-      dockerfile: ./tailor-is-core-gateway/Dockerfile
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      TZ: Asia/Shanghai
-      JVM_XMX: 2048m
-      JVM_XMS: 1024m
-      SERVER_PORT: "9000"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
-      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: localhost:8848
-      SPRING_CLOUD_NACOS_DISCOVERY_USERNAME: ${NACOS_USERNAME:-}
-      SPRING_CLOUD_NACOS_DISCOVERY_PASSWORD: ${NACOS_PASSWORD:-}
-      SPRING_DATA_REDIS_HOST: localhost
-      SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
-      REDIS_HOST: localhost
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      NACOS_ADDR: localhost:8848
-      NACOS_NAMESPACE: ${NACOS_NAMESPACE:-}
-      NACOS_USERNAME: ${NACOS_USERNAME:-}
-      NACOS_PASSWORD: ${NACOS_PASSWORD:-}
-      CORS_ALLOWED_ORIGINS: "http://localhost,http://localhost:5173,http://localhost:5174,https://www.tailoris.com"
-    
-    <<: *restart-policy
-    logging: *default-logging
-    deploy:
-      resources:
-        limits: { cpus: '0.25', memory: 3072M }
-        reservations: { cpus: '0.1', memory: 512M }
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/actuator/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
-
-  lite-gateway:
-    image: tailor-is/lite-gateway:latest
-    container_name: tailor-is-lite-gateway
-    hostname: lite-gateway
-    network_mode: host
-    build:
-      context: ../tailor-is
-      dockerfile: ./tailor-is-lite-gateway/Dockerfile
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      TZ: Asia/Shanghai
-      JVM_XMX: 512m
-      JVM_XMS: 256m
-      SERVER_PORT: "8081"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
-      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: localhost:8848
-      SPRING_CLOUD_NACOS_DISCOVERY_USERNAME: ${NACOS_USERNAME:-}
-      SPRING_CLOUD_NACOS_DISCOVERY_PASSWORD: ${NACOS_PASSWORD:-}
-      SPRING_DATA_REDIS_HOST: localhost
-      SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
-      REDIS_HOST: localhost
-      REDIS_PORT: "6379"
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      NACOS_ADDR: localhost:8848
-      NACOS_NAMESPACE: ${NACOS_NAMESPACE:-}
-      NACOS_USERNAME: ${NACOS_USERNAME:-}
-      NACOS_PASSWORD: ${NACOS_PASSWORD:-}
-    
-    <<: *restart-policy
-    logging: *default-logging
-    deploy:
-      resources:
-        limits: { cpus: '0.25', memory: 768M }
-        reservations: { cpus: '0.1', memory: 256M }
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
-
-  admin-service:
-    image: tailor-is/admin-service:latest
-    container_name: tailor-is-admin-service
-    hostname: admin-service
-    network_mode: host
-    build:
-      context: ../tailor-is
-      dockerfile: ./tailor-is-admin/Dockerfile
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
-      SERVER_PORT: "8100"
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
-      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
-      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: localhost:8848
-      SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/tailor_is_user?useSSL=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
-      SPRING_DATA_REDIS_HOST: localhost
-      SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
-      SPRING_RABBITMQ_HOST: localhost
-      SPRING_RABBITMQ_PORT: "5672"
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
-    <<: *restart-policy
-    logging: *default-logging
-    deploy:
-      resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8100/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -327,11 +259,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-product/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 320m
+      JVM_XMS: 160m
       SERVER_PORT: "8102"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -347,14 +282,13 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.30', memory: 512M }
+        reservations: { cpus: '0.10', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8102/actuator/health"]
       interval: 30s
@@ -370,11 +304,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-order/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 512m
+      JVM_XMS: 256m
       SERVER_PORT: "8103"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -390,15 +327,14 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
       SEATA_ENABLED: "false"
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.40', memory: 768M }
+        reservations: { cpus: '0.10', memory: 256M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8103/actuator/health"]
       interval: 30s
@@ -414,11 +350,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-payment/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 320m
+      JVM_XMS: 160m
       SERVER_PORT: "8104"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -440,15 +379,14 @@ services:
       ALIPAY_PRIVATE_KEY: ${ALIPAY_PRIVATE_KEY:-}
       ALIPAY_PUBLIC_KEY: ${ALIPAY_PUBLIC_KEY:-}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
       SEATA_ENABLED: "false"
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.40', memory: 512M }
+        reservations: { cpus: '0.10', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8104/actuator/health"]
       interval: 30s
@@ -464,11 +402,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-marketing/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 320m
+      JVM_XMS: 160m
       SERVER_PORT: "8105"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -484,14 +425,13 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.30', memory: 512M }
+        reservations: { cpus: '0.10', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8105/actuator/health"]
       interval: 30s
@@ -507,11 +447,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-ai/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 2048m
-      JVM_XMS: 1024m
+      JVM_XMX: 512m
+      JVM_XMS: 256m
       SERVER_PORT: "8106"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -527,15 +470,14 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
       SEATA_ENABLED: "false"
-    
+      <<: *java-common-ai
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 3072M }
-        reservations: { cpus: '0.1', memory: 512M }
+        limits: { cpus: '0.50', memory: 1024M }
+        reservations: { cpus: '0.15', memory: 256M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8106/actuator/health"]
       interval: 30s
@@ -551,11 +493,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-copyright/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 320m
+      JVM_XMS: 160m
       SERVER_PORT: "8107"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -575,20 +520,19 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.30', memory: 512M }
+        reservations: { cpus: '0.10', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8107/actuator/health"]
       interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
   community-service:
     image: tailor-is/community-service:latest
@@ -598,11 +542,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-community/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 220m
+      JVM_XMS: 128m
       SERVER_PORT: "8108"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -618,14 +565,13 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.20', memory: 384M }
+        reservations: { cpus: '0.05', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8108/actuator/health"]
       interval: 30s
@@ -641,11 +587,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-supply/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 220m
+      JVM_XMS: 128m
       SERVER_PORT: "8109"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -661,14 +610,13 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.20', memory: 384M }
+        reservations: { cpus: '0.05', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8109/actuator/health"]
       interval: 30s
@@ -684,11 +632,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-merchant/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 320m
+      JVM_XMS: 160m
       SERVER_PORT: "8110"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -704,14 +655,13 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.30', memory: 512M }
+        reservations: { cpus: '0.10', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8110/actuator/health"]
       interval: 30s
@@ -727,11 +677,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-message/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 220m
+      JVM_XMS: 128m
       SERVER_PORT: "8111"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -747,14 +700,13 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.20', memory: 384M }
+        reservations: { cpus: '0.05', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8111/actuator/health"]
       interval: 30s
@@ -770,11 +722,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-academy/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 220m
+      JVM_XMS: 128m
       SERVER_PORT: "8112"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -790,14 +745,13 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.20', memory: 384M }
+        reservations: { cpus: '0.05', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8112/actuator/health"]
       interval: 30s
@@ -813,11 +767,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-analytics/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 220m
+      JVM_XMS: 128m
       SERVER_PORT: "8113"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -833,14 +790,13 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.20', memory: 384M }
+        reservations: { cpus: '0.05', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8113/actuator/health"]
       interval: 30s
@@ -856,11 +812,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-message-im/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 220m
+      JVM_XMS: 128m
       SERVER_PORT: "8114"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -876,14 +835,13 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.20', memory: 384M }
+        reservations: { cpus: '0.05', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8114/actuator/health"]
       interval: 30s
@@ -899,11 +857,14 @@ services:
     build:
       context: ../tailor-is
       dockerfile: ./tailor-is-pattern/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Asia/Shanghai
-      JVM_XMX: 1024m
-      JVM_XMS: 512m
+      JVM_XMX: 320m
+      JVM_XMS: 160m
       SERVER_PORT: "8115"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
       MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
@@ -919,23 +880,113 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-rabbitmq}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       AES_KEY: ${AES_KEY}
-      <<: *charset-config
-    
+      <<: *java-common
     <<: *restart-policy
     logging: *default-logging
     deploy:
       resources:
-        limits: { cpus: '0.25', memory: 1536M }
-        reservations: { cpus: '0.1', memory: 384M }
+        limits: { cpus: '0.30', memory: 512M }
+        reservations: { cpus: '0.10', memory: 128M }
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8115/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 60s
-# ==============================================================================
-# 告警 Webhook 中继 - 接入钉钉/飞书/企业微信/Resend 邮件
-# ==============================================================================
+
+  core-gateway:
+    image: tailor-is/core-gateway:latest
+    container_name: tailor-is-core-gateway
+    hostname: core-gateway
+    network_mode: host
+    build:
+      context: ../tailor-is
+      dockerfile: ./tailor-is-core-gateway/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Shanghai
+      JVM_XMX: 512m
+      JVM_XMS: 256m
+      SERVER_PORT: "9000"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: localhost:8848
+      SPRING_CLOUD_NACOS_DISCOVERY_USERNAME: ${NACOS_USERNAME:-}
+      SPRING_CLOUD_NACOS_DISCOVERY_PASSWORD: ${NACOS_PASSWORD:-}
+      SPRING_DATA_REDIS_HOST: localhost
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      NACOS_ADDR: localhost:8848
+      NACOS_NAMESPACE: ${NACOS_NAMESPACE:-}
+      NACOS_USERNAME: ${NACOS_USERNAME:-}
+      NACOS_PASSWORD: ${NACOS_PASSWORD:-}
+      CORS_ALLOWED_ORIGINS: "http://localhost,http://localhost:5173,http://localhost:5174,https://www.tailoris.com"
+      <<: *java-opts-gateway
+    <<: *restart-policy
+    logging: *default-logging
+    deploy:
+      resources:
+        limits: { cpus: '0.50', memory: 1024M }
+        reservations: { cpus: '0.15', memory: 256M }
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/actuator/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  lite-gateway:
+    image: tailor-is/lite-gateway:latest
+    container_name: tailor-is-lite-gateway
+    hostname: lite-gateway
+    network_mode: host
+    build:
+      context: ../tailor-is
+      dockerfile: ./tailor-is-lite-gateway/Dockerfile
+    env_file:
+      - ./tailor-is-prod/env/.env.base
+      - ./tailor-is-prod/env/.env.dev
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Asia/Shanghai
+      JVM_XMX: 320m
+      JVM_XMS: 160m
+      SERVER_PORT: "8081"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: localhost:8848
+      SPRING_CLOUD_NACOS_DISCOVERY_USERNAME: ${NACOS_USERNAME:-}
+      SPRING_CLOUD_NACOS_DISCOVERY_PASSWORD: ${NACOS_PASSWORD:-}
+      SPRING_DATA_REDIS_HOST: localhost
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      NACOS_ADDR: localhost:8848
+      NACOS_NAMESPACE: ${NACOS_NAMESPACE:-}
+      NACOS_USERNAME: ${NACOS_USERNAME:-}
+      NACOS_PASSWORD: ${NACOS_PASSWORD:-}
+      <<: *java-opts
+    <<: *restart-policy
+    logging: *default-logging
+    deploy:
+      resources:
+        limits: { cpus: '0.30', memory: 512M }
+        reservations: { cpus: '0.10', memory: 128M }
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
   alert-webhook:
     image: tailor-is/alert-webhook:1.0.0
     container_name: tailor-is-alert-webhook
@@ -946,7 +997,7 @@ services:
       dockerfile: Dockerfile
     environment:
       TZ: Asia/Shanghai
-      PORT: "9095"
+      PORT: "9203"
       DINGTALK_WEBHOOK: ${DINGTALK_WEBHOOK:-}
       DINGTALK_SECRET:  ${DINGTALK_SECRET:-}
       FEISHU_WEBHOOK:   ${FEISHU_WEBHOOK:-}
@@ -954,7 +1005,6 @@ services:
       RESEND_API_KEY:   ${RESEND_API_KEY:-}
       ALERT_FROM_EMAIL: ${ALERT_FROM_EMAIL:-"Tailor IS <alerts@tailorbot.top>"}
       ALERT_TO_EMAIL:   ${ALERT_TO_EMAIL:-}
-    
     <<: *restart-policy
     logging: *default-logging
     deploy:
@@ -962,15 +1012,12 @@ services:
         limits: { cpus: '0.25', memory: 256M }
         reservations: { cpus: '0.1', memory: 64M }
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9095/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9203/"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
 
-# ==============================================================================
-# 监控 Exporter 层 (🔒 H-13修复: 合并入主 compose，统一编排)
-# ==============================================================================
   node-exporter:
     image: prom/node-exporter:v1.8.2
     container_name: tailor-is-node-exporter
@@ -1026,20 +1073,6 @@ services:
         limits: { cpus: '0.1', memory: 128M }
         reservations: { cpus: '0.05', memory: 32M }
 
-  # nginx-exporter:  # 暂时禁用 - 镜像不可用
-  #   image: nginxinc/nginx-prometheus-exporter:1.1.0
-  #   container_name: tailor-is-nginx-exporter
-  #   hostname: nginx-exporter
-  #   network_mode: host
-  #   command:
-  #     - -nginx.scrape-uri=http://localhost:80/nginx_status
-  #   <<: *restart-policy
-  #   logging: *default-logging
-  #   deploy:
-  #     resources:
-  #       limits: { cpus: '0.1', memory: 64M }
-  #       reservations: { cpus: '0.05', memory: 16M }
-
   blackbox-exporter:
     image: prom/blackbox-exporter:v0.25.0
     container_name: tailor-is-blackbox-exporter
@@ -1056,9 +1089,6 @@ services:
         limits: { cpus: '0.1', memory: 64M }
         reservations: { cpus: '0.05', memory: 16M }
 
-# ==============================================================================
-# 前端静态资源服务 (Frontend)
-# ==============================================================================
   nginx-frontend:
     image: nginx:1.27-alpine
     container_name: tailor-is-frontend
@@ -1068,7 +1098,7 @@ services:
       - ../tailor-is-frontend/pc-mall/dist:/usr/share/nginx/html/pc-mall:ro
       - ../tailor-is-frontend/merchant-admin/dist:/usr/share/nginx/html/merchant-admin:ro
       - ../tailor-is-frontend/platform-admin/dist:/usr/share/nginx/html/platform-admin:ro
-      - ./nginx/frontend.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/frontend-prod.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/rate-limiting.conf:/etc/nginx/rate-limiting.conf:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"

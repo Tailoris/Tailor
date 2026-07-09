@@ -84,6 +84,12 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 <artifactId>lombok</artifactId>
 </dependency>
 
+<dependency>
+<groupId>jakarta.annotation</groupId>
+<artifactId>jakarta.annotation-api</artifactId>
+<version>2.1.1</version>
+</dependency>
+
 <!-- JUnit 5 + Mockito 测试依赖 (Phase 1 / P1-2) -->
 <dependency>
 <groupId>org.springframework.boot</groupId>

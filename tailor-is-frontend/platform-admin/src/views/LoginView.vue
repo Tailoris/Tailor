@@ -241,7 +241,7 @@ const countdown = useCountdown(60)
 
 // 页面加载时回填记住的账号
 onMounted(() => {
-  const savedAccount = storage.getAccount()
+  const savedAccount = storage.get()
   if (savedAccount) {
     passwordForm.value.account = savedAccount
     rememberMe.value = true
@@ -267,9 +267,9 @@ async function handlePasswordLogin() {
           localStorage.setItem('token', response.token)
         }
         if (rememberMe.value) {
-          storage.saveAccount(passwordForm.value.account)
+          storage.set(passwordForm.value.account)
         } else {
-          storage.clearAccount()
+          storage.clear()
         }
         ElMessage.success('登录成功')
         router.push('/dashboard')

@@ -3,6 +3,7 @@ package com.tailoris.product.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tailoris.common.dto.PageResponse;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.product.dto.ProductQueryRequest;
 import com.tailoris.product.entity.Product;
@@ -20,7 +21,7 @@ import java.util.List;
 
 @Tag(name = "商品公开接口", description = "首页商品展示相关接口，无需登录")
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping(RoutePortConstant.ROUTE_PRODUCTS)
 @RequiredArgsConstructor
 public class PublicProductController {
 

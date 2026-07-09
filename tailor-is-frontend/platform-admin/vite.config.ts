@@ -34,10 +34,13 @@ export default defineConfig({
   },
   base: CDN_BASE,
   server: {
+    host: '0.0.0.0',
     port: 3003,
+    origin: 'http://localhost/admin',
+    hmr: false,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:9000',
         changeOrigin: true,
       },
     },

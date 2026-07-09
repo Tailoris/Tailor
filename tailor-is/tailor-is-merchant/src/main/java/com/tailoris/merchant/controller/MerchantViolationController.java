@@ -5,6 +5,7 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tailoris.common.annotation.RateLimit;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.merchant.dto.ViolationAppealRequest;
 import com.tailoris.merchant.dto.ViolationPunishRequest;
@@ -29,7 +30,7 @@ import java.util.Map;
  */
 @Tag(name = "Merchant Violation API", description = "商家违规处罚接口 - MER-007")
 @RestController
-@RequestMapping("/api/v1/merchant/violation")
+@RequestMapping(RoutePortConstant.ROUTE_MERCHANT_VIOLATION)
 @RequiredArgsConstructor
 @Validated
 public class MerchantViolationController {

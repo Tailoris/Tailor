@@ -14,14 +14,15 @@ interface UpdateCartData {
 
 export function getCart() {
   return request<Record<string, unknown>, CartItem[]>({
-    url: '/cart',
-    method: 'get'
+    url: '/api/v1/cart',
+    method: 'get',
+    showError: false
   })
 }
 
 export function addToCart(data: AddCartData) {
   return request<Record<string, unknown>, number>({
-    url: '/cart',
+    url: '/api/v1/cart',
     method: 'post',
     data
   })
@@ -29,7 +30,7 @@ export function addToCart(data: AddCartData) {
 
 export function updateCart(id: number, data: UpdateCartData) {
   return request<Record<string, unknown>, boolean>({
-    url: `/cart/${id}`,
+    url: `/api/v1/cart/${id}`,
     method: 'put',
     data
   })
@@ -37,14 +38,14 @@ export function updateCart(id: number, data: UpdateCartData) {
 
 export function deleteCart(id: number) {
   return request<Record<string, unknown>, boolean>({
-    url: `/cart/${id}`,
+    url: `/api/v1/cart/${id}`,
     method: 'delete'
   })
 }
 
 export function checkoutCart(ids: number[]) {
   return request<Record<string, unknown>, { items: CartItem[] }>({
-    url: '/cart/checkout',
+    url: '/api/v1/cart/checkout',
     method: 'post',
     data: { ids }
   })
@@ -52,7 +53,7 @@ export function checkoutCart(ids: number[]) {
 
 export function clearCart() {
   return request<Record<string, unknown>, boolean>({
-    url: '/cart/clear',
+    url: '/api/v1/cart/clear',
     method: 'delete'
   })
 }

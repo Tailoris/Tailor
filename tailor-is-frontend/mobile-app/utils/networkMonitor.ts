@@ -143,7 +143,7 @@ function detectNetworkInfo(): void {
  * @param timeout - 超时时间 (ms)
  * @returns 延迟时间 (ms)，失败返回 Infinity
  */
-export async function detectLatency(url: string = '/api/front/ping', timeout: number = 5000): Promise<number> {
+export async function detectLatency(url: string = '/api/v1/ping', timeout: number = 5000): Promise<number> {
   const startTime = Date.now()
 
   return new Promise<number>((resolve) => {

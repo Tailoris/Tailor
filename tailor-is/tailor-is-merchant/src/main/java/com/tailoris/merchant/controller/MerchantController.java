@@ -2,6 +2,7 @@ package com.tailoris.merchant.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.tailoris.common.dto.PageResponse;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.merchant.dto.MerchantApplyRequest;
 import com.tailoris.merchant.dto.MerchantAuditRequest;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @SaCheckLogin
 @Tag(name = "商家管理")
 @RestController
-@RequestMapping("/api/merchant")
+@RequestMapping(RoutePortConstant.ROUTE_MERCHANT)
 @RequiredArgsConstructor
 public class MerchantController {
 

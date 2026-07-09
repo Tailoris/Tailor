@@ -8,9 +8,12 @@
         </router-link>
         <nav class="nav-links" role="navigation" aria-label="主导航">
           <router-link to="/" data-testid="main-nav-item">首页</router-link>
-          <router-link to="/products" data-testid="main-nav-item">商品</router-link>
-          <router-link to="/community" data-testid="main-nav-item">社区</router-link>
-          <router-link to="/merchant-apply" data-testid="main-nav-item">商家入驻</router-link>
+          <router-link to="/patterns" data-testid="main-nav-item">纸样商城</router-link>
+          <router-link to="/pattern-custom" data-testid="main-nav-item">纸样定制</router-link>
+          <router-link to="/design" data-testid="main-nav-item">服装设计</router-link>
+          <router-link to="/community" data-testid="main-nav-item">社区交流</router-link>
+          <router-link to="/knowledge" data-testid="main-nav-item">知识库</router-link>
+          <router-link to="/academy" data-testid="main-nav-item">线上学堂</router-link>
         </nav>
       </div>
       <div class="header-center">
@@ -54,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useCartStore } from '@/store/cart'
@@ -93,12 +96,23 @@ function handleScroll() {
   isScrolled.value = window.scrollY > 0
 }
 
-onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
-  if (userStore.token) {
+function loadCart() {
+  if (userStore.userInfo?.id) {
     cartStore.fetchCart()
   }
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+  loadCart()
 })
+
+watch(
+  () => userStore.userInfo?.id,
+  () => {
+    loadCart()
+  }
+)
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)

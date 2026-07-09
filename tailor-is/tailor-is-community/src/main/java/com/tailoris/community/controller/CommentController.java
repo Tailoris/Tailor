@@ -13,12 +13,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 @SaCheckLogin
 @Tag(name = "评论管理", description = "评论发布、删除、查询等接口")
 @RestController
-@RequestMapping("/api/community/comment")
+@RequestMapping(RoutePortConstant.ROUTE_COMMUNITY_COMMENT)
 @RequiredArgsConstructor
 public class CommentController {
 

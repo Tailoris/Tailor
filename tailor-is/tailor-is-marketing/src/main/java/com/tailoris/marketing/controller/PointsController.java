@@ -14,12 +14,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 @SaCheckLogin
 @Tag(name = "积分管理", description = "积分查询、兑换、记录等接口")
 @RestController
-@RequestMapping("/api/marketing/points")
+@RequestMapping(RoutePortConstant.ROUTE_MARKETING_POINTS)
 @RequiredArgsConstructor
 public class PointsController {
 

@@ -20,47 +20,71 @@ interface CommentData {
   parentId?: number
 }
 
-export function getPosts(params: PostListParams) {
+export function getPosts(params: PostListParams, options?: { showError?: boolean }) {
   return request<Record<string, unknown>, PageResponse<Post>>({
-    url: '/community/posts',
+    url: '/api/v1/community/post',
     method: 'get',
-    params
+    params,
+    showError: options?.showError
   })
 }
 
 export function getPostDetail(id: number) {
   return request<Record<string, unknown>, Post>({
-    url: `/community/posts/${id}`,
+    url: `/api/v1/community/post/detail/${id}`,
     method: 'get'
   })
 }
 
 export function createPost(data: CreatePostData) {
   return request<Record<string, unknown>, number>({
-    url: '/community/posts',
+    url: '/api/v1/community/post/create',
     method: 'post',
     data
   })
 }
 
+export function updatePost(id: number, data: CreatePostData) {
+  return request<Record<string, unknown>, Post>({
+    url: `/api/v1/community/post/update/${id}`,
+    method: 'put',
+    data
+  })
+}
+
+export function deletePost(id: number) {
+  return request<Record<string, unknown>, boolean>({
+    url: `/api/v1/community/post/delete/${id}`,
+    method: 'delete'
+  })
+}
+
 export function likePost(id: number) {
   return request<Record<string, unknown>, boolean>({
-    url: `/community/posts/${id}/like`,
-    method: 'post'
+    url: '/api/v1/community/interaction/like',
+    method: 'post',
+    data: { targetType: 1, targetId: id }
   })
 }
 
 export function getPostComments(postId: number) {
-  return request<Record<string, unknown>, Comment[]>({
-    url: `/community/posts/${postId}/comments`,
+  return request<Record<string, unknown>, PageResponse<Comment>>({
+    url: `/api/v1/community/comment/list/${postId}`,
     method: 'get'
   })
 }
 
 export function commentPost(postId: number, data: CommentData) {
   return request<Record<string, unknown>, boolean>({
-    url: `/community/posts/${postId}/comments`,
+    url: '/api/v1/community/comment/create',
     method: 'post',
-    data
+    data: { ...data, postId }
+  })
+}
+
+export function deleteComment(commentId: number) {
+  return request<Record<string, unknown>, boolean>({
+    url: `/api/v1/community/comment/delete/${commentId}`,
+    method: 'delete'
   })
 }

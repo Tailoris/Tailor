@@ -2,6 +2,7 @@ package com.tailoris.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.user.dto.AddressRequest;
 import com.tailoris.user.entity.UserAddress;
@@ -38,7 +39,7 @@ import java.util.List;
 @SaCheckLogin
 @Tag(name = "地址管理", description = "收货地址增删改查接口")
 @RestController
-@RequestMapping("/api/user/address")
+@RequestMapping(RoutePortConstant.ROUTE_USER_ADDRESS)
 @RequiredArgsConstructor
 public class AddressController {
 

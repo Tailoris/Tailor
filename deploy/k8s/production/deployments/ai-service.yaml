@@ -18,8 +18,8 @@ spec:
   type: ClusterIP
   ports:
     - name: http
-      port: 8106
-      targetPort: 8106
+      port: 8140
+      targetPort: 8140
       protocol: TCP
   selector:
     app: tailor-is
@@ -127,7 +127,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8106
+              port: 8140
             initialDelaySeconds: 90
             periodSeconds: 15
             timeoutSeconds: 10
@@ -135,7 +135,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8106
+              port: 8140
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
@@ -143,7 +143,7 @@ spec:
           startupProbe:
             httpGet:
               path: /actuator/health
-              port: 8106
+              port: 8140
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 10

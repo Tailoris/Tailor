@@ -1,6 +1,7 @@
 package com.tailoris.merchant.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.merchant.entity.MerchantCurrentShop;
 import com.tailoris.merchant.entity.MerchantShop;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 @Tag(name = "Merchant Shop Switch API", description = "商家多店铺切换接口 - MER-003")
 @RestController
-@RequestMapping("/api/v1/merchant/shop-switch")
+@RequestMapping(RoutePortConstant.ROUTE_MERCHANT_SHOP_SWITCH)
 @RequiredArgsConstructor
 @Validated
 public class MerchantShopSwitchController {

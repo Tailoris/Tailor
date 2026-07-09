@@ -11,6 +11,7 @@ import com.tailoris.payment.service.SettlementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -18,7 +19,7 @@ import java.math.BigDecimal;
 @SaCheckLogin
 @Tag(name = "商家结算管理", description = "商家结算查询、批量结算等接口")
 @RestController
-@RequestMapping("/api/settlement")
+@RequestMapping(RoutePortConstant.ROUTE_SETTLEMENT)
 @RequiredArgsConstructor
 public class SettlementController {
 

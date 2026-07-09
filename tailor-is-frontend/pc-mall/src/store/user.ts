@@ -13,9 +13,6 @@ export const useUserStore = defineStore('user', () => {
     token.value = res.token
     localStorage.setItem('token', encryptSync(res.token))
     userInfo.value = res.userInfo
-    if (res.userInfo?.id) {
-      localStorage.setItem('user_id', String(res.userInfo.id))
-    }
     if (res.csrfToken) {
       localStorage.setItem('csrf_token', res.csrfToken)
     }
@@ -29,7 +26,6 @@ export const useUserStore = defineStore('user', () => {
       token.value = ''
       userInfo.value = null
       localStorage.removeItem('token')
-      localStorage.removeItem('user_id')
     }
   }
 

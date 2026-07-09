@@ -5,10 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tailoris.admin.constant.AdminConstants;
 import com.tailoris.api.admin.dto.DashboardStatsResponse;
 import com.tailoris.admin.service.AdminDashboardService;
-import com.tailoris.api.user.entity.SysUser;
-import com.tailoris.api.user.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -26,10 +25,21 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class AdminDashboardServiceImpl implements AdminDashboardService {
 
-    private final SysUserMapper sysUserMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final ObjectMapper objectMapper;
     private final JdbcTemplate jdbcTemplate;
+
+    @Value("${tailoris.datasource.user-db:tailor_is_user}")
+    private String userDatabase;
+
+    @Value("${tailoris.datasource.merchant-db:tailor_is_merchant}")
+    private String merchantDatabase;
+
+    @Value("${tailoris.datasource.order-db:tailoris_order}")
+    private String orderDatabase;
+
+    @Value("${tailoris.datasource.product-db:tailor_is_product}")
+    private String productDatabase;
 
     @Override
     public DashboardStatsResponse getDashboardStats() {
@@ -43,7 +53,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             }
         }
 
-        Long userCount = sysUserMapper.selectCount(null);
+        Long userCount = queryUserCount();
 
         Long merchantCount = queryMerchantCount();
 
@@ -85,9 +95,20 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return response;
     }
 
+    private Long queryUserCount() {
+        try {
+            return jdbcTemplate.queryForObject(
+                    String.format("SELECT COUNT(*) FROM %s.sys_user", userDatabase), Long.class);
+        } catch (Exception e) {
+            log.warn("Failed to query user count", e);
+            return 0L;
+        }
+    }
+
     private Long queryMerchantCount() {
         try {
-            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tailor_is_merchant.merchant", Long.class);
+            return jdbcTemplate.queryForObject(
+                    String.format("SELECT COUNT(*) FROM %s.merchant", merchantDatabase), Long.class);
         } catch (Exception e) {
             log.warn("Failed to query merchant count", e);
             return 0L;
@@ -96,7 +117,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     private Long queryOrderCount() {
         try {
-            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tailor_is_order.order_info", Long.class);
+            return jdbcTemplate.queryForObject(
+                    String.format("SELECT COUNT(*) FROM %s.order_info", orderDatabase), Long.class);
         } catch (Exception e) {
             log.warn("Failed to query order count", e);
             return 0L;
@@ -106,7 +128,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private Long queryTodayOrders(String start, String end) {
         try {
             return jdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM tailor_is_order.order_info WHERE create_time >= ? AND create_time < ? AND status IN (2, 3, 4)",
+                    String.format("SELECT COUNT(*) FROM %s.order_info WHERE create_time >= ? AND create_time < ? AND status IN (2, 3, 4)", orderDatabase),
                     Long.class, start, end);
         } catch (Exception e) {
             log.warn("Failed to query today orders", e);
@@ -117,7 +139,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private BigDecimal queryTodayRevenue(String start, String end) {
         try {
             BigDecimal result = jdbcTemplate.queryForObject(
-                    "SELECT COALESCE(SUM(pay_amount), 0) FROM tailor_is_order.order_info WHERE create_time >= ? AND create_time < ? AND status IN (2, 3, 4)",
+                    String.format("SELECT COALESCE(SUM(pay_amount), 0) FROM %s.order_info WHERE create_time >= ? AND create_time < ? AND status IN (2, 3, 4)", orderDatabase),
                     BigDecimal.class, start, end);
             return result != null ? result : BigDecimal.ZERO;
         } catch (Exception e) {
@@ -128,7 +150,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     private Long queryPendingMerchantCount() {
         try {
-            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tailor_is_merchant.merchant WHERE audit_status = 0", Long.class);
+            return jdbcTemplate.queryForObject(
+                    String.format("SELECT COUNT(*) FROM %s.merchant WHERE audit_status = 0", merchantDatabase), Long.class);
         } catch (Exception e) {
             log.warn("Failed to query pending merchant count", e);
             return 0L;
@@ -137,7 +160,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     private Long queryPendingProductCount() {
         try {
-            return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tailor_is_product.product WHERE audit_status = 0", Long.class);
+            return jdbcTemplate.queryForObject(
+                    String.format("SELECT COUNT(*) FROM %s.product WHERE audit_status = 0", productDatabase), Long.class);
         } catch (Exception e) {
             log.warn("Failed to query pending product count", e);
             return 0L;

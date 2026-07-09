@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.List;
 @SaCheckLogin
 @Tag(name = "秒杀管理", description = "秒杀活动创建、参与、查询等接口")
 @RestController
-@RequestMapping("/api/marketing/seckill")
+@RequestMapping(RoutePortConstant.ROUTE_MARKETING_SECKILL)
 @RequiredArgsConstructor
 public class SeckillController {
 

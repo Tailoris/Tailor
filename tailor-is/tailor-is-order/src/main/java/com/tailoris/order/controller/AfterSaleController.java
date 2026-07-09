@@ -11,12 +11,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 @SaCheckLogin
 @Tag(name = "售后管理")
 @RestController
-@RequestMapping("/api/order/after-sale")
+@RequestMapping(RoutePortConstant.ROUTE_ORDER_AFTER_SALE)
 @RequiredArgsConstructor
 public class AfterSaleController {
 

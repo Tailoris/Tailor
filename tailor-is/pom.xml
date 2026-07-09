@@ -39,6 +39,8 @@
         <module>tailor-is-academy</module>
         <module>tailor-is-analytics</module>
         <module>tailor-is-pattern</module>
+        <module>tailor-is-design</module>
+        <module>tailor-is-knowledge</module>
         <module>tailor-is-admin</module>
     </modules>
 

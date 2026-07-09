@@ -8,9 +8,12 @@ import i18n from './i18n'
 import router from './router'
 import App from './App.vue'
 import { installA11yDirectives } from '@shared/plugins/a11y-directive'
+import { applySecurityHeaders } from './security'
 import './style.css'
 import './styles/responsive.scss'
 import '@shared/styles/a11y.scss'
+
+applySecurityHeaders()
 
 const app = createApp(App)
 const pinia = createPinia()

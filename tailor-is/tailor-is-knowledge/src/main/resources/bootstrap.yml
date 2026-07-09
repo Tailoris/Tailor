@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: tailor-is-knowledge
+  cloud:
+    nacos:
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        file-extension: yaml
+        shared-configs:
+          - data-id: common-config.yaml
+            namespace: ${NACOS_NAMESPACE:dev}
+            group: DEFAULT_GROUP
+            refresh: true

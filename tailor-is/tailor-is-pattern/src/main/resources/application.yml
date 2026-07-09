@@ -1,15 +1,20 @@
 server:
-  port: 8115
+  port: ${SERVER_PORT:8090}
 spring:
   application:
     name: tailor-is-pattern
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
   main:
     allow-bean-definition-overriding: true
   cloud:
     nacos:
       discovery:
         server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:}
+        namespace: ${NACOS_NAMESPACE:dev}
         register-enabled: true
         watch:
           enabled: false
@@ -19,7 +24,7 @@ spring:
           password: ${NACOS_PASSWORD:}
       config:
         server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:}
+        namespace: ${NACOS_NAMESPACE:dev}
         file-extension: yaml
         import-check:
           enabled: false
@@ -37,6 +42,8 @@ spring:
       time-between-eviction-runs-millis: 60000
       min-evictable-idle-time-millis: 300000
       validation-query: SELECT 1
+      connection-init-sqls:
+        - SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
   data:
     redis:
       host: ${REDIS_HOST:localhost}

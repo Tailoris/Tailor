@@ -1,20 +1,26 @@
 server:
-  port: 8202
+  port: ${SERVER_PORT:8102}
 
 spring:
   application:
     name: tailor-is-product
   main:
     allow-bean-definition-overriding: true
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:prod}
-        register-enabled: false
+        server-addr: ${NACOS_ADDR:host.docker.internal:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        register-enabled: ${SPRING_CLOUD_NACOS_DISCOVERY_REGISTER_ENABLED:true}
         watch:
           enabled: false
-        fail-fast: false
+        fail-fast: ${SPRING_CLOUD_NACOS_DISCOVERY_FAIL_FAST:false}
+        port: ${SERVER_PORT:8102}
         auth:
           username: ${NACOS_USERNAME:}
           password: ${NACOS_PASSWORD:}
@@ -29,7 +35,7 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_product?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_product?useUnicode=true&characterEncoding=UTF-8&useSSL=true&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:mysql_ZmY2sr}
     druid:
@@ -40,6 +46,8 @@ spring:
       time-between-eviction-runs-millis: 60000
       min-evictable-idle-time-millis: 300000
       validation-query: SELECT 1
+      connection-init-sqls:
+        - SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -47,13 +55,12 @@ spring:
       username: default
       password: ${REDIS_PASSWORD:redis_jD2N8n}
       database: 0
-  # Redis config for Redisson starter
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    username: default
-    password: ${REDIS_PASSWORD:redis_jD2N8n}
-    database: 0
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    encoding:
+      charset: UTF-8
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
@@ -107,7 +114,7 @@ knife4j:
 # ============================================================
 tailoris:
   crypto:
-    aes-key: ${AES_KEY:0123456789abcdef0123456789abcdef}
+    aes-key: ${AES_KEY:9f2492ed344d7cabc3a98bb2a71af40b}
   oss:
     local-fallback-path: ${LOCAL_STORAGE_PATH:./data/upload}
   redis:

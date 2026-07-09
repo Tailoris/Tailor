@@ -117,3 +117,17 @@ venv/
 .obsidian/
 .claudian/
 .trae/
+
+# ===== 测试报告临时文件 =====
+test-report-*.txt
+
+# ===== 前端构建产物（deploy 目录中） =====
+deploy/tailor-is-prod/frontend/
+
+# ===== 备份目录 =====
+backup/
+deploy/backups/
+
+# ===== 项目清理脚本（已过期） =====
+clean-project.sh
+start-all.sh

@@ -1,6 +1,7 @@
 package com.tailoris.admin.controller;
 
 import com.tailoris.admin.service.AdminRoleService;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.dto.PageResponse;
 import com.tailoris.common.result.Result;
 import cn.dev33.satoken.annotation.SaCheckRole;
@@ -14,9 +15,9 @@ import java.util.Map;
 
 @Tag(name = "平台角色管理")
 @RestController
-@RequestMapping("/api/admin/roles")
+@RequestMapping(RoutePortConstant.ROUTE_ADMIN_ROLES)
 @RequiredArgsConstructor
-@SaCheckRole("admin")
+@SaCheckRole({"SUPER_ADMIN", "PLATFORM_ADMIN"})
 public class AdminRoleController {
 
     private final AdminRoleService adminRoleService;

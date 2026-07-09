@@ -1,0 +1,74 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tailor-is-frontend/pc-mall/**'
+      - 'docs/**'
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: tailor-is-frontend/pc-mall
+        run: npm ci
+
+      - name: Build project
+        working-directory: tailor-is-frontend/pc-mall
+        run: npm run build
+
+      - name: Generate coverage report
+        working-directory: tailor-is-frontend/pc-mall
+        run: npm run test:coverage
+
+      - name: Create pages output directory
+        run: mkdir -p pages-output
+
+      - name: Copy build output to pages
+        run: cp -r tailor-is-frontend/pc-mall/dist/* pages-output/
+
+      - name: Copy coverage report to pages/coverage
+        run: cp -r tailor-is-frontend/pc-mall/coverage pages-output/coverage
+
+      - name: List pages output
+        run: ls -la pages-output/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-output
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -19,7 +20,7 @@ import java.util.List;
 @Slf4j
 @Tag(name = "数据分析")
 @RestController
-@RequestMapping("/api/v1/analytics")
+@RequestMapping(RoutePortConstant.ROUTE_ANALYTICS)
 @RequiredArgsConstructor
 public class MetricsController {
 

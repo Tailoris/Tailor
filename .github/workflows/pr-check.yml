@@ -80,7 +80,7 @@ jobs:
           fi
           echo "✅ No hardcoded secrets found"
 
-      # 检查 4: 大文件
+      # 检查 5: 大文件
       - name: Check file sizes
         run: |
           echo "Checking for files > 5MB..."
@@ -90,7 +90,7 @@ jobs:
             echo "$large_files"
           fi
 
-      # 检查 6: 标记 .env 未提交
+      # 检查 7: 标记 .env 未提交
       - name: Verify .env is not committed
         run: |
           if [ -f .env ]; then
@@ -103,7 +103,7 @@ jobs:
           fi
           echo "✅ .env files are properly ignored"
 
-      # 检查 6: 废弃/备份文件检测
+      # 检查 8: 废弃/备份文件检测
       - name: Check for abandoned files
         run: |
           echo "Scanning for abandoned/backup files..."
@@ -131,7 +131,7 @@ jobs:
           fi
           echo "✅ No abandoned/backup files found"
 
-      # 检查 8: 编辑器缓存文件检测
+      # 检查 9: 编辑器缓存文件检测
       - name: Check for editor cache files
         run: |
           echo "Scanning for editor cache files..."
@@ -151,7 +151,7 @@ jobs:
           fi
           echo "✅ No editor cache files committed"
 
-      # 检查 9: 日志/Python缓存文件检测
+      # 检查 10: 日志/Python缓存文件检测
       - name: Check for log and cache files
         run: |
           echo "Scanning for log and cache files..."
@@ -175,3 +175,24 @@ jobs:
             exit 1
           fi
           echo "✅ No log/cache files committed"
+
+      # 检查 11: API 路由前缀规范检测 (v4.0)
+      - name: Check API Prefix Compliance
+        run: |
+          echo "Running API prefix compliance check..."
+          chmod +x deploy/scripts/check-api-prefix.sh
+          deploy/scripts/check-api-prefix.sh
+
+      # 检查 12: 端口分配规范检测 (v4.0)
+      - name: Check Port Allocation Compliance
+        run: |
+          echo "Running port allocation compliance check..."
+          chmod +x deploy/scripts/check-port-allocation.sh
+          deploy/scripts/check-port-allocation.sh
+
+      # 检查 13: 环境变量配置校验 (v4.0)
+      - name: Check Environment Variables
+        run: |
+          echo "Running environment variable validation..."
+          chmod +x deploy/scripts/check-env-vars.sh
+          deploy/scripts/check-env-vars.sh

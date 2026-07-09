@@ -15,12 +15,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 @SaCheckLogin
 @Tag(name = "侵权管理", description = "侵权举报、仲裁等接口")
 @RestController
-@RequestMapping("/api/v1/copyright/infringement")
+@RequestMapping(RoutePortConstant.ROUTE_COPYRIGHT_INFRINGEMENT)
 @RequiredArgsConstructor
 public class InfringementController {
 

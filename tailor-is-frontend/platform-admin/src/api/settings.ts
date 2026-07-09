@@ -35,7 +35,7 @@ export interface SystemSettings {
 /** 获取系统设置 */
 export const getSettings = () => {
   return request<Record<string, unknown>, SystemSettings>({
-    url: '/system/settings',
+    url: '/admin/system/settings',
     method: 'GET',
   })
 }
@@ -43,7 +43,7 @@ export const getSettings = () => {
 /** 保存基本设置 */
 export const saveBasicSettings = (data: BasicSettings) => {
   return request<Record<string, unknown>, void>({
-    url: '/system/settings/basic',
+    url: '/admin/system/settings/basic',
     method: 'PUT',
     data,
   })
@@ -52,7 +52,7 @@ export const saveBasicSettings = (data: BasicSettings) => {
 /** 保存安全设置 */
 export const saveSecuritySettings = (data: SecuritySettings) => {
   return request<Record<string, unknown>, void>({
-    url: '/system/settings/security',
+    url: '/admin/system/settings/security',
     method: 'PUT',
     data,
   })
@@ -61,7 +61,7 @@ export const saveSecuritySettings = (data: SecuritySettings) => {
 /** 保存第三方服务设置 */
 export const saveThirdPartySettings = (data: ThirdPartySettings) => {
   return request<Record<string, unknown>, void>({
-    url: '/system/settings/third-party',
+    url: '/admin/system/settings/third-party',
     method: 'PUT',
     data,
   })

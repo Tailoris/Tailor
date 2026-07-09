@@ -62,8 +62,9 @@ WORKDIR /app
 # 从构建阶段复制指定模块的jar包
 COPY --from=builder /app/${MODULE}/target/*.jar app.jar
 
-# 设置文件权限
-RUN chown -R appuser:appgroup /app
+# 创建日志目录（Sentinel需要）
+RUN mkdir -p /home/appuser/logs/csp && \
+    chown -R appuser:appgroup /app /home/appuser/logs
 
 # 切换到非root用户
 USER appuser
@@ -81,6 +82,8 @@ ENV JAVA_OPTS="-Xms256m -Xmx512m \
   -XX:MaxGCPauseMillis=200 \
   -XX:+HeapDumpOnOutOfMemoryError \
   -XX:HeapDumpPath=/tmp/heapdump.hprof \
-  -Djava.security.egd=file:/dev/./urandom"
+  -Djava.security.egd=file:/dev/./urandom \
+  -Dfile.encoding=UTF-8 \
+  -Dsun.jnu.encoding=UTF-8"
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

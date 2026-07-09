@@ -128,6 +128,7 @@ import { useUserStore } from '@/store/user'
 import { login as apiLogin, sendVerificationCode, loginByCode, sendEmailCode } from '@/api/auth'
 import { validate } from '@/utils/validate'
 import { storage } from '@/utils/storage'
+import { encryptSync } from '@/utils/crypto'
 import { useCountdown } from '@/composables/useCountdown'
 
 const router = useRouter()
@@ -259,7 +260,7 @@ const countdown = useCountdown(60)
 
 // 页面加载时回填记住的账号
 onMounted(() => {
-  const savedAccount = storage.getAccount()
+  const savedAccount = storage.get()
   if (savedAccount) {
     passwordForm.value.account = savedAccount
     rememberMe.value = true
@@ -283,9 +284,9 @@ async function handlePasswordLogin() {
           password: passwordForm.value.password
         })
         if (rememberMe.value) {
-          storage.saveAccount(passwordForm.value.account)
+          storage.set(passwordForm.value.account)
         } else {
-          storage.clearAccount()
+          storage.clear()
         }
         ElMessage.success('登录成功')
         const redirect = (route.query.redirect as string) || '/'
@@ -342,11 +343,17 @@ async function handleCodeLogin() {
       }
       loading.value = true
       try {
-        await loginByCode({
+        const res = await loginByCode({
           target: codeForm.value.account,
           code: codeForm.value.code,
           type
         })
+        userStore.token = res.token
+        userStore.userInfo = res.userInfo
+        localStorage.setItem('token', encryptSync(res.token))
+        if (res.csrfToken) {
+          localStorage.setItem('csrf_token', res.csrfToken)
+        }
         ElMessage.success('登录成功')
         const redirect = (route.query.redirect as string) || '/'
         router.push(redirect)

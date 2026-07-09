@@ -130,8 +130,16 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = Exception.class)
     @SentinelResource(value = "createOrder", blockHandler = "createOrderBlockHandler", fallback = "createOrderFallback")
     public String createOrder(Long userId, CreateOrderRequest request) {
-        // H-009: 快速幂等锁 — 基于 userId + cartIds 防止无 requestId 的重复提交
-        String fastIdemKey = ORDER_IDEMPOTENT_KEY + "fast:" + userId + ":" + request.getCartIds().stream().sorted().toList();
+        if (CollectionUtils.isEmpty(request.getCartIds()) && CollectionUtils.isEmpty(request.getItems())) {
+            throw new BusinessException("购物车ID列表或商品项列表不能为空");
+        }
+
+        String fastIdemKey;
+        if (!CollectionUtils.isEmpty(request.getCartIds())) {
+            fastIdemKey = ORDER_IDEMPOTENT_KEY + "fast:" + userId + ":" + request.getCartIds().stream().sorted().toList();
+        } else {
+            fastIdemKey = ORDER_IDEMPOTENT_KEY + "fast:" + userId + ":" + request.getItems().hashCode();
+        }
         Boolean fastAcquired = stringRedisTemplate.opsForValue().setIfAbsent(fastIdemKey, "1", Duration.ofSeconds(5));
         if (Boolean.FALSE.equals(fastAcquired)) {
             throw new BusinessException("订单处理中，请勿重复提交");
@@ -150,12 +158,19 @@ public class OrderServiceImpl implements OrderService {
         }
 
         try {
-            List<ShoppingCart> carts = shoppingCartService.batchCheckout(userId, request.getCartIds());
-            if (CollectionUtils.isEmpty(carts)) {
-                throw new BusinessException("购物车中没有选中的商品");
+            List<ShoppingCart> carts;
+            boolean isDirectPurchase = !CollectionUtils.isEmpty(request.getItems());
+
+            if (isDirectPurchase) {
+                carts = convertItemsToCarts(request.getItems());
+            } else {
+                carts = shoppingCartService.batchCheckout(userId, request.getCartIds());
             }
 
-            // B-M19修复: 使用Map.computeIfAbsent替代groupingBy后遍历
+            if (CollectionUtils.isEmpty(carts)) {
+                throw new BusinessException("订单商品不能为空");
+            }
+
             Map<Long, List<ShoppingCart>> cartsByShop = new HashMap<>();
             carts.forEach(cart -> cartsByShop
                     .computeIfAbsent(cart.getShopId(), k -> new ArrayList<>())
@@ -164,12 +179,11 @@ public class OrderServiceImpl implements OrderService {
             List<String> orderNos = cartsByShop.entrySet().stream()
                     .filter(entry -> !CollectionUtils.isEmpty(entry.getValue()))
                     .flatMap(entry -> {
-                        // B-M19修复: flatMap将所有店铺订单No合并到一个流
                         List<String> shopOrderNos = new ArrayList<>();
                         Long shopId = entry.getKey();
                         String stockLockKey = "lock:stock:create:" + shopId;
                         distributedLock.executeWithLock(stockLockKey, 3, 30, TimeUnit.SECONDS, () -> {
-                            processSingleShopOrder(userId, shopId, entry.getValue(), request, shopOrderNos);
+                            processSingleShopOrder(userId, shopId, entry.getValue(), request, shopOrderNos, isDirectPurchase);
                             return null;
                         });
                         return shopOrderNos.stream();
@@ -177,7 +191,6 @@ public class OrderServiceImpl implements OrderService {
                     .collect(Collectors.toList());
 
             String result = String.join(",", orderNos);
-            // 缓存幂等Key,30分钟内的相同requestId将返回相同订单
             stringRedisTemplate.opsForValue().set(idempotentKey, result, IDEMPOTENT_TTL);
             return result;
         } finally {
@@ -186,15 +199,31 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    private List<ShoppingCart> convertItemsToCarts(List<CreateOrderRequest.OrderItemRequest> items) {
+        List<ShoppingCart> carts = new ArrayList<>();
+        for (CreateOrderRequest.OrderItemRequest item : items) {
+            ShoppingCart cart = new ShoppingCart();
+            cart.setId(0L);
+            cart.setUserId(0L);
+            cart.setProductId(item.getProductId());
+            cart.setSkuId(item.getSkuId());
+            cart.setQuantity(item.getQuantity());
+            cart.setPriceSnapshot(item.getPrice());
+            cart.setShopId(item.getShopId());
+            cart.setMerchantId(item.getMerchantId());
+            carts.add(cart);
+        }
+        return carts;
+    }
+
     /**
      * 处理单个店铺的订单创建（含库存预扣减）
      */
     private void processSingleShopOrder(Long userId, Long shopId, List<ShoppingCart> shopCarts,
-                                        CreateOrderRequest request, List<String> orderNos) {
+                                        CreateOrderRequest request, List<String> orderNos, boolean isDirectPurchase) {
         ShoppingCart firstCart = shopCarts.get(0);
         Long merchantId = firstCart.getMerchantId();
 
-        // C-BE-04: 分片路由 - 确定订单所属分片
         int shardIndex = orderShardingService.getShardIndex(merchantId);
         log.debug("订单分片路由: merchantId={}, shardIndex={}", merchantId, shardIndex);
 
@@ -223,6 +252,8 @@ public class OrderServiceImpl implements OrderService {
             OrderItem item = new OrderItem();
             item.setProductId(cart.getProductId());
             item.setSkuId(cart.getSkuId());
+            item.setProductName("商品#" + cart.getProductId());
+            item.setProductImage("");
             item.setQuantity(cart.getQuantity());
             item.setPrice(cart.getPriceSnapshot() != null ? cart.getPriceSnapshot() : BigDecimal.ZERO);
             item.setSubtotal(subtotal);
@@ -230,11 +261,14 @@ public class OrderServiceImpl implements OrderService {
             item.setDiscountAmount(BigDecimal.ZERO);
             item.setIsCommented(0);
             item.setAfterSaleStatus(0);
+            item.setCreateTime(LocalDateTime.now());
+            item.setUpdateTime(LocalDateTime.now());
+            item.setCreateBy(String.valueOf(userId));
+            item.setUpdateBy(String.valueOf(userId));
             orderItems.add(item);
         }
 
         order.setTotalAmount(totalAmount);
-        // B-M35修复: 折扣和优惠券从优惠券服务计算，不硬编码为0
         order.setDiscountAmount(calculateDiscountAmount(request, totalAmount));
         order.setCouponAmount(calculateCouponAmount(request, totalAmount));
         order.setFreightAmount(calculateFreightAmount(request, totalAmount));
@@ -243,8 +277,11 @@ public class OrderServiceImpl implements OrderService {
                 .subtract(order.getCouponAmount())
                 .add(order.getFreightAmount()));
         order.setExpireTime(LocalDateTime.now().plusMinutes(OrderConstants.ORDER_EXPIRE_MINUTES));
+        order.setCreateTime(LocalDateTime.now());
+        order.setUpdateTime(LocalDateTime.now());
+        order.setCreateBy(String.valueOf(userId));
+        order.setUpdateBy(String.valueOf(userId));
 
-        // 🔒 B-C07: 在订单保存前预扣减库存（同一事务内）
         boolean stockDeducted = inventoryService.deductStock(orderItems);
         if (!stockDeducted) {
             throw new BusinessException("库存不足，无法创建订单");
@@ -255,13 +292,14 @@ public class OrderServiceImpl implements OrderService {
         for (OrderItem item : orderItems) {
             item.setOrderId(order.getId());
             item.setOrderNo(orderNo);
+            orderItemMapper.insert(item);
         }
-        orderItemMapper.insertBatchSomeColumn(orderItems);
 
         orderNos.add(orderNo);
 
         List<Long> cartIdsToRemove = shopCarts.stream()
                 .map(ShoppingCart::getId)
+                .filter(id -> id != null && id > 0)
                 .collect(Collectors.toList());
         final List<Long> cartIdsToRemoveNow = cartIdsToRemove;
         final String orderNoForMq = orderNo;
@@ -273,15 +311,17 @@ public class OrderServiceImpl implements OrderService {
             @Override
             public void afterCommit() {
                 sendOrderTimeoutMessage(orderNoForMq, expireTimeForMq);
-                shoppingCartMapper.deleteBatchIds(cartIdsToRemoveNow);
-                shoppingCartService.clearCartCache(userId);
-                // C-BE-04: 记录商户订单量，用于动态判断高频商户分片
+                if (!isDirectPurchase && !cartIdsToRemoveNow.isEmpty()) {
+                    for (Long cartId : cartIdsToRemoveNow) {
+                        shoppingCartMapper.deleteById(cartId);
+                    }
+                    shoppingCartService.clearCartCache(userId);
+                }
                 orderShardingService.recordOrder(finalMerchantId);
             }
 
             @Override
             public void afterCompletion(int status) {
-                // 事务回滚时释放已扣减的库存
                 if (status != STATUS_COMMITTED) {
                     try {
                         inventoryService.releaseStock(finalItems);
@@ -854,22 +894,17 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updatePaymentStatus(String paymentNo, String status) {
-        LambdaQueryWrapper<OrderInfo> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(OrderInfo::getOrderNo, paymentNo);
-        OrderInfo order = orderInfoMapper.selectOne(queryWrapper);
-        if (order == null) {
-            log.warn("支付回调更新订单状态失败，订单不存在: paymentNo={}", paymentNo);
-            return;
-        }
-        if ("PAID".equals(status) && order.getStatus() == OrderConstants.ORDER_STATUS_PENDING_PAY) {
-            order.setStatus(OrderConstants.ORDER_STATUS_PENDING_DELIVERY);
-            order.setPayTime(LocalDateTime.now());
-            order.setUpdateTime(LocalDateTime.now());
-            orderInfoMapper.updateById(order);
-            log.info("支付回调更新订单状态成功: orderNo={}, status=PAID", paymentNo);
+    public void updatePaymentStatus(String paymentNo, String status, Integer payType) {
+        if ("PAID".equals(status)) {
+            OrderInfo order = getOrderByOrderNo(paymentNo);
+            if (order == null) {
+                log.warn("支付回调更新订单状态失败，订单不存在: paymentNo={}", paymentNo);
+                return;
+            }
+            int finalPayType = payType != null ? payType : (order.getPayType() != null ? order.getPayType() : 1);
+            payOrder(order.getUserId(), paymentNo, finalPayType);
         } else {
-            log.info("支付回调无需更新订单状态: orderNo={}, currentStatus={}, targetStatus={}", paymentNo, order.getStatus(), status);
+            log.info("支付回调状态不处理: paymentNo={}, status={}", paymentNo, status);
         }
     }
 

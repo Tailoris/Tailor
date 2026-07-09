@@ -9,12 +9,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 @SaCheckLogin
 @Tag(name = "物流管理")
 @RestController
-@RequestMapping("/api/order")
+@RequestMapping(RoutePortConstant.ROUTE_ORDER)
 @RequiredArgsConstructor
 public class LogisticsController {
 

@@ -232,7 +232,8 @@ function doRequest<T = unknown>(
     // 🔒 F-C03: 从加密存储读取Token
     const token: string = noAuth ? '' : getSecure(appConfig.tokenStorageKey)
     const header: Record<string, string> = {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json;charset=UTF-8',
+      'Accept': 'application/json;charset=UTF-8',
       'X-Request-Id': generateUUID()
     }
 

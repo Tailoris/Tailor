@@ -11,6 +11,7 @@ import com.tailoris.message.service.MessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -18,7 +19,7 @@ import java.util.Map;
 @SaCheckLogin
 @Tag(name = "消息管理", description = "系统消息查询、已读标记、未读数等接口")
 @RestController
-@RequestMapping("/api/message")
+@RequestMapping(RoutePortConstant.ROUTE_MESSAGE)
 @RequiredArgsConstructor
 public class MessageController {
 

@@ -13,6 +13,8 @@ import com.tailoris.user.dto.RealNameAuthRequest;
 import com.tailoris.user.dto.UserUpdateRequest;
 import com.tailoris.user.entity.SysUser;
 import com.tailoris.user.service.SysUserService;
+import com.tailoris.common.annotation.ApiVersion;
+import com.tailoris.common.constant.RoutePortConstant;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -23,14 +25,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * TODO P3-L-07: 清理计划 — 确认所有客户端已迁移至 /api/v1/user 后，在 v1.1.0 中移除此控制器
- */
-@Deprecated
+@ApiVersion(value = "1.0", deprecated = true, deprecatedSince = "1.1.0", replacement = "/api/v1/user")
 @SaCheckLogin
-@Tag(name = "用户管理", description = "已弃用，请使用 /api/v1/user")
+@Tag(name = "用户管理", description = "用户信息管理接口")
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping(RoutePortConstant.ROUTE_USER)
 @RequiredArgsConstructor
 public class UserController {
 

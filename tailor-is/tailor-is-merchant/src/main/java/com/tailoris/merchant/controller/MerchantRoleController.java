@@ -2,6 +2,7 @@ package com.tailoris.merchant.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckRole;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.merchant.entity.MerchantRoleTemplate;
 import com.tailoris.merchant.service.IMerchantPermissionService;
@@ -25,7 +26,7 @@ import java.util.Set;
  */
 @Tag(name = "Merchant Role API", description = "商家角色权限接口 - MER-002")
 @RestController
-@RequestMapping("/api/v1/merchant/role")
+@RequestMapping(RoutePortConstant.ROUTE_MERCHANT_ROLE)
 @RequiredArgsConstructor
 @Validated
 public class MerchantRoleController {

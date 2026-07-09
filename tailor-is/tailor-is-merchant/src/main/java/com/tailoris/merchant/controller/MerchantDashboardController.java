@@ -2,6 +2,7 @@ package com.tailoris.merchant.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.tailoris.common.annotation.RateLimit;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.merchant.entity.MerchantDashboardStats;
 import com.tailoris.merchant.service.IMerchantDashboardStatsService;
@@ -27,7 +28,7 @@ import java.util.Map;
  */
 @Tag(name = "Merchant Dashboard API", description = "商家数据看板接口 - MER-005")
 @RestController
-@RequestMapping("/api/v1/merchant/dashboard")
+@RequestMapping(RoutePortConstant.ROUTE_MERCHANT_DASHBOARD)
 @RequiredArgsConstructor
 @Validated
 public class MerchantDashboardController {

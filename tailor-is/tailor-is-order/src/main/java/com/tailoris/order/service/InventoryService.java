@@ -1,8 +1,8 @@
 package com.tailoris.order.service;
 
 import com.tailoris.order.entity.OrderItem;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -33,10 +33,13 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class InventoryService {
 
     private final JdbcTemplate jdbcTemplate;
+
+    public InventoryService(@Qualifier("productJdbcTemplate") JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     /**
      * 预扣减库存 (修复 B-C07)

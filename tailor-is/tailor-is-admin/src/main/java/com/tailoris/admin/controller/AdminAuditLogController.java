@@ -1,6 +1,7 @@
 package com.tailoris.admin.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.dto.PageResponse;
 import com.tailoris.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,9 +19,9 @@ import java.util.Map;
 @Slf4j
 @Tag(name = "平台操作日志")
 @RestController
-@RequestMapping("/api/admin/audit-logs")
+@RequestMapping(RoutePortConstant.ROUTE_ADMIN_AUDIT_LOGS)
 @RequiredArgsConstructor
-@SaCheckRole("admin")
+@SaCheckRole({"SUPER_ADMIN", "PLATFORM_ADMIN"})
 public class AdminAuditLogController {
 
     private final JdbcTemplate jdbcTemplate;

@@ -49,4 +49,20 @@ public class PageRequest {
         }
         return "ASC";
     }
+
+    public int getCurrent() {
+        return pageNum;
+    }
+
+    public void setCurrent(int current) {
+        this.pageNum = current;
+    }
+
+    public int getSize() {
+        return pageSize;
+    }
+
+    public void setSize(int size) {
+        this.pageSize = size;
+    }
 }

@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
@@ -29,7 +30,7 @@ import java.util.Map;
 @SaCheckLogin
 @Tag(name = "版型管理", description = "版型生成、检查、迭代、版本管理、导出等接口")
 @RestController
-@RequestMapping("/api/v1/ai/pattern")
+@RequestMapping(RoutePortConstant.ROUTE_AI_PATTERN)
 @RequiredArgsConstructor
 public class PatternController {
 

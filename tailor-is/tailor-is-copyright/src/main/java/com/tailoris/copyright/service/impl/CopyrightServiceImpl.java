@@ -76,7 +76,7 @@ public class CopyrightServiceImpl implements CopyrightService {
     private final HashGenerationService hashGenerationService;
     private final BatchChainScheduler batchChainScheduler;
 
-    @Value("${copyright.aes.key}")
+    @Value("${copyright.aes.key:}")
     private String aesKey;
 
     @Value("${copyright.verify.base-url:https://verify.tailoris.com}")

@@ -77,7 +77,7 @@ public class WechatLoginServiceImpl implements WechatLoginService {
     private final StringRedisTemplate stringRedisTemplate;
     private final SysRoleService sysRoleService;
     private final SysPermissionService sysPermissionService;
-    private final RestClient restClient = RestClient.builder().build();
+    private final RestClient restClient;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -102,8 +102,8 @@ public class WechatLoginServiceImpl implements WechatLoginService {
         // 2. 根据 openid 查/建用户
         SysUser user = findOrCreateWechatUser(openid, unionid);
 
-        // 3. 校验用户状态（正常用户 status=0 放行，非零状态拦截）
-        if (user.getStatus() != null && user.getStatus() != 0) {
+        // 3. 校验用户状态（正常用户 status=1 放行，status=0 禁用）
+        if (user.getStatus() != null && user.getStatus() != 1) {
             throw new BusinessException("账号已被禁用，请联系管理员");
         }
 
@@ -185,7 +185,7 @@ public class WechatLoginServiceImpl implements WechatLoginService {
         user = new SysUser();
         user.setUsername("wx_" + openid);
         user.setNickName("微信用户_" + openid.substring(0, Math.min(6, openid.length())));
-        user.setStatus(0);
+        user.setStatus(1);
         // 头像/手机号由后续绑定流程补充
         sysUserMapper.insert(user);
         log.info("微信新用户创建: userId={}, openid={}", user.getId(), LogMaskUtils.maskString(openid));

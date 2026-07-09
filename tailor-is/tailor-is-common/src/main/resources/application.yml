@@ -17,7 +17,7 @@ tailoris:
   swagger:
     enabled: false
   crypto:
-    aes-key: ${AES_KEY:YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXpBQkNERUY=}
+    aes-key: ${AES_KEY:}
   # 数据同步分层配置
   data-sync:
     # 近实时同步调度器
@@ -44,6 +44,11 @@ tailoris:
       multiplier: 2
 
 spring:
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
   datasource:
     hikari:
       pool-name: TailorIsPool

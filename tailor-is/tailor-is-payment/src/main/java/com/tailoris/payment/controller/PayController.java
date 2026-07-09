@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.validation.annotation.Validated;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.BufferedReader;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
 @Validated
 @Tag(name = "支付管理", description = "微信支付、支付宝支付")
 @RestController
-@RequestMapping("/api/v1/payment")
+@RequestMapping(RoutePortConstant.ROUTE_PAYMENT)
 @RequiredArgsConstructor
 public class PayController {
 

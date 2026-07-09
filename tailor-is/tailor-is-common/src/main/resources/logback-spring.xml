@@ -67,7 +67,7 @@
     <logger name="org.springframework" level="WARN"/>
     <logger name="com.baomidou.mybatisplus" level="WARN"/>
     <logger name="org.apache.ibatis" level="WARN"/>
-    <logger name="com.alibaba.nacos" level="WARN"/>
+    <logger name="com.alibaba.nacos" level="INFO"/>
     <logger name="org.apache.dubbo" level="WARN"/>
     <logger name="com.netflix" level="WARN"/>
 
@@ -93,9 +93,9 @@
         </root>
     </springProfile>
 
-    <!-- 生产环境: 仅文件，WARN级别 -->
+    <!-- 生产环境: 控制台+文件，INFO级别 -->
     <springProfile name="prod">
-        <root level="WARN">
+        <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
             <appender-ref ref="FILE_ERROR"/>

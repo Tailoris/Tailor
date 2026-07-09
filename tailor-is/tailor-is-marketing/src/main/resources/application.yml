@@ -1,26 +1,33 @@
 server:
-  port: 8105
+  port: ${SERVER_PORT:8103}
 
 spring:
   application:
     name: tailor-is-marketing
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
   main:
     allow-bean-definition-overriding: true
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:}
-        register-enabled: true
+        enabled: ${SPRING_CLOUD_NACOS_DISCOVERY_ENABLED:true}
+        server-addr: ${NACOS_ADDR:host.docker.internal:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        register-enabled: ${SPRING_CLOUD_NACOS_DISCOVERY_REGISTER_ENABLED:true}
+        fail-fast: ${SPRING_CLOUD_NACOS_DISCOVERY_FAIL_FAST:false}
+        port: ${SERVER_PORT:8105}
         watch:
           enabled: false
-        fail-fast: false
         auth:
           username: ${NACOS_USERNAME:}
           password: ${NACOS_PASSWORD:}
       config:
         server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: ${NACOS_NAMESPACE:}
+        namespace: ${NACOS_NAMESPACE:dev}
         file-extension: yaml
         import-check:
           enabled: false
@@ -38,6 +45,8 @@ spring:
       time-between-eviction-runs-millis: 60000
       min-evictable-idle-time-millis: 300000
       validation-query: SELECT 1
+      connection-init-sqls:
+        - SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
   data:
     redis:
       host: ${REDIS_HOST:localhost}

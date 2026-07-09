@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,7 @@ import java.util.List;
 @Slf4j
 @Tag(name = "即时通讯")
 @RestController
-@RequestMapping("/api/v1/im")
+@RequestMapping(RoutePortConstant.ROUTE_IM)
 @RequiredArgsConstructor
 public class ImController {
 

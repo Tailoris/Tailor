@@ -17,12 +17,13 @@ import com.tailoris.community.service.CommunityPostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.tailoris.common.constant.RoutePortConstant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "社区公开接口", description = "首页社区展示相关接口，无需登录")
 @RestController
-@RequestMapping("/api/community/posts")
+@RequestMapping(RoutePortConstant.ROUTE_COMMUNITY_POST)
 @RequiredArgsConstructor
 public class PublicPostController {
 
@@ -36,6 +37,19 @@ public class PublicPostController {
             @RequestParam(defaultValue = "1") Integer current,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) Integer type) {
+        return doListPosts(current, size, type);
+    }
+
+    @Operation(summary = "帖子列表（兼容路径）", description = "分页查询帖子列表，兼容旧版/list路径")
+    @GetMapping("/list")
+    public Result<PageResponse<CommunityPost>> listPostsLegacy(
+            @RequestParam(defaultValue = "1") Integer current,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) Integer type) {
+        return doListPosts(current, size, type);
+    }
+
+    private Result<PageResponse<CommunityPost>> doListPosts(Integer current, Integer size, Integer type) {
         PageRequest pageRequest = new PageRequest();
         pageRequest.setPageNum(current);
         pageRequest.setPageSize(size);

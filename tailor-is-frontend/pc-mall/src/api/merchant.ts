@@ -14,7 +14,7 @@ interface MerchantApplyData {
 
 export function applyMerchant(data: MerchantApplyData) {
   return request<Record<string, unknown>, boolean>({
-    url: '/merchant/apply',
+    url: '/api/v1/merchant/apply',
     method: 'post',
     data
   })
@@ -22,7 +22,7 @@ export function applyMerchant(data: MerchantApplyData) {
 
 export function getMerchantInfo() {
   return request<Record<string, unknown>, Merchant>({
-    url: '/merchant/info',
+    url: '/api/v1/merchant/info',
     method: 'get'
   })
 }

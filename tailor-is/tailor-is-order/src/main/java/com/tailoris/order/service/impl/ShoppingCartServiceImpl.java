@@ -17,6 +17,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -55,8 +56,14 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             cart.setSkuId(request.getSkuId());
             cart.setQuantity(request.getQuantity());
             cart.setChecked(1);
+            cart.setShopId(0L);
+            cart.setMerchantId(0L);
             // BE-M-33: 保存价格快照，下单时使用，避免价格为 null 导致金额为 0
             cart.setPriceSnapshot(request.getPriceSnapshot());
+            cart.setCreateTime(LocalDateTime.now());
+            cart.setUpdateTime(LocalDateTime.now());
+            cart.setCreateBy(String.valueOf(userId));
+            cart.setUpdateBy(String.valueOf(userId));
             shoppingCartMapper.insert(cart);
             log.info("添加商品到购物车, userId: {}, skuId: {}, quantity: {}",
                     userId, request.getSkuId(), request.getQuantity());

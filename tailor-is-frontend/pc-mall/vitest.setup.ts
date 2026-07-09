@@ -1,35 +1,5 @@
 import { vi } from 'vitest'
-
-vi.mock('axios', () => {
-  const mockInterceptors = {
-    request: { use: vi.fn(), eject: vi.fn() },
-    response: { use: vi.fn(), eject: vi.fn() }
-  }
-  const mockAxiosInstance = {
-    interceptors: mockInterceptors,
-    request: vi.fn().mockResolvedValue({
-      data: { code: 200, message: 'success', data: {} }
-    }),
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn()
-  }
-  return {
-    default: {
-      create: vi.fn(() => mockAxiosInstance),
-      get: vi.fn(),
-      post: vi.fn(),
-      put: vi.fn(),
-      delete: vi.fn()
-    },
-    AxiosInstance: {},
-    AxiosResponse: {},
-    AxiosError: {},
-    AxiosRequestConfig: {},
-    InternalAxiosRequestConfig: {}
-  }
-})
+import ElementPlus from 'element-plus'
 
 vi.mock('@/router', () => ({
   default: {
@@ -38,11 +8,21 @@ vi.mock('@/router', () => ({
   }
 }))
 
-vi.mock('element-plus', () => ({
-  ElMessage: {
-    error: vi.fn(),
-    success: vi.fn(),
-    warning: vi.fn(),
-    info: vi.fn()
-  }
+
+
+vi.mock('@element-plus/icons-vue', () => ({
+  Search: {},
+  ShoppingCart: {},
+  ArrowDown: {}
+}))
+
+vi.mock('@shared/utils/placeholder', () => ({
+  PLACEHOLDER_32x32: 'placeholder-32x32.jpg',
+  PLACEHOLDER_60x60: 'placeholder-60x60.jpg'
+}))
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key
+  })
 }))

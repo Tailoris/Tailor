@@ -1,6 +1,7 @@
 package com.tailoris.product.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.product.dto.ProductCreateRequest;
 import com.tailoris.product.dto.ProductQueryRequest;
@@ -26,7 +27,7 @@ import java.util.List;
 @Deprecated
 @Tag(name = "商品管理", description = "已弃用，请使用 /api/v1/product")
 @RestController
-@RequestMapping("/api/product")
+@RequestMapping(RoutePortConstant.ROUTE_PRODUCT)
 @RequiredArgsConstructor
 public class ProductController {
 

@@ -13,6 +13,10 @@ public class Result<T> implements Serializable {
     private String message;
     private T data;
 
+    public boolean isSuccess() {
+        return code == 200;
+    }
+
     public static <T> Result<T> success() {
         return success(null);
     }

@@ -13,12 +13,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 @SaCheckLogin
 @Tag(name = "供需管理", description = "供需帖子发布、编辑、删除、查询等接口")
 @RestController
-@RequestMapping("/api/supply")
+@RequestMapping(RoutePortConstant.ROUTE_SUPPLY)
 @RequiredArgsConstructor
 public class SupplyController {
 

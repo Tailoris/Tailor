@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -22,7 +23,7 @@ import java.math.BigDecimal;
 @SaCheckLogin
 @Tag(name = "优惠券管理", description = "优惠券创建、领取、使用、查询等接口")
 @RestController
-@RequestMapping("/api/marketing/coupon")
+@RequestMapping(RoutePortConstant.ROUTE_MARKETING_COUPON)
 @RequiredArgsConstructor
 public class CouponController {
 

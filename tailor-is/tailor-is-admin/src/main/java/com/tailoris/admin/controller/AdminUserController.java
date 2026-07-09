@@ -1,6 +1,7 @@
 package com.tailoris.admin.controller;
 
 import com.tailoris.admin.service.AdminUserService;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.dto.PageResponse;
 import com.tailoris.common.result.Result;
 import com.tailoris.api.user.entity.SysUser;
@@ -21,9 +22,9 @@ import java.util.Map;
 @Slf4j
 @Tag(name = "平台用户管理")
 @RestController
-@RequestMapping("/api/admin/users")
+@RequestMapping(RoutePortConstant.ROUTE_ADMIN_USERS)
 @RequiredArgsConstructor
-@SaCheckRole("admin")
+@SaCheckRole({"SUPER_ADMIN", "PLATFORM_ADMIN"})
 public class AdminUserController {
 
     private final AdminUserService adminUserService;

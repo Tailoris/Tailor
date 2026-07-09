@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     globals: true,
     setupFiles: ['vitest.setup.ts'],
+    exclude: ['e2e/**'],
     coverage: {
       provider: 'v8',
       exclude: [
@@ -14,7 +15,8 @@ export default defineConfig({
         'dist/**',
         'src/server/**',
         'src/router/**',
-        'src/store/**'
+        'src/store/**',
+        'e2e/**'
       ]
     },
     environmentMatchGlobs: [

@@ -5,6 +5,7 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication(scanBasePackages = {
         "com.tailoris.admin",
@@ -12,6 +13,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
         "com.tailoris.api"
 })
 @EnableDiscoveryClient
+@EnableFeignClients(basePackages = "com.tailoris.admin.feign")
 @MapperScan(basePackages = {"com.tailoris.admin.mapper", "com.tailoris.api.admin.mapper",
                             "com.tailoris.api.community.mapper", "com.tailoris.api.merchant.mapper",
                             "com.tailoris.api.order.mapper", "com.tailoris.api.product.mapper",

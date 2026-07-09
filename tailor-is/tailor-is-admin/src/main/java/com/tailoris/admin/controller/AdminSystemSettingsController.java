@@ -18,7 +18,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/system/settings")
 @RequiredArgsConstructor
-@SaCheckRole("admin")
+@SaCheckRole({"SUPER_ADMIN", "PLATFORM_ADMIN"})
 public class AdminSystemSettingsController {
 
     private final JdbcTemplate jdbcTemplate;

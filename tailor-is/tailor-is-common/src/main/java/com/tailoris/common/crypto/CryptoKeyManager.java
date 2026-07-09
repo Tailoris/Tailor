@@ -51,6 +51,9 @@ public class CryptoKeyManager {
     /** 密钥长度（AES-256） */
     private static final int AES_KEY_LENGTH = 32;
 
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
+
     @PostConstruct
     public void init() {
         refreshKey();
@@ -58,18 +61,30 @@ public class CryptoKeyManager {
     }
 
     /**
-     * 刷新密钥（支持热更新）
+     * 刷新密钥（支持热更新）.
+     *
+     * <p>生产/测试环境强制要求配置 AES_KEY，缺失时拒绝启动，
+     * 防止不同实例使用不同随机密钥导致加密数据无法互通。</p>
      */
     public void refreshKey() {
         String key = loadKey();
         if (key != null) {
             currentKey.set(key);
             log.info("加密密钥已更新，版本: v{}", keyVersion);
-        } else {
-            log.warn("未配置加密密钥，将使用本地生成");
-            // 警告：生产环境应配置密钥
+        } else if (isDevProfile()) {
+            log.warn("开发环境未配置加密密钥，将使用本地随机生成（每次重启密钥不同）");
             currentKey.set(generateRandomKey());
+        } else {
+            throw new IllegalStateException(
+                    "生产/测试环境必须配置 AES_KEY 环境变量或 tailoris.crypto.aes-key 配置项。" +
+                    "当前 active profile: " + activeProfile + "。" +
+                    "生成新密钥: java -cp tailor-is-common.jar com.tailoris.common.crypto.CryptoKeyManager generateNewKey"
+            );
         }
+    }
+
+    private boolean isDevProfile() {
+        return activeProfile != null && (activeProfile.contains("dev") || activeProfile.contains("default"));
     }
 
     /**

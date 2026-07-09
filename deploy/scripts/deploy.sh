@@ -28,6 +28,15 @@ validate_environment() {
     fi
 }
 
+sync_scripts() {
+    local TARGET_DIR="/data/tailor-is-prod/script"
+    log "Syncing scripts to $TARGET_DIR..."
+    mkdir -p "$TARGET_DIR"
+    cp "$DEPLOY_DIR/scripts/"*.sh "$TARGET_DIR/" 2>/dev/null || true
+    chmod +x "$TARGET_DIR/"*.sh 2>/dev/null || true
+    log "Scripts synced to $TARGET_DIR"
+}
+
 backup_configs() {
     log "Creating backup of current configurations..."
     mkdir -p "$BACKUP_DIR/$TIMESTAMP"
@@ -54,6 +63,15 @@ deploy_services() {
     log "Deploying services..."
     cd "$DEPLOY_DIR"
     docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
+}
+
+post_deploy_verify() {
+    log "Running post-deployment health checks..."
+    if [[ -x "$DEPLOY_DIR/scripts/post-deploy-health-check.sh" ]]; then
+        bash "$DEPLOY_DIR/scripts/post-deploy-health-check.sh" "$ENVIRONMENT" || log "Post-deploy health check warnings, but deployment completed"
+    else
+        log "WARNING: post-deploy-health-check.sh not found, skipping"
+    fi
 }
 
 health_check() {
@@ -141,10 +159,12 @@ main() {
             ENVIRONMENT="${2:-staging}"
             TAG="${3:-latest}"
             validate_environment
+            sync_scripts
             backup_configs
             pull_latest_code
             build_images
             deploy_services
+            post_deploy_verify
             health_check || log "Health check warnings, but deployment completed"
             show_status
             log "Deployment completed successfully"

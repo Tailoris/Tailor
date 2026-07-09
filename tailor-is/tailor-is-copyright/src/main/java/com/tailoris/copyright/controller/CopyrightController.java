@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,7 +29,7 @@ import java.util.Map;
 @SaCheckLogin
 @Tag(name = "版权管理", description = "版权登记、验证、证书生成、授权等接口")
 @RestController
-@RequestMapping("/api/v1/copyright")
+@RequestMapping(RoutePortConstant.ROUTE_COPYRIGHT)
 @RequiredArgsConstructor
 public class CopyrightController {
 

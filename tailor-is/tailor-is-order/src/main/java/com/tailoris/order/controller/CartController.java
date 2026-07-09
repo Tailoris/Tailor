@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,7 @@ import java.util.List;
 @SaCheckLogin
 @Tag(name = "购物车管理")
 @RestController
-@RequestMapping("/api/cart")
+@RequestMapping(RoutePortConstant.ROUTE_CART)
 @RequiredArgsConstructor
 public class CartController {
 

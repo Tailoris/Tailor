@@ -42,9 +42,13 @@ function generateSecureToken(): string {
 }
 
 const request: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 15000,
-  headers: { 'Content-Type': 'application/json' }
+  responseEncoding: 'utf8',
+  headers: {
+    'Content-Type': 'application/json;charset=UTF-8',
+    'Accept': 'application/json;charset=UTF-8'
+  }
 })
 
 request.interceptors.request.use(
@@ -92,7 +96,7 @@ request.interceptors.response.use(
           _router?.push('/login')
           break
         case 403:
-          ElMessage.error('没有权限访问')
+          ElMessage.error('没有权限访问，请联系管理员')
           break
         case 404:
           ElMessage.error('请求的资源不存在')

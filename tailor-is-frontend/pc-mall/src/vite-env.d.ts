@@ -166,13 +166,12 @@ declare module '@shared/utils/validate' {
   };
 }
 declare module '@shared/composables/useCountdown' {
-  export function useCountdown(targetTime: Date | number): {
-    days: import('vue').Ref<number>;
-    hours: import('vue').Ref<number>;
-    minutes: import('vue').Ref<number>;
-    seconds: import('vue').Ref<number>;
-    isEnd: import('vue').Ref<boolean>;
+  export function useCountdown(duration?: number): {
+    counting: import('vue').Ref<boolean>;
+    remaining: import('vue').Ref<number>;
+    start: () => void;
     stop: () => void;
+    getButtonText: () => string;
   };
 }
 

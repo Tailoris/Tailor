@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -16,7 +17,7 @@ import java.util.Map;
 @Tag(name = "沙箱环境测试", description = "支付服务沙箱环境测试接口")
 @RestController
 @Profile("dev,test")
-@RequestMapping("/api/sandbox")
+@RequestMapping(RoutePortConstant.ROUTE_SANDBOX)
 @RequiredArgsConstructor
 public class SandboxTestController {
 

@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import com.tailoris.common.exception.BusinessException;
 import com.tailoris.common.result.Result;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.community.dto.LikeRequest;
 import com.tailoris.community.service.CommunityInteractionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @SaCheckLogin
 @Tag(name = "互动管理", description = "点赞、收藏、关注等互动接口")
 @RestController
-@RequestMapping("/api/community/interaction")
+@RequestMapping(RoutePortConstant.ROUTE_COMMUNITY + "/interaction")
 @RequiredArgsConstructor
 public class InteractionController {
 

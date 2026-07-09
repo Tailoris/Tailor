@@ -1,0 +1,28 @@
+-- ============================================================
+-- Tailor IS - Flyway 数据库迁移说明
+-- ============================================================
+-- 迁移目录: src/main/resources/db/migration/
+-- 命名规范: V{version}__{description}.sql
+-- 
+-- 迁移历史:
+-- V1__init_xxx_system.sql    - 基线：各服务数据库表结构初始化
+-- V2__fix_baseentity.sql     - 修复：86张表添加created_by/updated_by字段
+-- V3__fix_unique_keys.sql    - 修复：购物车唯一键添加deleted字段
+-- 
+-- 使用方式:
+-- 1. 在application.yml中添加Flyway配置
+-- 2. 启动服务时Flyway自动执行迁移
+-- 
+-- 配置示例:
+-- spring:
+--   flyway:
+--     enabled: true
+--     baseline-on-migrate: true
+--     baseline-version: 1
+--     locations: classpath:db/migration
+-- 
+-- 注意：
+-- 1. 所有表已包含 created_by/updated_by/deleted/created_at/updated_at 字段
+-- 2. 使用逻辑删除的表，唯一键必须包含 deleted 字段
+-- 3. V1脚本使用 CREATE TABLE IF NOT EXISTS，兼容已有数据库
+-- ============================================================

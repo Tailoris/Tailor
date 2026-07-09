@@ -3,6 +3,7 @@ package com.tailoris.merchant.controller;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.tailoris.common.annotation.RateLimit;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.merchant.entity.MerchantNotice;
 import com.tailoris.merchant.service.IMerchantNoticeService;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Tag(name = "Merchant Notice API", description = "商家公告管理接口")
 @RestController
-@RequestMapping("/api/v1/merchant/notices")
+@RequestMapping(RoutePortConstant.ROUTE_MERCHANT_NOTICES)
 @RequiredArgsConstructor
 @Validated
 public class MerchantNoticeController {

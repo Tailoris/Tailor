@@ -1,5 +1,5 @@
 server:
-  port: 9000
+  port: ${SERVER_PORT:9000}
 
 spring:
   application:
@@ -9,7 +9,13 @@ spring:
   cloud:
     nacos:
       discovery:
-        enabled: false
+        enabled: true
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        register-enabled: true
+        fail-fast: false
+        username: ${NACOS_USERNAME:}
+        password: ${NACOS_PASSWORD:}
       config:
         enabled: false
     sentinel:
@@ -22,34 +28,17 @@ spring:
       globalcors:
         enabled: false
       # ============================================================
-      # 路由策略: 双模路由（Nacos 动态路由 + Java Config 硬编码兜底）
+      # 路由策略: Java Config 硬编码路由（唯一权威来源）
       #
-      # 当前阶段: 路由权威定义位于 CoreGatewayRouteConfig (Java Config)
-      # 后续迁移: 在 Nacos 中创建 data-id=gateway-routes.yaml 的动态路由配置
-      #           当 Nacos 可用时优先使用动态路由，不可用时回退到硬编码路由
+      # 路由定义位于 CoreGatewayRouteConfig.java
+      # 禁止在 yml 文件中配置路由规则，CI 静态检测会拦截违规代码
       #
-      # Nacos 动态路由配置示例 (gateway-routes.yaml):
-      #   spring:
-      #     cloud:
-      #       gateway:
-      #         routes:
-      #           - id: user-route
-      #             uri: lb://tailor-is-user
-      #             predicates:
-      #               - Path=/api/user/**,/api/auth/**
-      #             filters:
-      #               - StripPrefix=0
-      #           - id: product-route
-      #             uri: lb://tailor-is-product
-      #             predicates:
-      #               - Path=/api/product/**,/api/favorite/**
-      #             filters:
-      #               - StripPrefix=0
+      # v4.0 优化: 所有路由 uri 使用 lb://tailor-is-{service} 服务发现格式
+      #           禁止硬编码 http://host:port，支持自动扩缩容和负载均衡
       # ============================================================
 
   data:
     redis:
-      # 凭证从环境变量读取 (source deploy/load-credentials.sh)
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
@@ -74,26 +63,30 @@ sa-token:
   is-redis: true
 
 # ============================================================
-# Core Gateway: 核心业务服务路由 (user, merchant, product, order, payment, marketing, ai, copyright, admin, pattern)
+# Core Gateway: 核心业务服务路由
+# 承载: user, merchant, product, order, payment, marketing, ai, copyright, admin, pattern
+# v4.0 优化: community/supply/message/academy/analytics/im 已迁移至 lite-gateway
 # ============================================================
 tailoris:
   gateway:
     auth:
-      excluded-paths: /api/auth/login,/api/auth/register,/api/auth/sms-code,/api/auth/refresh,/api/auth/reset-password,/api/auth/login/code,/api/auth/register/email,/api/auth/email-code,/api/auth/userinfo
+      excluded-paths: /api/auth/login,/api/auth/register,/api/auth/sms-code,/api/auth/refresh,/api/auth/reset-password,/api/auth/login/code,/api/auth/register/email,/api/auth/email-code,/api/auth/userinfo,/api/v1/auth/login,/api/v1/auth/register,/api/v1/auth/sms-code,/api/v1/auth/email-code,/api/v1/auth/login/code,/api/v1/auth/register/email,/api/v1/auth/refresh,/api/v1/auth/reset-password,/api/v1/auth/wechat-login,/api/v1/auth/userinfo,/api/v1/products/**,/api/v1/product/list,/api/v1/product/search,/api/v1/community/post/**,/api/v1/community/posts/**
     ratelimit:
       enabled: true
-      default-permits-per-second: 200   # 核心网关: 200 req/s per IP (高于 lite)
-      login-permits-per-minute: 10      # 登录接口 10 req/min per IP
+      default-permits-per-second: 200
+      login-permits-per-minute: 10
       api-paths:
         - /api/auth/login
         - /api/auth/register
         - /api/payment/**
+        - /api/v1/auth/login
+        - /api/v1/auth/register
+        - /api/v1/payment/**
 
 knife4j:
   gateway:
     enabled: false
 
-# 暴露 actuator 端点用于监控
 management:
   endpoints:
     web:
@@ -107,8 +100,6 @@ management:
   metrics:
     tags:
       application: tailor-is-core-gateway
-
-# 日志级别由 logback-spring.xml 统一管理
 
 ---
 spring.config.activate.on-profile: prod

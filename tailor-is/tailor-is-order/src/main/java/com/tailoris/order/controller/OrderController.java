@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 @SaCheckLogin
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @Deprecated
 @Tag(name = "订单管理", description = "已弃用，请使用 /api/v1/order")
 @RestController
-@RequestMapping("/api/order")
+@RequestMapping(RoutePortConstant.ROUTE_ORDER)
 @RequiredArgsConstructor
 public class OrderController {
 
@@ -86,8 +87,9 @@ public class OrderController {
     @PostMapping("/payment/status/update")
     public Result<Boolean> updatePaymentStatus(
             @RequestParam String paymentNo,
-            @RequestParam String status) {
-        orderService.updatePaymentStatus(paymentNo, status);
+            @RequestParam String status,
+            @RequestParam(required = false) Integer payType) {
+        orderService.updatePaymentStatus(paymentNo, status, payType);
         return Result.success(true);
     }
 }

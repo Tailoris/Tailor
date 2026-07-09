@@ -237,19 +237,36 @@ async function handleSubmit() {
   }
   submitting.value = true
   try {
-    const res = await createOrder({
-      items: orderItems.value.map((item) => ({
+    const requestId = crypto.randomUUID()
+    const cartIds = orderItems.value.map(item => item.id).filter(id => id > 0)
+    
+    if (cartIds.length > 0) {
+      const res = await createOrder({
+        cartIds,
+        addressId: selectedAddress.value,
+        remark: remark.value,
+        requestId
+      })
+      ElMessage.success('订单创建成功')
+      router.push(`/order/${res.orderNo}`)
+    } else {
+      const items = orderItems.value.map(item => ({
         productId: item.productId,
         skuId: item.skuId,
-        quantity: item.quantity
-      })),
-      addressId: selectedAddress.value,
-      remark: remark.value
-    })
-    ElMessage.success('订单创建成功')
-    router.push(`/order/${res.orderNo}`)
-  } catch {
-    ElMessage.error('订单创建失败')
+        quantity: item.quantity,
+        price: item.price
+      }))
+      const res = await createOrder({
+        items,
+        addressId: selectedAddress.value,
+        remark: remark.value,
+        requestId
+      })
+      ElMessage.success('订单创建成功')
+      router.push(`/order/${res.orderNo}`)
+    }
+  } catch (err: any) {
+    ElMessage.error(err?.message || '订单创建失败')
   } finally {
     submitting.value = false
   }

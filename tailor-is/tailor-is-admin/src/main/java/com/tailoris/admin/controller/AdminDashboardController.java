@@ -2,6 +2,7 @@ package com.tailoris.admin.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.tailoris.api.admin.dto.DashboardStatsResponse;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.admin.service.AdminDashboardService;
 import com.tailoris.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,10 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-@SaCheckRole("admin")
+@SaCheckRole({"SUPER_ADMIN", "PLATFORM_ADMIN"})
 @Tag(name = "平台管理员仪表盘")
 @RestController
-@RequestMapping("/api/admin/dashboard")
+@RequestMapping(RoutePortConstant.ROUTE_ADMIN_DASHBOARD)
 @RequiredArgsConstructor
 public class AdminDashboardController {
 

@@ -81,11 +81,11 @@ public class SysUserServiceImpl implements SysUserService {
     /** 登录失败最大次数（与B-C05锁定策略配合） */
     private static final int MAX_LOGIN_FAILURES = 5;
 
-    /** 用户状态枚举：0-正常, 1-禁用, 2-锁定（B-M36修复） */
-    private static final int USER_STATUS_NORMAL = 0;
+    /** 用户状态枚举：1-正常, 0-禁用, 2-锁定（B-M36修复） */
+    private static final int USER_STATUS_NORMAL = 1;
 
     /** 用户状态：禁用 */
-    private static final int USER_STATUS_DISABLED = 1;
+    private static final int USER_STATUS_DISABLED = 0;
 
     /** 用户状态：锁定 */
     private static final int USER_STATUS_LOCKED = 2;
@@ -228,6 +228,8 @@ public class SysUserServiceImpl implements SysUserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setStatus(USER_STATUS_NORMAL);
         user.setNickName("用户_" + phone.substring(PHONE_MASK_PREFIX_LENGTH));
+        user.setCreateTime(java.time.LocalDateTime.now());
+        user.setUpdateTime(java.time.LocalDateTime.now());
         sysUserMapper.insert(user);
 
         if (defaultRoleId != null) {
@@ -409,6 +411,7 @@ public class SysUserServiceImpl implements SysUserService {
         user.setId(userId);
         user.setLastLoginTime(LocalDateTime.now());
         user.setLastLoginIp(ip);
+        user.setUpdateTime(LocalDateTime.now());
         sysUserMapper.updateById(user);
     }
 

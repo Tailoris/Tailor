@@ -52,6 +52,32 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
 
     /** 默认白名单路径（不需Token） */
     private static final List<String> DEFAULT_EXCLUDED_PATHS = Arrays.asList(
+            // v4.0 标准路径 (/api/v1/ 前缀)
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+            "/api/v1/auth/sms-code",
+            "/api/v1/auth/email-code",
+            "/api/v1/auth/register/email",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/reset-password",
+            "/api/v1/auth/login/code",
+            "/api/v1/auth/wechat-login",
+            "/api/v1/auth/userinfo",
+            "/api/v1/products/**",
+            "/api/v1/product/**",
+            "/api/v1/categories/**",
+            "/api/v1/category/**",
+            "/api/v1/community/**",
+            "/api/v1/merchant/**",
+            "/api/v1/public/**",
+            "/api/v1/marketing/coupon/list",
+            "/api/v1/coupon/list",
+            "/api/v1/seckill/list",
+            "/api/v1/body-size/template",
+            "/api/v1/payment/options",
+            "/api/v1/sandbox/**",
+            "/api/v1/upload/**",
+            // 兼容旧版路径 (v4.1 移除)
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/register/email",
@@ -64,9 +90,18 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
             "/api/products/**",
             "/api/product/**",
             "/api/categories/**",
+            "/api/category/**",
             "/api/community/**",
             "/api/merchant/**",
             "/api/public/**",
+            "/api/marketing/coupon/list",
+            "/api/coupon/list",
+            "/api/seckill/list",
+            "/api/body-size/template",
+            "/api/payment/options",
+            "/api/sandbox/**",
+            "/api/upload/**",
+            // 基础设施
             "/actuator/health",
             "/doc.html",
             "/swagger-ui/**",
@@ -93,34 +128,41 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().toString();
 
+        log.info("Core Gateway - 请求进入: path={}, method={}", path, request.getMethod());
+
         // 1. 白名单放行
         if (isExcludedPath(path)) {
-            log.debug("Core Gateway - 白名单路径放行: {}", path);
+            log.info("Core Gateway - 白名单路径放行: {}", path);
             return chain.filter(exchange);
         }
 
         // 2. 非API路径放行（静态资源等）
         if (!path.startsWith("/api/")) {
+            log.info("Core Gateway - 非API路径放行: {}", path);
             return chain.filter(exchange);
         }
 
         // 3. 提取Token
         String token = extractToken(request);
+        log.info("Core Gateway - 提取Token: path={}, tokenExists={}", path, token != null && !token.isBlank());
         if (token == null || token.isBlank()) {
             log.warn("Core Gateway - 缺少Token: path={}, ip={}", path, getClientIp(request));
-            return unauthorizedResponse(exchange, "未登录，请先登录");
+            return unauthorizedResponse(exchange, 401, "NOT_LOGGED_IN", "未登录，请先登录");
         }
 
         // 4. 校验Token
         try {
             Object loginId = StpUtil.getLoginIdByToken(token);
+            log.info("Core Gateway - Token校验结果: path={}, loginId={}", path, loginId);
             if (loginId == null) {
                 log.warn("Core Gateway - Token无效或已过期: path={}, token={}", path, maskToken(token));
-                return unauthorizedResponse(exchange, "Token无效或已过期，请重新登录");
+                return unauthorizedResponse(exchange, 401, "TOKEN_EXPIRED", "Token无效或已过期，请重新登录");
             }
 
             // 5. 透传用户信息到下游（BE-H-18: 先删除客户端传入的 X-User-Id 防止伪造）
             //    并对 X-User-Id 计算 HMAC-SHA256 签名，下游服务可据此校验请求确实来自网关
+            //    保留 Authorization 头：下游服务 Sa-Token 配置 token-name=Authorization，
+            //    需要从 Authorization 头读取 Token 以支持 StpUtil.getLoginIdAsLong() 等 API。
             String userIdStr = String.valueOf(loginId);
             String signature = signUserId(userIdStr);
             ServerHttpRequest mutatedRequest = request.mutate()
@@ -135,12 +177,11 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
                         headers.add("X-Gateway-Token", token);
                     })
                     .build();
-            // TODO[安全]: 下游服务需校验 X-User-Id-Signature = HMAC-SHA256(X-User-Id, GATEWAY_HMAC_SECRET)，
-            // 拒绝签名缺失或不匹配的请求，防止绕过网关直接伪造 X-User-Id 头。
+            log.info("Core Gateway - 添加X-User-Id请求头: path={}, userId={}", path, userIdStr);
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
         } catch (Exception e) {
             log.warn("Core Gateway - Token验证异常: path={}, error={}", path, e.getMessage());
-            return unauthorizedResponse(exchange, "Token验证失败，请重新登录");
+            return unauthorizedResponse(exchange, 401, "TOKEN_INVALID", "Token验证失败，请重新登录");
         }
     }
 
@@ -225,12 +266,25 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, String message) {
+        return unauthorizedResponse(exchange, 401, "UNAUTHORIZED", message);
+    }
+
+    /**
+     * 返回标准化的未授权响应，包含错误码和错误子类型。
+     *
+     * @param exchange 当前请求上下文
+     * @param code     HTTP 状态码
+     * @param subCode  业务错误子类型（NOT_LOGGED_IN / TOKEN_EXPIRED / TOKEN_INVALID）
+     * @param message  用户可读的错误消息
+     */
+    private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, int code, String subCode, String message) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("code", 401);
+        result.put("code", code);
+        result.put("subCode", subCode);
         result.put("message", message);
         result.put("data", null);
         result.put("timestamp", System.currentTimeMillis());

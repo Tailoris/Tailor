@@ -81,6 +81,45 @@ groups:
           description: "规划证书更新计划"
 
   # --------------------------------------------------------------------------
+  # 编码异常告警
+  # --------------------------------------------------------------------------
+  - name: encoding-alerts
+    rules:
+      - alert: HighInvalidUtf8RateP2
+        expr: rate(encoding.invalid_utf8_requests_total[5m]) > 10
+        for: 5m
+        labels: { severity: warning, category: encoding, priority: P2 }
+        annotations:
+          summary: "UTF-8编码异常率过高"
+          description: "过去5分钟平均每分钟检测到超过10个无效UTF-8请求"
+          action: "检查客户端编码设置、API网关配置及数据库连接字符集"
+
+      - alert: MojibakeDetectedP1
+        expr: increase(encoding.mojibake_detected_total[5m]) > 5
+        for: 3m
+        labels: { severity: critical, category: encoding, priority: P1 }
+        annotations:
+          summary: "检测到乱码数据"
+          description: "过去5分钟检测到超过5个包含乱码(mojibake)的请求"
+          action: "立即检查数据传输链路，确认是否存在编码转换错误"
+
+      - alert: CharsetConversionErrorsP1
+        expr: rate(encoding.charset_conversion_errors_total[5m]) > 0
+        for: 1m
+        labels: { severity: critical, category: encoding, priority: P1 }
+        annotations:
+          summary: "字符集转换错误"
+          description: "检测到字符集转换异常，请检查数据库和应用编码配置"
+
+      - alert: EncodingValidationFailureRateP2
+        expr: rate(encoding.invalid_utf8_requests_total[5m]) / rate(encoding.validation_passed_total[5m]) * 100 > 1
+        for: 10m
+        labels: { severity: warning, category: encoding, priority: P2 }
+        annotations:
+          summary: "编码验证失败率超过1%"
+          description: "当前编码验证失败率: {{ $value | printf \"%.2f\" }}%"
+
+  # --------------------------------------------------------------------------
   # 安全告警
   # --------------------------------------------------------------------------
   - name: security-alerts

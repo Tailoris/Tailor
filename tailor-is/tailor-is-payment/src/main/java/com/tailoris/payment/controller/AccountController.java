@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -20,7 +21,7 @@ import java.math.BigDecimal;
 @SaCheckLogin
 @Tag(name = "账户管理", description = "账户查询、提现、充值等接口")
 @RestController
-@RequestMapping("/api/account")
+@RequestMapping(RoutePortConstant.ROUTE_ACCOUNT)
 @RequiredArgsConstructor
 public class AccountController {
 

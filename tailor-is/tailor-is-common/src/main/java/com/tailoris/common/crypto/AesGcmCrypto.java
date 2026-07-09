@@ -55,8 +55,8 @@ public class AesGcmCrypto {
 
     @PostConstruct
     public void init() {
-        log.info("AES密钥配置检查 - configuredKey: '{}', 长度: {}", 
-                configuredKey != null ? configuredKey : "null", 
+        log.info("AES密钥配置检查 - 密钥已配置: {}, 长度: {}", 
+                configuredKey != null && !configuredKey.isEmpty(), 
                 configuredKey != null ? configuredKey.length() : 0);
         byte[] keyBytes = loadKey();
         if (keyBytes == null || keyBytes.length != KEY_LENGTH) {
@@ -117,7 +117,11 @@ public class AesGcmCrypto {
         } catch (IllegalArgumentException e) {
             // 不是有效的Base64
         }
-        return key.getBytes(StandardCharsets.UTF_8);
+        byte[] utf8Bytes = key.getBytes(StandardCharsets.UTF_8);
+        if (utf8Bytes.length == KEY_LENGTH) {
+            return utf8Bytes;
+        }
+        return null;
     }
 
     /**

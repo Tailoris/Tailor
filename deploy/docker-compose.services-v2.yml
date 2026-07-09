@@ -1,0 +1,548 @@
+# ==============================================================================
+# Tailor IS - Docker Compose 核心微服务编排 v2.0 (CPU优化版)
+# ==============================================================================
+# 基于 docker-compose.services.yml 优化，统一整合 prod compose 的资源策略
+# 关键优化:
+#   1. 全部服务注入 JVM 容器感知参数 (UseContainerSupport + ActiveProcessorCount=2)
+#   2. 使用 G1GC 替代 Parallel GC，减少 Full GC CPU 消耗
+#   3. CPU/内存限额按服务分级 (核心/普通/轻量)
+#   4. Profile 分组启动，按需运行，避免全量启动
+# ==============================================================================
+# 使用方式:
+#   cd deploy
+#   # 按 Profile 分组启动:
+#   docker compose -f docker-compose.services-v2.yml --profile core-trade up -d --build
+#   docker compose -f docker-compose.services-v2.yml --profile core-ai-chain up -d --build
+#   docker compose -f docker-compose.services-v2.yml --profile light-forum up -d --build
+#   docker compose -f docker-compose.services-v2.yml --profile light-edu up -d --build
+#   docker compose -f docker-compose.services-v2.yml --profile light-data-supply up -d --build
+# ==============================================================================
+
+version: '3.8'
+
+networks:
+  tailoris-services:
+    name: tailoris-services
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+
+x-core-service: &core-service
+  restart: unless-stopped
+  networks:
+    - tailoris-services
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  init: true
+  stop_grace_period: 30s
+  env_file:
+    - ./tailor-is-prod/env/.env.base
+    - ./tailor-is-prod/env/.env.core
+    - ./tailor-is-prod/env/.env.dev
+  environment:
+    - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+    - NACOS_NAMESPACE=dev
+    - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/
+    - SPRING_DATASOURCE_USERNAME=${MYSQL_USERNAME:-root}
+    - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+    - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+    - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+    - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
+    - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+    - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+    - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-rabbitmq}
+    - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+    - JVM_XMX=320m
+    - JVM_XMS=160m
+    - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -Xms160m -Xmx320m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=40 -Dserver.tomcat.threads.min-spare=5 -Dserver.tomcat.max-connections=200 -Dserver.tomcat.accept-count=50
+    - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,prometheus
+    - MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=never
+    - SPRING_CLOUD_SENTINEL_ENABLED=false
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+  deploy:
+    resources:
+      limits:
+        cpus: '0.30'
+        memory: 512M
+      reservations:
+        cpus: '0.10'
+        memory: 128M
+
+x-light-service: &light-service
+  restart: unless-stopped
+  networks:
+    - tailoris-services
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  init: true
+  stop_grace_period: 30s
+  env_file:
+    - ./tailor-is-prod/env/.env.base
+    - ./tailor-is-prod/env/.env.light
+    - ./tailor-is-prod/env/.env.dev
+  environment:
+    - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+    - NACOS_NAMESPACE=dev
+    - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/
+    - SPRING_DATASOURCE_USERNAME=${MYSQL_USERNAME:-root}
+    - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+    - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+    - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+    - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
+    - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+    - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+    - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-rabbitmq}
+    - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+    - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+    - JVM_XMX=220m
+    - JVM_XMS=128m
+    - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -Xms128m -Xmx220m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=40 -Dserver.tomcat.threads.min-spare=5 -Dserver.tomcat.max-connections=200 -Dserver.tomcat.accept-count=50
+    - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,prometheus
+    - MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=never
+    - SPRING_CLOUD_SENTINEL_ENABLED=false
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+  deploy:
+    resources:
+      limits:
+        cpus: '0.20'
+        memory: 384M
+      reservations:
+        cpus: '0.05'
+        memory: 128M
+
+services:
+
+  # ============================================================================
+  # Profile: core-trade — 核心交易链路（7个服务）
+  # 预期总CPU: 7 × 0.30 = 2.1核
+  # ============================================================================
+
+  core-gateway:
+    <<: *core-service
+    profiles: ["core-trade"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-core-gateway/Dockerfile
+    image: tailor-is-core-gateway:latest
+    container_name: tailor-is-core-gateway
+    hostname: core-gateway
+    ports:
+      - "9000:8080"
+    environment:
+      - SERVER_PORT=8080
+      - NACOS_NAMESPACE=dev
+      - SPRING_DATA_REDIS_DATABASE=1
+      - JVM_XMX=512m
+      - JVM_XMS=256m
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=60 -Dserver.tomcat.threads.min-spare=10 -Dserver.tomcat.max-connections=500 -Dserver.tomcat.accept-count=100
+    deploy:
+      resources:
+        limits: { cpus: '0.50', memory: 1024M }
+        reservations: { cpus: '0.15', memory: 256M }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  lite-gateway:
+    <<: *core-service
+    profiles: ["core-trade"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-lite-gateway/Dockerfile
+    image: tailor-is-lite-gateway:latest
+    container_name: tailor-is-lite-gateway
+    hostname: lite-gateway
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+      - JVM_XMX=320m
+      - JVM_XMS=160m
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -Xms160m -Xmx320m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=40 -Dserver.tomcat.threads.min-spare=5 -Dserver.tomcat.max-connections=200 -Dserver.tomcat.accept-count=50
+    deploy:
+      resources:
+        limits: { cpus: '0.30', memory: 512M }
+        reservations: { cpus: '0.10', memory: 128M }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  user-service:
+    <<: *core-service
+    profiles: ["core-trade"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-user/Dockerfile
+    image: tailor-is-user:latest
+    container_name: tailor-is-user
+    hostname: user-service
+    environment:
+      - SERVER_PORT=8101
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_user?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - TAILORIS_OSS_LOCAL_FALLBACK_PATH=/app/upload
+      - JVM_XMX=320m
+      - JVM_XMS=160m
+    volumes:
+      - ./volumes/user-service/upload:/app/upload
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8101/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  product-service:
+    <<: *core-service
+    profiles: ["core-trade"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-product/Dockerfile
+    image: tailor-is-product:latest
+    container_name: tailor-is-product
+    hostname: product-service
+    environment:
+      - SERVER_PORT=8102
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_product?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - AES_KEY=${AES_KEY}
+      - JVM_XMX=320m
+      - JVM_XMS=160m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8102/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  order-service:
+    <<: *core-service
+    profiles: ["core-trade"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-order/Dockerfile
+    image: tailor-is-order:latest
+    container_name: tailor-is-order
+    hostname: order-service
+    environment:
+      - SERVER_PORT=8103
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - JVM_XMX=512m
+      - JVM_XMS=256m
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=40 -Dserver.tomcat.threads.min-spare=5 -Dserver.tomcat.max-connections=200 -Dserver.tomcat.accept-count=50
+    deploy:
+      resources:
+        limits: { cpus: '0.40', memory: 768M }
+        reservations: { cpus: '0.10', memory: 256M }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8103/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  payment-service:
+    <<: *core-service
+    profiles: ["core-trade"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-payment/Dockerfile
+    image: tailor-is-payment:latest
+    container_name: tailor-is-payment
+    hostname: payment-service
+    environment:
+      - SERVER_PORT=8104
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_payment?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - JVM_XMX=320m
+      - JVM_XMS=160m
+    deploy:
+      resources:
+        limits: { cpus: '0.40', memory: 512M }
+        reservations: { cpus: '0.10', memory: 128M }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8104/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  marketing-service:
+    <<: *core-service
+    profiles: ["core-trade"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-marketing/Dockerfile
+    image: tailor-is-marketing:latest
+    container_name: tailor-is-marketing
+    hostname: marketing-service
+    environment:
+      - SERVER_PORT=8105
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_marketing?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - JVM_XMX=320m
+      - JVM_XMS=160m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8105/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  merchant-service:
+    <<: *core-service
+    profiles: ["core-trade"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-merchant/Dockerfile
+    image: tailor-is-merchant:latest
+    container_name: tailor-is-merchant
+    hostname: merchant-service
+    environment:
+      - SERVER_PORT=8110
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_merchant?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - JVM_XMX=320m
+      - JVM_XMS=160m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8110/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  admin-service:
+    <<: *core-service
+    profiles: ["core-trade"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-admin/Dockerfile
+    image: tailor-is-admin:latest
+    container_name: tailor-is-admin
+    hostname: admin-service
+    environment:
+      - SERVER_PORT=8100
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_admin?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - JVM_XMX=220m
+      - JVM_XMS=128m
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -Xms128m -Xmx220m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=40 -Dserver.tomcat.threads.min-spare=5 -Dserver.tomcat.max-connections=200 -Dserver.tomcat.accept-count=50
+    deploy:
+      resources:
+        limits: { cpus: '0.20', memory: 384M }
+        reservations: { cpus: '0.05', memory: 128M }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8100/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ============================================================================
+  # Profile: core-ai-chain — AI 算法 + 区块链版权链（3个服务）
+  # 预期总CPU: 0.50 + 0.30 + 0.20 = 1.0核
+  # ============================================================================
+
+  ai-service:
+    <<: *core-service
+    profiles: ["core-ai-chain"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-ai/Dockerfile
+    image: tailor-is-ai:latest
+    container_name: tailor-is-ai
+    hostname: ai-service
+    environment:
+      - SERVER_PORT=8106
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_ai?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - JVM_XMX=512m
+      - JVM_XMS=256m
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:G1ReservePercent=10 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=1 -Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=40 -Dserver.tomcat.threads.min-spare=5
+    deploy:
+      resources:
+        limits: { cpus: '0.50', memory: 1024M }
+        reservations: { cpus: '0.15', memory: 256M }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8106/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  copyright-service:
+    <<: *core-service
+    profiles: ["core-ai-chain"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-copyright/Dockerfile
+    image: tailor-is-copyright:latest
+    container_name: tailor-is-copyright
+    hostname: copyright-service
+    environment:
+      - SERVER_PORT=8107
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_copyright?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8107/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  pattern-service:
+    <<: *light-service
+    profiles: ["core-ai-chain"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-pattern/Dockerfile
+    image: tailor-is-pattern:latest
+    container_name: tailor-is-pattern
+    hostname: pattern-service
+    environment:
+      - SERVER_PORT=8115
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_pattern?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8115/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ============================================================================
+  # Profile: light-forum — 社区论坛 + 消息推送（3个服务）
+  # 预期总CPU: 3 × 0.20 = 0.6核
+  # ============================================================================
+
+  community-service:
+    <<: *light-service
+    profiles: ["light-forum"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-community/Dockerfile
+    image: tailor-is-community:latest
+    container_name: tailor-is-community
+    hostname: community-service
+    environment:
+      - SERVER_PORT=8108
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_community?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8108/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  message-service:
+    <<: *light-service
+    profiles: ["light-forum"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-message/Dockerfile
+    image: tailor-is-message:latest
+    container_name: tailor-is-message
+    hostname: message-service
+    environment:
+      - SERVER_PORT=8111
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_message?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8111/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  message-im-service:
+    <<: *light-service
+    profiles: ["light-forum"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-message-im/Dockerfile
+    image: tailor-is-message-im:latest
+    container_name: tailor-is-message-im
+    hostname: message-im-service
+    environment:
+      - SERVER_PORT=8114
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_im?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8114/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ============================================================================
+  # Profile: light-edu — 线上学堂（1个服务）
+  # 预期总CPU: 0.20核
+  # ============================================================================
+
+  academy-service:
+    <<: *light-service
+    profiles: ["light-edu"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-academy/Dockerfile
+    image: tailor-is-academy:latest
+    container_name: tailor-is-academy
+    hostname: academy-service
+    environment:
+      - SERVER_PORT=8112
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_academy?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8112/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ============================================================================
+  # Profile: light-data-supply — 数据分析 + 面辅料供应链（2个服务）
+  # 预期总CPU: 2 × 0.20 = 0.4核
+  # ============================================================================
+
+  supply-service:
+    <<: *light-service
+    profiles: ["light-data-supply"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-supply/Dockerfile
+    image: tailor-is-supply:latest
+    container_name: tailor-is-supply
+    hostname: supply-service
+    environment:
+      - SERVER_PORT=8109
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_supply?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8109/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  analytics-service:
+    <<: *light-service
+    profiles: ["light-forum"]
+    build:
+      context: ../tailor-is
+      dockerfile: tailor-is-analytics/Dockerfile
+    image: tailor-is-analytics:latest
+    container_name: tailor-is-analytics
+    hostname: analytics-service
+    environment:
+      - SERVER_PORT=8113
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_analytics?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8113/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

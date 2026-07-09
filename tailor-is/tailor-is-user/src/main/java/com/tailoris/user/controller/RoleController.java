@@ -3,6 +3,7 @@ package com.tailoris.user.controller;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.tailoris.common.exception.BusinessException;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import com.tailoris.user.service.SysRoleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,7 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @Tag(name = "角色管理", description = "用户角色分配、移除等管理接口")
 @RestController
-@RequestMapping("/api/user/roles")
+@RequestMapping(RoutePortConstant.ROUTE_USER_ROLES)
 @RequiredArgsConstructor
 public class RoleController {
 

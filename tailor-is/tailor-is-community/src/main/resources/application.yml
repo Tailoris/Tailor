@@ -7,16 +7,26 @@
 # 参考: docs/architecture/Tailor IS（裁智云）服装全产业平台架构优化方案.md
 # ============================================================
 server:
-  port: 8208
+  port: ${SERVER_PORT:8108}
 spring:
   application:
     name: tailor-is-community
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
   main:
     allow-bean-definition-overriding: true
   cloud:
     nacos:
       discovery:
-        enabled: false
+        enabled: ${SPRING_CLOUD_NACOS_DISCOVERY_ENABLED:true}
+        server-addr: ${NACOS_ADDR:host.docker.internal:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        register-enabled: ${SPRING_CLOUD_NACOS_DISCOVERY_REGISTER_ENABLED:true}
+        fail-fast: ${SPRING_CLOUD_NACOS_DISCOVERY_FAIL_FAST:false}
+        port: ${SERVER_PORT:8108}
       config:
         enabled: false
   datasource:
@@ -33,6 +43,8 @@ spring:
       time-between-eviction-runs-millis: 60000
       min-evictable-idle-time-millis: 300000
       validation-query: SELECT 1
+      connection-init-sqls:
+        - SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -93,7 +105,7 @@ knife4j:
 # ============================================================
 tailoris:
   crypto:
-    aes-key: ${AES_KEY:0123456789abcdef0123456789abcdef}
+    aes-key: ${AES_KEY:9f2492ed344d7cabc3a98bb2a71af40b}
   oss:
     local-fallback-path: ${LOCAL_STORAGE_PATH:./data/upload}
   redis:

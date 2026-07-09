@@ -1,21 +1,26 @@
-/**
- * 本地存储工具
- * 通过参数化 key 支持不同项目的使用场景
- */
+export interface StorageInstance {
+  set(value: string): void
+  get(): string | null
+  clear(): void
+}
 
-export function createStorage(key: string) {
+/**
+ * 创建通用 localStorage 存储实例.
+ *
+ * @param key - localStorage 键名
+ * @returns StorageInstance 包含 set/get/clear 操作
+ */
+export function createStorage(key: string): StorageInstance {
   return {
-    /** 保存账号到本地存储 */
-    saveAccount(account: string): void {
+    set(value: string): void {
       try {
-        localStorage.setItem(key, account)
+        localStorage.setItem(key, value)
       } catch {
-        // 静默失败
+        // localStorage 不可用或已满时静默失败
       }
     },
 
-    /** 从本地存储获取账号 */
-    getAccount(): string | null {
+    get(): string | null {
       try {
         return localStorage.getItem(key)
       } catch {
@@ -23,12 +28,10 @@ export function createStorage(key: string) {
       }
     },
 
-    /** 清除本地存储的账号 */
-    clearAccount(): void {
+    clear(): void {
       try {
         localStorage.removeItem(key)
       } catch {
-        // 静默失败
       }
     }
   }

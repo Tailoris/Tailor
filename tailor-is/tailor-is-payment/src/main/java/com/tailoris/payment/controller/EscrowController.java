@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -17,7 +18,7 @@ import java.util.Map;
 
 @Tag(name = "担保账户", description = "平台担保账户余额查询、资金管理、冻结/解冻等接口")
 @RestController
-@RequestMapping("/api/v1/payment/escrow")
+@RequestMapping(RoutePortConstant.ROUTE_PAYMENT_ESCROW)
 @RequiredArgsConstructor
 public class EscrowController {
 

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.tailoris.common.constant.RoutePortConstant;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.List;
 @Slf4j
 @Tag(name = "版型管理")
 @RestController
-@RequestMapping("/api/v1/pattern")
+@RequestMapping(RoutePortConstant.ROUTE_PATTERN)
 @RequiredArgsConstructor
 public class PatternController {
 

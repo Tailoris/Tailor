@@ -5,18 +5,27 @@
       <router-link :to="moreLink" class="view-more" v-if="moreLink" aria-label="查看更多商品">查看更多 →</router-link>
     </div>
     <el-skeleton :loading="loading" animated :rows="2">
-      <div class="product-grid">
+      <div v-if="error" class="empty-state">
+        <el-icon class="empty-icon"><Warning /></el-icon>
+        <p class="empty-text">数据加载失败，请稍后重试</p>
+      </div>
+      <div v-else class="product-grid">
         <ProductCard
           v-for="product in products"
           :key="product.id"
           :product="product"
         />
+        <div v-if="products.length === 0 && !loading" class="empty-state">
+          <el-icon class="empty-icon"><ShoppingCart /></el-icon>
+          <p class="empty-text">暂无商品</p>
+        </div>
       </div>
     </el-skeleton>
   </section>
 </template>
 
 <script setup lang="ts">
+import { Warning, ShoppingCart } from '@element-plus/icons-vue'
 import ProductCard from '@/components/ProductCard.vue'
 import type { Product } from '@/types'
 
@@ -24,6 +33,7 @@ defineProps<{
   title: string
   products: Product[]
   loading: boolean
+  error?: boolean
   moreLink?: string
 }>()
 </script>
@@ -55,5 +65,22 @@ defineProps<{
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
+}
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+.empty-text {
+  font-size: 14px;
+  margin: 0;
 }
 </style>

@@ -41,19 +41,20 @@ public class WechatPayConfig {
     @PostConstruct
     public void validate() {
         if (appId == null || appId.isBlank()) {
-            throw new IllegalStateException("wechat.pay.app-id 未配置，服务无法启动");
+            log.error("wechat.pay.app-id 未配置，微信支付功能将不可用");
+            return;
         }
         if (mchId == null || mchId.isBlank()) {
-            throw new IllegalStateException("wechat.pay.mch-id 未配置，服务无法启动");
+            log.error("wechat.pay.mch-id 未配置，微信支付功能将不可用");
+            return;
         }
         if (privateKey == null || privateKey.isBlank()) {
-            throw new IllegalStateException("wechat.pay.private-key 未配置，服务无法启动");
+            log.error("wechat.pay.private-key 未配置，微信支付功能将不可用");
+            return;
         }
         if (apiV3Key == null || apiV3Key.isBlank()) {
-            throw new IllegalStateException("wechat.pay.api-v3-key 未配置，服务无法启动");
-        }
-        if (platformPublicKey == null || platformPublicKey.isBlank()) {
-            throw new IllegalStateException("wechat.pay.platform-public-key 未配置，服务无法启动");
+            log.error("wechat.pay.api-v3-key 未配置，微信支付功能将不可用");
+            return;
         }
         log.info("微信支付配置验证通过: appId={}, mchId={}", appId, mchId);
     }

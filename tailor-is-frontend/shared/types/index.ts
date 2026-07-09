@@ -28,12 +28,13 @@ export interface PageResponse<T> {
 
 /**
  * 统一用户类型。
- * 字段命名统一使用 nickname，移除 nickName 变体。
+ * 字段命名统一使用 nickname，nickName 保留用于兼容旧版 API 响应（v4.1 移除）。
  */
 export interface User {
   id: number
   username: string
   phone: string
+  /** @deprecated 使用 nickname 替代，v4.1 移除 */
   nickName?: string
   nickname?: string
   email?: string

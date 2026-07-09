@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
   `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
   `last_login_time` DATETIME DEFAULT NULL COMMENT '最后登录时间',
   `last_login_ip` VARCHAR(45) DEFAULT NULL COMMENT '最后登录IP',
+  `created_by` VARCHAR(64) DEFAULT NULL COMMENT '创建人',
+  `updated_by` VARCHAR(64) DEFAULT NULL COMMENT '更新人',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -53,6 +55,8 @@ CREATE TABLE IF NOT EXISTS `sys_role` (
   `data_scope` TINYINT DEFAULT 1 COMMENT '数据权限范围：1-全部，2-本部门，3-本部门及以下，4-仅本人',
   `sort` INT DEFAULT 0 COMMENT '排序权重（数值越小越靠前）',
   `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+  `created_by` VARCHAR(64) DEFAULT NULL COMMENT '创建人',
+  `updated_by` VARCHAR(64) DEFAULT NULL COMMENT '更新人',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -94,6 +98,8 @@ CREATE TABLE IF NOT EXISTS `sys_permission` (
   `sort` INT DEFAULT 0 COMMENT '排序权重',
   `visible` TINYINT DEFAULT 1 COMMENT '是否可见：0-隐藏，1-显示',
   `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+  `created_by` VARCHAR(64) DEFAULT NULL COMMENT '创建人',
+  `updated_by` VARCHAR(64) DEFAULT NULL COMMENT '更新人',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -139,6 +145,8 @@ CREATE TABLE IF NOT EXISTS `user_address` (
   `latitude` DECIMAL(10, 6) DEFAULT NULL COMMENT '纬度',
   `is_default` TINYINT NOT NULL DEFAULT 0 COMMENT '是否默认地址：0-否，1-是',
   `tag` VARCHAR(32) DEFAULT NULL COMMENT '地址标签：家/公司/学校等',
+  `created_by` VARCHAR(64) DEFAULT NULL COMMENT '创建人',
+  `updated_by` VARCHAR(64) DEFAULT NULL COMMENT '更新人',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -197,9 +205,9 @@ INSERT INTO `sys_permission` (`permission_name`, `permission_code`, `type`, `pat
 ('用户禁用', 'user:disable', 2, NULL, NULL, 22, '', 3, 1, 1),
 ('用户删除', 'user:delete', 2, NULL, NULL, 22, '', 4, 1, 1);
 
--- 初始化超级管理员用户（密码：admin123，BCrypt加密）
+-- 初始化超级管理员用户（密码：admin123，BCrypt加密，强度12）
 INSERT INTO `sys_user` (`username`, `password`, `phone`, `email`, `real_name`, `status`) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '13800138000', 'admin@tailoris.com', '系统管理员', 0);
+('admin', '$2a$12$1n9g4kGXgALTgsyyclXUQes7VYHtEqAG0UoPlt/6/1qGxdTgt7.sa', '13800138000', 'admin@tailoris.com', '系统管理员', 1);
 
 -- 为超级管理员分配所有角色
 INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES

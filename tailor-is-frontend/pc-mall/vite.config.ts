@@ -46,33 +46,11 @@ export default defineConfig({
   // CDN 基础路径
   base: CDN_BASE,
   server: {
+    host: '0.0.0.0',
     port: 3001,
     proxy: {
-      '/api/auth': {
-        target: 'http://localhost:8101',
-        changeOrigin: true,
-      },
-      '/api/user': {
-        target: 'http://localhost:8101',
-        changeOrigin: true,
-      },
-      '/api/address': {
-        target: 'http://localhost:8101',
-        changeOrigin: true,
-      },
-      '/api/product': {
-        target: 'http://localhost:8102',
-        changeOrigin: true,
-      },
-      '/api/products': {
-        target: 'http://localhost:8102',
-        changeOrigin: true,
-      },
-      '/api/community': {
-        target: 'http://localhost:8108',
-        changeOrigin: true,
-      },
-      '/api': {
+      // 所有 /api/v1 请求统一走网关（gateway port 9000），禁止直连后端微服务
+      '/api/v1': {
         target: process.env.VITE_CORE_GATEWAY_URL || 'http://localhost:9000',
         changeOrigin: true,
       },

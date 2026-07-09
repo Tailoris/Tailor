@@ -2,6 +2,7 @@ package com.tailoris.product.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.exception.BusinessException;
 import com.tailoris.common.result.Result;
 import com.tailoris.product.dto.CreateReviewRequest;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @SaCheckLogin
 @Tag(name = "商品评价管理")
 @RestController
-@RequestMapping("/api/product/review")
+@RequestMapping(RoutePortConstant.ROUTE_PRODUCT_REVIEW)
 @RequiredArgsConstructor
 public class ReviewController {
 

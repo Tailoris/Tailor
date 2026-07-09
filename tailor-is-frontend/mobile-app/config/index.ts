@@ -102,19 +102,19 @@ export const gatewayConfig: GatewayConfig = {
  */
 export function resolveGatewayUrl(path: string): string {
   const corePaths = [
-    '/api/user', '/api/auth', '/api/product', '/api/favorite',
-    '/api/order', '/api/cart', '/api/payment', '/api/settlement',
-    '/api/account', '/api/sandbox', '/api/marketing', '/api/coupon',
-    '/api/points', '/api/seckill', '/api/ai', '/api/body-size',
-    '/api/copyright', '/api/merchant', '/api/shop', '/api/admin', '/api/pattern'
+    '/api/v1/user', '/api/v1/auth', '/api/v1/product', '/api/v1/favorite',
+    '/api/v1/order', '/api/v1/cart', '/api/v1/payment', '/api/v1/settlement',
+    '/api/v1/account', '/api/v1/sandbox', '/api/v1/marketing', '/api/v1/coupon',
+    '/api/v1/points', '/api/v1/seckill', '/api/v1/ai', '/api/v1/body-size',
+    '/api/v1/copyright', '/api/v1/merchant', '/api/v1/shop', '/api/v1/admin', '/api/v1/pattern'
   ]
   const litePaths = [
-    '/api/community', '/api/post', '/api/comment',
-    '/api/academy', '/api/course',
-    '/api/supply',
-    '/api/message', '/api/notice',
-    '/api/im', '/api/im-message',
-    '/api/analytics', '/api/metrics', '/api/dashboard'
+    '/api/v1/community', '/api/v1/post', '/api/v1/comment',
+    '/api/v1/academy', '/api/v1/course',
+    '/api/v1/supply',
+    '/api/v1/message', '/api/v1/notice',
+    '/api/v1/im', '/api/v1/im-message',
+    '/api/v1/analytics', '/api/v1/metrics', '/api/v1/dashboard'
   ]
 
   const isCore = corePaths.some(p => path.startsWith(p))
@@ -129,8 +129,8 @@ export function resolveGatewayUrl(path: string): string {
 
 export const appConfig: AppConfig = {
   baseURL: selectBaseURL(),
-  apiPrefix: '/api/front',
-  uploadURL: '/api/front/upload',
+  apiPrefix: '/api/v1',
+  uploadURL: '/api/v1/upload',
   tokenStorageKey: '__tkn__',
   userInfoStorageKey: '__usr__',
   env: ENV,

@@ -41,6 +41,11 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
 </dependency>
 
+<dependency>
+<groupId>org.springframework.cloud</groupId>
+<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+</dependency>
+
 <!-- Nacos Config已禁用，移除依赖以避免dataId错误 -->
 <!--
 <dependency>

@@ -1,11 +1,22 @@
 import request from './request'
 import type { Order, PageResponse } from '@/types'
 
+interface OrderItemRequest {
+  productId: number
+  skuId: number
+  quantity: number
+  price?: number
+  shopId?: number
+  merchantId?: number
+}
+
 interface CreateOrderData {
-  items: { productId: number; skuId: number; quantity: number }[]
+  cartIds?: number[]
+  items?: OrderItemRequest[]
   addressId: number
   remark?: string
   couponId?: number
+  requestId: string
 }
 
 interface OrderListParams {
@@ -16,7 +27,7 @@ interface OrderListParams {
 
 export function createOrder(data: CreateOrderData) {
   return request<Record<string, unknown>, { orderNo: string }>({
-    url: '/order',
+    url: '/api/v1/order',
     method: 'post',
     data
   })
@@ -24,7 +35,7 @@ export function createOrder(data: CreateOrderData) {
 
 export function getOrders(params: OrderListParams) {
   return request<Record<string, unknown>, PageResponse<Order>>({
-    url: '/order/list',
+    url: '/api/v1/order/list',
     method: 'get',
     params
   })
@@ -32,14 +43,14 @@ export function getOrders(params: OrderListParams) {
 
 export function getOrderDetail(orderNo: string) {
   return request<Record<string, unknown>, Order>({
-    url: `/order/${orderNo}`,
+    url: `/api/v1/order/${orderNo}`,
     method: 'get'
   })
 }
 
 export function payOrder(orderNo: string) {
   return request<Record<string, unknown>, boolean>({
-    url: `/order/${orderNo}/pay`,
+    url: `/api/v1/order/${orderNo}/pay`,
     method: 'put',
     params: { payType: 1 }
   })
@@ -47,14 +58,14 @@ export function payOrder(orderNo: string) {
 
 export function confirmOrder(orderNo: string) {
   return request<Record<string, unknown>, boolean>({
-    url: `/order/${orderNo}/confirm`,
+    url: `/api/v1/order/${orderNo}/confirm`,
     method: 'put'
   })
 }
 
 export function cancelOrder(orderNo: string) {
   return request<Record<string, unknown>, boolean>({
-    url: `/order/${orderNo}/cancel`,
+    url: `/api/v1/order/${orderNo}/cancel`,
     method: 'put',
     params: { reason: '用户取消' }
   })

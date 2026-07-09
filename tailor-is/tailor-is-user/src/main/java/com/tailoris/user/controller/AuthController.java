@@ -15,6 +15,8 @@ import com.tailoris.user.mapper.SysUserMapper;
 import com.tailoris.user.service.MailService;
 import com.tailoris.user.service.SysUserService;
 import com.tailoris.user.service.WechatLoginService;
+import com.tailoris.common.annotation.ApiVersion;
+import com.tailoris.common.constant.RoutePortConstant;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -32,9 +34,10 @@ import java.security.SecureRandom;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@ApiVersion("1.0")
 @Tag(name = "认证管理", description = "用户登录、注册、登出等认证相关接口")
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping(RoutePortConstant.ROUTE_AUTH)
 @RequiredArgsConstructor
 @Slf4j
 public class AuthController {
@@ -91,7 +94,7 @@ public class AuthController {
             throw new BusinessException("用户不存在");
         }
 
-        if (user.getStatus() != 0) {
+        if (user.getStatus() != 1) {
             throw new BusinessException("账号已被禁用");
         }
 
@@ -160,7 +163,7 @@ public class AuthController {
         user.setUsername(email);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
-        user.setStatus(0);
+        user.setStatus(1);
         user.setNickName("用户_" + email.substring(0, email.indexOf("@")));
         sysUserMapper.insert(user);
 
@@ -238,7 +241,7 @@ public class AuthController {
             throw new BusinessException("用户不存在");
         }
 
-        if (user.getStatus() != 0) {
+        if (user.getStatus() != 1) {
             throw new BusinessException("账号已被禁用");
         }
 

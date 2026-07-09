@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS `shopping_cart` (
   `quantity` INT NOT NULL DEFAULT 1 COMMENT '购买数量',
   `checked` TINYINT NOT NULL DEFAULT 1 COMMENT '是否选中：0-未选中，1-选中',
   `price_snapshot` DECIMAL(12, 2) DEFAULT NULL COMMENT '加入购物车时的价格快照',
+  `created_by` VARCHAR(64) DEFAULT NULL COMMENT '创建人',
+  `updated_by` VARCHAR(64) DEFAULT NULL COMMENT '更新人',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -36,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `shopping_cart` (
   KEY `idx_sku_id` (`sku_id`),
   KEY `idx_shop_id` (`shop_id`),
   KEY `idx_checked` (`checked`),
-  UNIQUE KEY `uk_user_sku` (`user_id`, `sku_id`)
+  UNIQUE KEY `uk_user_sku` (`user_id`, `sku_id`, `deleted`)
   -- 外键约束保持禁用，原因：
   -- 1. 跨库引用：user_id 指向 tailor_is_user.sys_user，product_id/sku_id 指向 tailor_is_product，MySQL 不支持跨库外键
   -- 2. 分库分表：本表已按 merchant_id 取模分片（t_shopping_cart_0~3，见 10_sharding_migration.sql），
@@ -79,6 +81,8 @@ CREATE TABLE IF NOT EXISTS `order_info` (
   `cancel_reason` VARCHAR(256) DEFAULT NULL COMMENT '取消原因',
   `cancel_time` DATETIME DEFAULT NULL COMMENT '取消时间',
   `confirm_receive_time` DATETIME DEFAULT NULL COMMENT '确认收货时间',
+  `created_by` VARCHAR(64) DEFAULT NULL COMMENT '创建人',
+  `updated_by` VARCHAR(64) DEFAULT NULL COMMENT '更新人',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -120,6 +124,8 @@ CREATE TABLE IF NOT EXISTS `order_item` (
   `pay_amount` DECIMAL(12, 2) NOT NULL COMMENT '实付金额（元）',
   `is_commented` TINYINT DEFAULT 0 COMMENT '是否已评价：0-否，1-是',
   `after_sale_status` TINYINT DEFAULT 0 COMMENT '售后状态：0-无售后，1-售后中，2-售后完成，3-售后关闭',
+  `created_by` VARCHAR(64) DEFAULT NULL COMMENT '创建人',
+  `updated_by` VARCHAR(64) DEFAULT NULL COMMENT '更新人',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -154,6 +160,8 @@ CREATE TABLE IF NOT EXISTS `order_logistics` (
   `receiver_phone` VARCHAR(20) DEFAULT NULL COMMENT '收货人电话（快照）',
   `receiver_address` VARCHAR(512) DEFAULT NULL COMMENT '收货地址（快照）',
   `remark` VARCHAR(256) DEFAULT NULL COMMENT '物流备注',
+  `created_by` VARCHAR(64) DEFAULT NULL COMMENT '创建人',
+  `updated_by` VARCHAR(64) DEFAULT NULL COMMENT '更新人',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -200,6 +208,8 @@ CREATE TABLE IF NOT EXISTS `after_sale_ticket` (
   `platform_result` VARCHAR(512) DEFAULT NULL COMMENT '平台处理结果',
   `platform_handle_time` DATETIME DEFAULT NULL COMMENT '平台处理时间',
   `processed_at` DATETIME DEFAULT NULL COMMENT '售后完成时间',
+  `created_by` VARCHAR(64) DEFAULT NULL COMMENT '创建人',
+  `updated_by` VARCHAR(64) DEFAULT NULL COMMENT '更新人',
   `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

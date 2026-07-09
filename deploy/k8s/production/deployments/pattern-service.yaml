@@ -18,8 +18,8 @@ spec:
   type: ClusterIP
   ports:
     - name: http
-      port: 8115
-      targetPort: 8115
+      port: 8091
+      targetPort: 8091
       protocol: TCP
   selector:
     app: tailor-is
@@ -102,7 +102,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8115
+              port: 8091
             initialDelaySeconds: 60
             periodSeconds: 15
             timeoutSeconds: 5
@@ -110,7 +110,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8115
+              port: 8091
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3
@@ -118,7 +118,7 @@ spec:
           startupProbe:
             httpGet:
               path: /actuator/health
-              port: 8115
+              port: 8091
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5

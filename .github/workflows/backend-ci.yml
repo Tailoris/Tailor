@@ -123,6 +123,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: false
 
+      - name: Check File Encoding
+        run: |
+          chmod +x deploy/scripts/check-file-encoding.sh
+          PROJECT_DIR=. FAIL_ON_ERROR=true deploy/scripts/check-file-encoding.sh
+
       - name: Run Checkstyle
         if: always()
         run: |
