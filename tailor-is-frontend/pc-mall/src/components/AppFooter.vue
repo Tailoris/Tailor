@@ -1,7 +1,15 @@
 <template>
-  <footer class="app-footer" role="contentinfo" aria-label="页脚">
+  <footer
+    class="app-footer"
+    role="contentinfo"
+    aria-label="页脚"
+  >
     <div class="footer-container">
-      <div class="footer-content" role="navigation" aria-label="页脚导航">
+      <div
+        class="footer-content"
+        role="navigation"
+        aria-label="页脚导航"
+      >
         <div class="footer-column">
           <h4>品牌介绍</h4>
           <ul>
@@ -36,9 +44,15 @@
             <li><a href="#">工作时间: 9:00-18:00</a></li>
             <li><a href="#">邮箱: support@tailoris.com</a></li>
             <li class="social-icons">
-              <el-icon :size="24"><ChatDotRound /></el-icon>
-              <el-icon :size="24"><Share /></el-icon>
-              <el-icon :size="24"><Message /></el-icon>
+              <el-icon :size="24">
+                <ChatDotRound />
+              </el-icon>
+              <el-icon :size="24">
+                <Share />
+              </el-icon>
+              <el-icon :size="24">
+                <Message />
+              </el-icon>
             </li>
           </ul>
         </div>
@@ -52,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChatDotRound, Share, Message } from '@element-plus/icons-vue'
+import { ChatDotRound, Share, Message } from '@element-plus/icons-vue';
 </script>
 
 <style scoped>

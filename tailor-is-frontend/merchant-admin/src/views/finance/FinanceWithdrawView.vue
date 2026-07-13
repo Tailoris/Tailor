@@ -1,23 +1,46 @@
 <template>
-  <div class="finance-withdraw" v-loading="loading">
+  <div
+    v-loading="loading"
+    class="finance-withdraw"
+  >
     <PageHeader title="提现管理" />
 
-    <el-card shadow="never" style="margin-bottom: 20px">
+    <el-card
+      shadow="never"
+      style="margin-bottom: 20px"
+    >
       <div class="balance-cards">
         <div class="balance-card primary">
-          <div class="balance-label">可提现金额</div>
-          <div class="balance-value">¥{{ balance.withdrawableAmount?.toFixed(2) || '0.00' }}</div>
-          <el-button type="primary" size="small" @click="withdrawDialogVisible = true" class="withdraw-btn">
+          <div class="balance-label">
+            可提现金额
+          </div>
+          <div class="balance-value">
+            ¥{{ balance.withdrawableAmount?.toFixed(2) || '0.00' }}
+          </div>
+          <el-button
+            type="primary"
+            size="small"
+            class="withdraw-btn"
+            @click="withdrawDialogVisible = true"
+          >
             申请提现
           </el-button>
         </div>
         <div class="balance-card">
-          <div class="balance-label">累计收益</div>
-          <div class="balance-value">¥{{ balance.totalEarnings?.toFixed(2) || '0.00' }}</div>
+          <div class="balance-label">
+            累计收益
+          </div>
+          <div class="balance-value">
+            ¥{{ balance.totalEarnings?.toFixed(2) || '0.00' }}
+          </div>
         </div>
         <div class="balance-card">
-          <div class="balance-label">累计提现</div>
-          <div class="balance-value">¥{{ balance.totalWithdrawn?.toFixed(2) || '0.00' }}</div>
+          <div class="balance-label">
+            累计提现
+          </div>
+          <div class="balance-value">
+            ¥{{ balance.totalWithdrawn?.toFixed(2) || '0.00' }}
+          </div>
         </div>
       </div>
     </el-card>
@@ -29,32 +52,77 @@
         </div>
       </template>
 
-      <el-table :data="withdrawRecords" stripe>
-        <el-table-column prop="id" label="提现单号" width="180" show-overflow-tooltip />
-        <el-table-column label="提现金额" width="120">
-          <template #default="{ row }">¥{{ row.amount?.toFixed(2) }}</template>
-        </el-table-column>
-        <el-table-column label="开户银行" width="120">
-          <template #default="{ row }">{{ bankNameLabel[row.bankName] || row.bankName }}</template>
-        </el-table-column>
-        <el-table-column label="银行账号" width="160">
-          <template #default="{ row }">{{ maskBankAccount(row.bankAccount) }}</template>
-        </el-table-column>
-        <el-table-column label="状态" width="100">
+      <el-table
+        :data="withdrawRecords"
+        stripe
+      >
+        <el-table-column
+          prop="id"
+          label="提现单号"
+          width="180"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          label="提现金额"
+          width="120"
+        >
           <template #default="{ row }">
-            <el-tag :type="withdrawStatusType[row.status]" size="small">
+            ¥{{ row.amount?.toFixed(2) }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="开户银行"
+          width="120"
+        >
+          <template #default="{ row }">
+            {{ bankNameLabel[row.bankName] || row.bankName }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="银行账号"
+          width="160"
+        >
+          <template #default="{ row }">
+            {{ maskBankAccount(row.bankAccount) }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="状态"
+          width="100"
+        >
+          <template #default="{ row }">
+            <el-tag
+              :type="withdrawStatusType[row.status]"
+              size="small"
+            >
               {{ withdrawStatusLabel[row.status] }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="申请时间" width="180">
-          <template #default="{ row }">{{ row.createdAt || '-' }}</template>
+        <el-table-column
+          label="申请时间"
+          width="180"
+        >
+          <template #default="{ row }">
+            {{ row.createdAt || '-' }}
+          </template>
         </el-table-column>
-        <el-table-column label="处理时间" width="180">
-          <template #default="{ row }">{{ row.processedAt || '-' }}</template>
+        <el-table-column
+          label="处理时间"
+          width="180"
+        >
+          <template #default="{ row }">
+            {{ row.processedAt || '-' }}
+          </template>
         </el-table-column>
-        <el-table-column label="备注" min-width="200" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.remark || '-' }}</template>
+        <el-table-column
+          label="备注"
+          min-width="200"
+          show-overflow-tooltip
+        >
+          <template #default="{ row }">
+            {{ row.remark || '-' }}
+          </template>
         </el-table-column>
         <template #empty>
           <el-empty description="暂无提现记录" />
@@ -72,8 +140,15 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="withdrawDialogVisible" title="提现申请" width="500px">
-      <el-form :model="withdrawForm" label-width="100px">
+    <el-dialog
+      v-model="withdrawDialogVisible"
+      title="提现申请"
+      width="500px"
+    >
+      <el-form
+        :model="withdrawForm"
+        label-width="100px"
+      >
         <el-form-item label="提现金额">
           <el-input-number
             v-model="withdrawForm.amount"
@@ -83,64 +158,99 @@
             :controls="false"
             style="width: 100%"
           />
-          <div class="form-hint">可提现金额：¥{{ balance.withdrawableAmount?.toFixed(2) }}</div>
+          <div class="form-hint">
+            可提现金额：¥{{ balance.withdrawableAmount?.toFixed(2) }}
+          </div>
         </el-form-item>
         <el-form-item label="开户银行">
-          <el-select v-model="withdrawForm.bankName" placeholder="请选择银行" style="width: 100%">
-            <el-option label="工商银行" value="ICBC" />
-            <el-option label="建设银行" value="CCB" />
-            <el-option label="农业银行" value="ABC" />
-            <el-option label="中国银行" value="BOC" />
-            <el-option label="招商银行" value="CMB" />
-            <el-option label="交通银行" value="BOCOM" />
+          <el-select
+            v-model="withdrawForm.bankName"
+            placeholder="请选择银行"
+            style="width: 100%"
+          >
+            <el-option
+              label="工商银行"
+              value="ICBC"
+            />
+            <el-option
+              label="建设银行"
+              value="CCB"
+            />
+            <el-option
+              label="农业银行"
+              value="ABC"
+            />
+            <el-option
+              label="中国银行"
+              value="BOC"
+            />
+            <el-option
+              label="招商银行"
+              value="CMB"
+            />
+            <el-option
+              label="交通银行"
+              value="BOCOM"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="银行账号">
-          <el-input v-model="withdrawForm.bankAccount" placeholder="请输入银行账号" />
+          <el-input
+            v-model="withdrawForm.bankAccount"
+            placeholder="请输入银行账号"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="withdrawDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleWithdraw" :loading="withdrawing">确认提现</el-button>
+        <el-button @click="withdrawDialogVisible = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="withdrawing"
+          @click="handleWithdraw"
+        >
+          确认提现
+        </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { getBalance, withdraw, getWithdrawRecords } from '@/api/finance'
-import type { SettlementRecord } from '@/types'
-import PageHeader from '@/components/PageHeader.vue'
-import { ElMessage } from 'element-plus'
+import { ref, reactive, onMounted } from 'vue';
+import { getBalance, withdraw, getWithdrawRecords } from '@/api/finance';
+import type { SettlementRecord } from '@/types';
+import PageHeader from '@/components/PageHeader.vue';
+import { ElMessage } from 'element-plus';
 
-const loading = ref(false)
-const withdrawing = ref(false)
+const loading = ref(false);
+const withdrawing = ref(false);
 // 🔒 M-23修复: 使用 SettlementRecord 替代 any[]，保持类型安全
-const withdrawRecords = ref<SettlementRecord[]>([])
-const total = ref(0)
-const page = ref(1)
-const pageSize = ref(10)
+const withdrawRecords = ref<SettlementRecord[]>([]);
+const total = ref(0);
+const page = ref(1);
+const pageSize = ref(10);
 
 const balance = reactive({
   withdrawableAmount: 0,
   totalEarnings: 0,
   totalWithdrawn: 0,
-})
+});
 
 const withdrawStatusType: Record<number, string> = {
   0: 'warning',
   1: 'primary',
   2: 'success',
   3: 'danger',
-}
+};
 
 const withdrawStatusLabel: Record<number, string> = {
   0: '待处理',
   1: '处理中',
   2: '已到账',
   3: '提现失败',
-}
+};
 
 const bankNameLabel: Record<string, string> = {
   ICBC: '工商银行',
@@ -149,78 +259,78 @@ const bankNameLabel: Record<string, string> = {
   BOC: '中国银行',
   CMB: '招商银行',
   BOCOM: '交通银行',
-}
+};
 
 function maskBankAccount(account: string) {
-  if (!account) return '-'
-  if (account.length <= 8) return account
-  return account.slice(0, 4) + '****' + account.slice(-4)
+  if (!account) return '-';
+  if (account.length <= 8) return account;
+  return account.slice(0, 4) + '****' + account.slice(-4);
 }
 
-const withdrawDialogVisible = ref(false)
+const withdrawDialogVisible = ref(false);
 const withdrawForm = reactive({
   amount: 0,
   bankName: '',
   bankAccount: '',
-})
+});
 
 async function fetchBalance() {
   try {
-    const res = await getBalance()
-    Object.assign(balance, res)
+    const res = await getBalance();
+    Object.assign(balance, res);
   } catch {
     // error handled by interceptor
   }
 }
 
 async function fetchWithdrawRecords() {
-  loading.value = true
+  loading.value = true;
   try {
-    const res = await getWithdrawRecords({ current: page.value, size: pageSize.value })
-    withdrawRecords.value = res.records
-    total.value = res.total
+    const res = await getWithdrawRecords({ current: page.value, size: pageSize.value });
+    withdrawRecords.value = res.records;
+    total.value = res.total;
   } catch {
     // error handled by interceptor
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function handleWithdraw() {
   if (!withdrawForm.bankName || !withdrawForm.bankAccount) {
-    ElMessage.warning('请填写完整的银行信息')
-    return
+    ElMessage.warning('请填写完整的银行信息');
+    return;
   }
   if (withdrawForm.amount <= 0) {
-    ElMessage.warning('请输入正确的提现金额')
-    return
+    ElMessage.warning('请输入正确的提现金额');
+    return;
   }
   if (withdrawForm.amount > balance.withdrawableAmount) {
-    ElMessage.warning('提现金额不能超过可提现金额')
-    return
+    ElMessage.warning('提现金额不能超过可提现金额');
+    return;
   }
-  withdrawing.value = true
+  withdrawing.value = true;
   try {
     await withdraw({
       amount: withdrawForm.amount,
       bankName: withdrawForm.bankName,
       bankAccount: withdrawForm.bankAccount,
-    })
-    ElMessage.success('提现申请已提交')
-    withdrawDialogVisible.value = false
-    fetchBalance()
-    fetchWithdrawRecords()
+    });
+    ElMessage.success('提现申请已提交');
+    withdrawDialogVisible.value = false;
+    fetchBalance();
+    fetchWithdrawRecords();
   } catch {
     // error handled by interceptor
   } finally {
-    withdrawing.value = false
+    withdrawing.value = false;
   }
 }
 
 onMounted(() => {
-  fetchBalance()
-  fetchWithdrawRecords()
-})
+  fetchBalance();
+  fetchWithdrawRecords();
+});
 </script>
 
 <style scoped>
@@ -238,7 +348,7 @@ onMounted(() => {
 }
 
 .balance-card.primary {
-  background: linear-gradient(135deg, #6366F1, #818CF8);
+  background: linear-gradient(135deg, #6366f1, #818cf8);
   color: white;
 }
 

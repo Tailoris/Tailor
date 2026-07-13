@@ -1,16 +1,28 @@
 <template>
   <div class="admin-layout">
-    <aside class="sidebar" :class="{ collapsed: appStore.sidebarCollapsed }">
+    <aside
+      class="sidebar"
+      :class="{ collapsed: appStore.sidebarCollapsed }"
+    >
       <div class="logo">
         <span class="logo-icon">T</span>
-        <span v-show="!appStore.sidebarCollapsed" class="logo-text">Tailor IS</span>
+        <span
+          v-show="!appStore.sidebarCollapsed"
+          class="logo-text"
+        >Tailor IS</span>
       </div>
       <SidebarMenu />
     </aside>
-    <div class="main-wrapper" :class="{ expanded: appStore.sidebarCollapsed }">
+    <div
+      class="main-wrapper"
+      :class="{ expanded: appStore.sidebarCollapsed }"
+    >
       <header class="header">
         <div class="header-left">
-          <el-icon class="toggle-btn" @click="appStore.toggleSidebar">
+          <el-icon
+            class="toggle-btn"
+            @click="appStore.toggleSidebar"
+          >
             <Fold v-if="!appStore.sidebarCollapsed" />
             <Expand v-else />
           </el-icon>
@@ -40,22 +52,38 @@
           </el-select>
           <el-dropdown trigger="click">
             <span class="user-info">
-              <el-avatar :size="32" class="user-avatar">
+              <el-avatar
+                :size="32"
+                class="user-avatar"
+              >
                 {{ userStore.userInfo?.name?.charAt(0) || 'U' }}
               </el-avatar>
               <span class="user-name">{{ userStore.userInfo?.name || '用户' }}</span>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="router.push('/shop/settings')">店铺设置</el-dropdown-item>
-                <el-dropdown-item @click="router.push('/shop/employees')">员工管理</el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+                <el-dropdown-item @click="router.push('/shop/settings')">
+                  店铺设置
+                </el-dropdown-item>
+                <el-dropdown-item @click="router.push('/shop/employees')">
+                  员工管理
+                </el-dropdown-item>
+                <el-dropdown-item
+                  divided
+                  @click="handleLogout"
+                >
+                  退出登录
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </div>
       </header>
-      <main id="main-content" class="content" :class="`content--${appStore.device}`">
+      <main
+        id="main-content"
+        class="content"
+        :class="`content--${appStore.device}`"
+      >
         <router-view />
       </main>
     </div>
@@ -63,48 +91,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useUserStore } from '@/store/user'
-import { useAppStore } from '@/store/app'
-import SidebarMenu from './SidebarMenu.vue'
-import { Fold, Expand } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus'
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useUserStore } from '@/store/user';
+import { useAppStore } from '@/store/app';
+import SidebarMenu from './SidebarMenu.vue';
+import { Fold, Expand } from '@element-plus/icons-vue';
+import { ElMessageBox } from 'element-plus';
 
-const router = useRouter()
-const route = useRoute()
-const userStore = useUserStore()
-const appStore = useAppStore()
+const router = useRouter();
+const route = useRoute();
+const userStore = useUserStore();
+const appStore = useAppStore();
 
-const currentShopId = ref<number | null>(userStore.currentShopId)
+const currentShopId = ref<number | null>(userStore.currentShopId);
 
 watch(
   () => route.path,
   () => {
-    const matched = route.matched[route.matched.length - 1]
+    const matched = route.matched[route.matched.length - 1];
     if (matched.meta.breadcrumb) {
       appStore.setBreadcrumbs(
         (matched.meta.breadcrumb as string[]).map((title, index, arr) => ({
           title,
           path: index < arr.length - 1 ? '/' : undefined,
         }))
-      )
+      );
     }
   },
   { immediate: true }
-)
+);
 
 onMounted(async () => {
-  appStore.initDeviceListener()
+  appStore.initDeviceListener();
   if (userStore.isLoggedIn) {
-    await userStore.fetchUserInfo()
-    await userStore.fetchShopList()
+    await userStore.fetchUserInfo();
+    await userStore.fetchShopList();
   }
-})
+});
 
 onUnmounted(() => {
-  appStore.destroyDeviceListener()
-})
+  appStore.destroyDeviceListener();
+});
 
 async function handleLogout() {
   try {
@@ -112,9 +140,9 @@ async function handleLogout() {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
-    })
-    await userStore.logout()
-    router.push('/login')
+    });
+    await userStore.logout();
+    router.push('/login');
   } catch {
     // cancelled
   }

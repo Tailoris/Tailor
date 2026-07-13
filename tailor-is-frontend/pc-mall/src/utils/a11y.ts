@@ -5,17 +5,17 @@
  */
 
 /** 创建或获取屏幕阅读器专用 live region 元素 */
-let liveRegionEl: HTMLElement | null = null
+let liveRegionEl: HTMLElement | null = null;
 
 function getLiveRegion(): HTMLElement {
   if (!liveRegionEl) {
-    liveRegionEl = document.createElement('div')
-    liveRegionEl.setAttribute('aria-live', 'polite')
-    liveRegionEl.setAttribute('aria-atomic', 'true')
-    liveRegionEl.className = 'sr-only'
-    document.body.appendChild(liveRegionEl)
+    liveRegionEl = document.createElement('div');
+    liveRegionEl.setAttribute('aria-live', 'polite');
+    liveRegionEl.setAttribute('aria-atomic', 'true');
+    liveRegionEl.className = 'sr-only';
+    document.body.appendChild(liveRegionEl);
   }
-  return liveRegionEl
+  return liveRegionEl;
 }
 
 /**
@@ -24,18 +24,18 @@ function getLiveRegion(): HTMLElement {
  * @param priority - 'polite'（不打断）| 'assertive'（立即打断）
  */
 export function announceToScreenReader(message: string, priority: 'polite' | 'assertive' = 'polite'): void {
-  const region = getLiveRegion()
-  region.setAttribute('aria-live', priority)
+  const region = getLiveRegion();
+  region.setAttribute('aria-live', priority);
   if (priority === 'assertive') {
-    region.setAttribute('role', 'alert')
+    region.setAttribute('role', 'alert');
   } else {
-    region.setAttribute('role', 'status')
+    region.setAttribute('role', 'status');
   }
   // 先清空再设置，确保每次都能触发播报
-  region.textContent = ''
+  region.textContent = '';
   requestAnimationFrame(() => {
-    region.textContent = message
-  })
+    region.textContent = message;
+  });
 }
 
 /**
@@ -52,46 +52,46 @@ export function focusTrap(element: HTMLElement): () => void {
     'select:not([disabled])',
     'textarea:not([disabled])',
     '[tabindex]:not([tabindex="-1"])',
-  ].join(', ')
+  ].join(', ');
 
   function getFocusableElements(): HTMLElement[] {
-    return Array.from(element.querySelectorAll<HTMLElement>(focusableSelector))
+    return Array.from(element.querySelectorAll<HTMLElement>(focusableSelector));
   }
 
   const handleKeyDown = (e: KeyboardEvent): void => {
-    if (e.key !== 'Tab') return
+    if (e.key !== 'Tab') return;
 
-    const focusable = getFocusableElements()
-    if (focusable.length === 0) return
+    const focusable = getFocusableElements();
+    if (focusable.length === 0) return;
 
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
 
     if (e.shiftKey) {
       if (document.activeElement === first && last) {
-        e.preventDefault()
-        last.focus()
+        e.preventDefault();
+        last.focus();
       }
     } else {
       if (document.activeElement === last && first) {
-        e.preventDefault()
-        first.focus()
+        e.preventDefault();
+        first.focus();
       }
     }
-  }
+  };
 
-  const focusable = getFocusableElements()
+  const focusable = getFocusableElements();
   if (focusable.length > 0) {
-    const firstFocusable = focusable[0]
+    const firstFocusable = focusable[0];
     if (firstFocusable) {
-      firstFocusable.focus()
+      firstFocusable.focus();
     }
   }
 
-  element.addEventListener('keydown', handleKeyDown)
+  element.addEventListener('keydown', handleKeyDown);
   return () => {
-    element.removeEventListener('keydown', handleKeyDown)
-  }
+    element.removeEventListener('keydown', handleKeyDown);
+  };
 }
 
 /**
@@ -99,14 +99,18 @@ export function focusTrap(element: HTMLElement): () => void {
  * @param targetId - 主内容元素的 ID，默认 'main-content'
  */
 export function skipToContent(targetId: string = 'main-content'): void {
-  const target = document.getElementById(targetId)
+  const target = document.getElementById(targetId);
   if (target) {
-    target.setAttribute('tabindex', '-1')
-    target.focus()
+    target.setAttribute('tabindex', '-1');
+    target.focus();
     // 移除 tabindex 避免后续 Tab 导航异常
-    target.addEventListener('blur', () => {
-      target.removeAttribute('tabindex')
-    }, { once: true })
+    target.addEventListener(
+      'blur',
+      () => {
+        target.removeAttribute('tabindex');
+      },
+      { once: true }
+    );
   }
 }
 
@@ -117,27 +121,27 @@ export function skipToContent(targetId: string = 'main-content'): void {
  * @returns ARIA 标签文本
  */
 export function getAriaLabel(element: HTMLElement): string {
-  const ariaLabel = element.getAttribute('aria-label')
+  const ariaLabel = element.getAttribute('aria-label');
   if (ariaLabel && ariaLabel.trim()) {
-    return ariaLabel.trim()
+    return ariaLabel.trim();
   }
 
-  const labelledBy = element.getAttribute('aria-labelledby')
+  const labelledBy = element.getAttribute('aria-labelledby');
   if (labelledBy) {
-    const labelEl = document.getElementById(labelledBy)
+    const labelEl = document.getElementById(labelledBy);
     if (labelEl) {
-      return labelEl.textContent?.trim() || ''
+      return labelEl.textContent?.trim() || '';
     }
   }
 
-  return element.textContent?.trim() || ''
+  return element.textContent?.trim() || '';
 }
 
 /**
  * 生成唯一 ID，用于关联 label 和表单元素
  * @param prefix - ID 前缀
  */
-let idCounter = 0
+let idCounter = 0;
 export function generateA11yId(prefix: string = 'a11y'): string {
-  return `${prefix}-${++idCounter}-${Date.now().toString(36)}`
+  return `${prefix}-${++idCounter}-${Date.now().toString(36)}`;
 }

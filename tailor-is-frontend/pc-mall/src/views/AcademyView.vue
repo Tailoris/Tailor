@@ -1,131 +1,235 @@
 <template>
-  <div class="academy-view" role="main" aria-label="线上学堂">
+  <div
+    class="academy-view"
+    role="main"
+    aria-label="线上学堂"
+  >
     <div class="view-header">
-      <h1 class="page-title">线上学堂</h1>
-      <p class="page-subtitle">课程学习与证书认证，成就专业梦想</p>
+      <h1 class="page-title">
+        线上学堂
+      </h1>
+      <p class="page-subtitle">
+        课程学习与证书认证，成就专业梦想
+      </p>
     </div>
 
     <div class="tabs-container">
       <div class="tabs">
-        <button :class="{ active: activeTab === 'courses' }" @click="activeTab = 'courses'">
+        <button
+          :class="{ active: activeTab === 'courses' }"
+          @click="activeTab = 'courses'"
+        >
           <el-icon><Reading /></el-icon>
           <span>课程中心</span>
         </button>
-        <button :class="{ active: activeTab === 'training' }" @click="activeTab = 'training'">
+        <button
+          :class="{ active: activeTab === 'training' }"
+          @click="activeTab = 'training'"
+        >
           <el-icon><Lightning /></el-icon>
           <span>实战训练营</span>
         </button>
-        <button :class="{ active: activeTab === 'certificates' }" @click="activeTab = 'certificates'">
+        <button
+          :class="{ active: activeTab === 'certificates' }"
+          @click="activeTab = 'certificates'"
+        >
           <el-icon><Medal /></el-icon>
           <span>证书认证</span>
         </button>
       </div>
     </div>
 
-    <div v-if="activeTab === 'courses'" class="tab-content">
-      <div v-if="loading" class="loading-state">
-        <el-icon class="loading-icon"><Loading /></el-icon>
+    <div
+      v-if="activeTab === 'courses'"
+      class="tab-content"
+    >
+      <div
+        v-if="loading"
+        class="loading-state"
+      >
+        <el-icon class="loading-icon">
+          <Loading />
+        </el-icon>
         <p>加载课程中...</p>
       </div>
-      <div v-else-if="error" class="error-state">
+      <div
+        v-else-if="error"
+        class="error-state"
+      >
         <p>{{ error }}</p>
-        <el-button @click="loadCourses">重试</el-button>
+        <el-button @click="loadCourses">
+          重试
+        </el-button>
       </div>
       <template v-else>
-      <div class="search-section">
-        <div class="search-box">
-          <el-icon class="search-icon"><Search /></el-icon>
-          <input v-model="searchKeyword" type="text" placeholder="搜索课程..." @keyup.enter="handleSearch" />
-          <button class="search-btn" @click="handleSearch">搜索</button>
-        </div>
-      </div>
-
-      <div class="level-tabs">
-        <button v-for="level in levels" :key="level.value"
-          :class="['level-btn', level.value, { active: selectedLevel === level.value }]"
-          @click="selectedLevel = level.value">
-          <span class="level-icon">{{ level.icon }}</span>
-          <span class="level-name">{{ level.name }}</span>
-          <span class="level-count">{{ level.count }}门课程</span>
-        </button>
-      </div>
-
-      <div class="filter-bar">
-        <div class="filter-group">
-          <span class="filter-label">分类</span>
-          <div class="filter-tags">
-            <button :class="{ active: selectedCategory === '' }" @click="selectedCategory = ''">全部</button>
-            <button v-for="cat in categories" :key="cat.value"
-              :class="{ active: selectedCategory === cat.value }"
-              @click="selectedCategory = cat.value">{{ cat.label }}</button>
+        <div class="search-section">
+          <div class="search-box">
+            <el-icon class="search-icon">
+              <Search />
+            </el-icon>
+            <input
+              v-model="searchKeyword"
+              type="text"
+              placeholder="搜索课程..."
+              @keyup.enter="handleSearch"
+            >
+            <button
+              class="search-btn"
+              @click="handleSearch"
+            >
+              搜索
+            </button>
           </div>
         </div>
-        <div class="filter-group">
-          <span class="filter-label">排序</span>
-          <select v-model="sortBy" @change="handleSort">
-            <option value="popular">最受欢迎</option>
-            <option value="newest">最新上线</option>
-            <option value="price_asc">价格从低到高</option>
-            <option value="price_desc">价格从高到低</option>
-          </select>
-        </div>
-      </div>
 
-      <div class="courses-grid">
-        <div v-for="course in courses" :key="course.id" class="course-card" @click="viewCourse(course.id)">
-          <div class="course-image-wrapper">
-            <img :src="course.image" :alt="course.title" class="course-image" />
-            <div class="course-badge" v-if="course.badge">{{ course.badge }}</div>
-            <div class="course-duration">{{ course.duration }}</div>
+        <div class="level-tabs">
+          <button
+            v-for="level in levels"
+            :key="level.value"
+            :class="['level-btn', level.value, { active: selectedLevel === level.value }]"
+            @click="selectedLevel = level.value"
+          >
+            <span class="level-icon">{{ level.icon }}</span>
+            <span class="level-name">{{ level.name }}</span>
+            <span class="level-count">{{ level.count }}门课程</span>
+          </button>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-group">
+            <span class="filter-label">分类</span>
+            <div class="filter-tags">
+              <button
+                :class="{ active: selectedCategory === '' }"
+                @click="selectedCategory = ''"
+              >
+                全部
+              </button>
+              <button
+                v-for="cat in categories"
+                :key="cat.value"
+                :class="{ active: selectedCategory === cat.value }"
+                @click="selectedCategory = cat.value"
+              >
+                {{ cat.label }}
+              </button>
+            </div>
           </div>
-          <div class="course-content">
-            <div class="course-tags">
-              <span :class="['level-tag', course.level]">{{ getLevelName(course.level) }}</span>
-              <span v-for="tag in course.tags" :key="tag" class="tag">{{ tag }}</span>
-            </div>
-            <h3 class="course-title">{{ course.title }}</h3>
-            <p class="course-desc">{{ course.description }}</p>
-            <div class="course-meta">
-              <span class="instructor">
-                <el-icon><User /></el-icon>
-                {{ course.instructor }}
-              </span>
-              <span class="students">
-                <el-icon><User /></el-icon>
-                {{ course.students }}人学习
-              </span>
-            </div>
-            <div class="course-rating">
-              <div class="star-rating">
-                <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= course.rating }">
-                  <Star />
-                </el-icon>
+          <div class="filter-group">
+            <span class="filter-label">排序</span>
+            <select
+              v-model="sortBy"
+              @change="handleSort"
+            >
+              <option value="popular">
+                最受欢迎
+              </option>
+              <option value="newest">
+                最新上线
+              </option>
+              <option value="price_asc">
+                价格从低到高
+              </option>
+              <option value="price_desc">
+                价格从高到低
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="courses-grid">
+          <div
+            v-for="course in courses"
+            :key="course.id"
+            class="course-card"
+            @click="viewCourse(course.id)"
+          >
+            <div class="course-image-wrapper">
+              <img
+                :src="course.image"
+                :alt="course.title"
+                class="course-image"
+              >
+              <div
+                v-if="course.badge"
+                class="course-badge"
+              >
+                {{ course.badge }}
               </div>
-              <span class="rating-text">{{ course.rating.toFixed(1) }}</span>
+              <div class="course-duration">
+                {{ course.duration }}
+              </div>
             </div>
-            <div class="course-price">
-              <span v-if="course.price > 0" class="price">¥{{ course.price }}</span>
-              <span v-else class="price free">免费</span>
+            <div class="course-content">
+              <div class="course-tags">
+                <span :class="['level-tag', course.level]">{{ getLevelName(course.level) }}</span>
+                <span
+                  v-for="tag in course.tags"
+                  :key="tag"
+                  class="tag"
+                >{{ tag }}</span>
+              </div>
+              <h3 class="course-title">
+                {{ course.title }}
+              </h3>
+              <p class="course-desc">
+                {{ course.description }}
+              </p>
+              <div class="course-meta">
+                <span class="instructor">
+                  <el-icon><User /></el-icon>
+                  {{ course.instructor }}
+                </span>
+                <span class="students">
+                  <el-icon><User /></el-icon>
+                  {{ course.students }}人学习
+                </span>
+              </div>
+              <div class="course-rating">
+                <div class="star-rating">
+                  <el-icon
+                    v-for="n in 5"
+                    :key="n"
+                    class="star"
+                    :class="{ filled: n <= course.rating }"
+                  >
+                    <Star />
+                  </el-icon>
+                </div>
+                <span class="rating-text">{{ course.rating.toFixed(1) }}</span>
+              </div>
+              <div class="course-price">
+                <span
+                  v-if="course.price > 0"
+                  class="price"
+                >¥{{ course.price }}</span>
+                <span
+                  v-else
+                  class="price free"
+                >免费</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="pagination-wrapper">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="totalCount"
-          :page-sizes="[12, 24, 36]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handlePageSizeChange"
-          @current-change="handlePageChange"
-        />
-      </div>
+        <div class="pagination-wrapper">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :total="totalCount"
+            :page-sizes="[12, 24, 36]"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handlePageSizeChange"
+            @current-change="handlePageChange"
+          />
+        </div>
       </template>
     </div>
 
-    <div v-if="activeTab === 'training'" class="tab-content">
+    <div
+      v-if="activeTab === 'training'"
+      class="tab-content"
+    >
       <div class="training-container">
         <div class="training-header">
           <h3>实战训练营</h3>
@@ -133,11 +237,28 @@
         </div>
 
         <div class="training-list">
-          <div v-for="camp in trainings" :key="camp.id" class="training-card">
+          <div
+            v-for="camp in trainings"
+            :key="camp.id"
+            class="training-card"
+          >
             <div class="training-image">
-              <img :src="camp.image" :alt="camp.title" />
-              <div class="training-badge" v-if="camp.status === 'ongoing'">进行中</div>
-              <div class="training-badge upcoming" v-else>即将开始</div>
+              <img
+                :src="camp.image"
+                :alt="camp.title"
+              >
+              <div
+                v-if="camp.status === 'ongoing'"
+                class="training-badge"
+              >
+                进行中
+              </div>
+              <div
+                v-else
+                class="training-badge upcoming"
+              >
+                即将开始
+              </div>
             </div>
 
             <div class="training-content">
@@ -145,11 +266,17 @@
                 <span class="duration-tag">{{ camp.duration }}</span>
                 <span class="level-tag">{{ camp.level }}</span>
               </div>
-              <h3 class="training-title">{{ camp.title }}</h3>
-              <p class="training-desc">{{ camp.description }}</p>
+              <h3 class="training-title">
+                {{ camp.title }}
+              </h3>
+              <p class="training-desc">
+                {{ camp.description }}
+              </p>
 
               <div class="mentor-section">
-                <div class="mentor-avatar">{{ camp.mentorAvatar }}</div>
+                <div class="mentor-avatar">
+                  {{ camp.mentorAvatar }}
+                </div>
                 <div class="mentor-info">
                   <span class="mentor-name">{{ camp.mentorName }}</span>
                   <span class="mentor-title">{{ camp.mentorTitle }}</span>
@@ -173,10 +300,16 @@
 
               <div class="training-price">
                 <span class="price">¥{{ camp.price }}</span>
-                <span class="original-price" v-if="camp.originalPrice">¥{{ camp.originalPrice }}</span>
+                <span
+                  v-if="camp.originalPrice"
+                  class="original-price"
+                >¥{{ camp.originalPrice }}</span>
               </div>
 
-              <button :class="['enroll-btn', { disabled: camp.status === 'upcoming' }]" @click="enrollTraining(camp.id)">
+              <button
+                :class="['enroll-btn', { disabled: camp.status === 'upcoming' }]"
+                @click="enrollTraining(camp.id)"
+              >
                 {{ camp.status === 'ongoing' ? '立即报名' : '预约报名' }}
               </button>
             </div>
@@ -185,21 +318,27 @@
 
         <div class="training-stats">
           <div class="stat-card">
-            <el-icon class="stat-icon"><School /></el-icon>
+            <el-icon class="stat-icon">
+              <School />
+            </el-icon>
             <div class="stat-content">
               <span class="stat-value">5000+</span>
               <span class="stat-label">学员已参与</span>
             </div>
           </div>
           <div class="stat-card">
-            <el-icon class="stat-icon"><Trophy /></el-icon>
+            <el-icon class="stat-icon">
+              <Trophy />
+            </el-icon>
             <div class="stat-content">
               <span class="stat-value">98%</span>
               <span class="stat-label">好评率</span>
             </div>
           </div>
           <div class="stat-card">
-            <el-icon class="stat-icon"><Briefcase /></el-icon>
+            <el-icon class="stat-icon">
+              <Briefcase />
+            </el-icon>
             <div class="stat-content">
               <span class="stat-value">85%</span>
               <span class="stat-label">就业转化率</span>
@@ -209,7 +348,10 @@
       </div>
     </div>
 
-    <div v-if="activeTab === 'certificates'" class="tab-content">
+    <div
+      v-if="activeTab === 'certificates'"
+      class="tab-content"
+    >
       <div class="certificates-container">
         <div class="certificates-header">
           <h3>证书认证体系</h3>
@@ -217,42 +359,88 @@
         </div>
 
         <div class="certificates-grid">
-          <div v-for="cert in certificates" :key="cert.id" class="cert-card">
-            <div class="cert-icon">{{ cert.icon }}</div>
-            <h3 class="cert-title">{{ cert.title }}</h3>
-            <p class="cert-desc">{{ cert.description }}</p>
+          <div
+            v-for="cert in certificates"
+            :key="cert.id"
+            class="cert-card"
+          >
+            <div class="cert-icon">
+              {{ cert.icon }}
+            </div>
+            <h3 class="cert-title">
+              {{ cert.title }}
+            </h3>
+            <p class="cert-desc">
+              {{ cert.description }}
+            </p>
             <div class="cert-requirements">
               <h4>获取条件</h4>
               <ul>
-                <li v-for="req in cert.requirements" :key="req">{{ req }}</li>
+                <li
+                  v-for="req in cert.requirements"
+                  :key="req"
+                >
+                  {{ req }}
+                </li>
               </ul>
             </div>
             <div class="cert-benefits">
               <h4>证书权益</h4>
               <ul>
-                <li v-for="benefit in cert.benefits" :key="benefit">{{ benefit }}</li>
+                <li
+                  v-for="benefit in cert.benefits"
+                  :key="benefit"
+                >
+                  {{ benefit }}
+                </li>
               </ul>
             </div>
-            <button class="apply-btn" @click="applyCert(cert.id)">申请认证</button>
+            <button
+              class="apply-btn"
+              @click="applyCert(cert.id)"
+            >
+              申请认证
+            </button>
           </div>
         </div>
 
         <div class="my-certificates">
           <h3>我的证书</h3>
-          <div v-if="myCerts.length === 0" class="empty-state">
-            <div class="empty-icon">📜</div>
+          <div
+            v-if="myCerts.length === 0"
+            class="empty-state"
+          >
+            <div class="empty-icon">
+              📜
+            </div>
             <p>暂无获得的证书</p>
-            <el-button type="primary" @click="activeTab = 'courses'">开始学习</el-button>
+            <el-button
+              type="primary"
+              @click="activeTab = 'courses'"
+            >
+              开始学习
+            </el-button>
           </div>
-          <div v-else class="my-certs-list">
-            <div v-for="cert in myCerts" :key="cert.id" class="my-cert-card">
-              <div class="cert-badge-icon">{{ cert.icon }}</div>
+          <div
+            v-else
+            class="my-certs-list"
+          >
+            <div
+              v-for="cert in myCerts"
+              :key="cert.id"
+              class="my-cert-card"
+            >
+              <div class="cert-badge-icon">
+                {{ cert.icon }}
+              </div>
               <div class="cert-info">
                 <h4>{{ cert.title }}</h4>
                 <span class="cert-date">获得时间：{{ cert.date }}</span>
                 <span class="cert-number">证书编号：{{ cert.number }}</span>
               </div>
-              <button class="view-btn">查看证书</button>
+              <button class="view-btn">
+                查看证书
+              </button>
             </div>
           </div>
         </div>
@@ -262,29 +450,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Reading, Lightning, Medal, Search, User, Star, Clock, ChatLineSquare, School, Trophy, Briefcase, Loading } from '@element-plus/icons-vue'
-import { getCourseList, getCourseDetail, getCourseChapters, type Course } from '@/api/academy'
+import { ref, onMounted, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+import {
+  Reading,
+  Lightning,
+  Medal,
+  Search,
+  User,
+  Star,
+  Clock,
+  ChatLineSquare,
+  School,
+  Trophy,
+  Briefcase,
+  Loading,
+} from '@element-plus/icons-vue';
+import { getCourseList, getCourseDetail, getCourseChapters, type Course } from '@/api/academy';
 
-const activeTab = ref('courses')
-const searchKeyword = ref('')
-const selectedLevel = ref('all')
-const selectedCategory = ref('')
-const sortBy = ref('popular')
-const currentPage = ref(1)
-const pageSize = ref(12)
-const totalCount = ref(0)
-const loading = ref(false)
-const error = ref<string | null>(null)
+const activeTab = ref('courses');
+const searchKeyword = ref('');
+const selectedLevel = ref('all');
+const selectedCategory = ref('');
+const sortBy = ref('popular');
+const currentPage = ref(1);
+const pageSize = ref(12);
+const totalCount = ref(0);
+const loading = ref(false);
+const error = ref<string | null>(null);
 
 const levels = [
   { value: 'all', name: '全部', icon: '📚', count: 0 },
   { value: 'beginner', name: '入门', icon: '🌱', count: 0 },
   { value: 'intermediate', name: '进阶', icon: '📈', count: 0 },
   { value: 'advanced', name: '高级', icon: '⭐', count: 0 },
-  { value: 'master', name: '大师', icon: '👑', count: 0 }
-]
+  { value: 'master', name: '大师', icon: '👑', count: 0 },
+];
 
 const categories = [
   { label: '设计基础', value: 'design' },
@@ -292,28 +493,28 @@ const categories = [
   { label: '工艺实操', value: 'craft' },
   { label: '面料知识', value: 'fabric' },
   { label: 'CAD软件', value: 'cad' },
-  { label: '行业趋势', value: 'trend' }
-]
+  { label: '行业趋势', value: 'trend' },
+];
 
 /**
  * 课程展示数据（映射后端Course到前端展示格式）
  */
 interface CourseDisplay {
-  id: number
-  title: string
-  description: string
-  image: string
-  level: string
-  tags: string[]
-  instructor: string
-  students: number
-  rating: number
-  price: number
-  duration: string
-  badge: string
+  id: number;
+  title: string;
+  description: string;
+  image: string;
+  level: string;
+  tags: string[];
+  instructor: string;
+  students: number;
+  rating: number;
+  price: number;
+  duration: string;
+  badge: string;
 }
 
-const courses = ref<CourseDisplay[]>([])
+const courses = ref<CourseDisplay[]>([]);
 
 // 训练营和证书暂为静态数据（后端API待扩展）
 const trainings = ref([
@@ -331,7 +532,7 @@ const trainings = ref([
     slots: 30,
     price: 3999,
     originalPrice: 4999,
-    status: 'ongoing'
+    status: 'ongoing',
   },
   {
     id: 2,
@@ -347,7 +548,7 @@ const trainings = ref([
     slots: 25,
     price: 4999,
     originalPrice: 5999,
-    status: 'ongoing'
+    status: 'ongoing',
   },
   {
     id: 3,
@@ -363,9 +564,9 @@ const trainings = ref([
     slots: 20,
     price: 3499,
     originalPrice: null,
-    status: 'upcoming'
-  }
-])
+    status: 'upcoming',
+  },
+]);
 
 const certificates = ref([
   {
@@ -374,7 +575,7 @@ const certificates = ref([
     icon: '🎨',
     description: '证明具备服装设计基础能力，可独立完成简单款式设计',
     requirements: ['完成3门入门级设计课程', '通过线上理论考核', '提交1份设计作品'],
-    benefits: ['平台认证标识', '优先推荐设计订单', '入驻设计师专区']
+    benefits: ['平台认证标识', '优先推荐设计订单', '入驻设计师专区'],
   },
   {
     id: 2,
@@ -382,7 +583,7 @@ const certificates = ref([
     icon: '📐',
     description: '证明具备独立打版能力，可完成各类版型的打版工作',
     requirements: ['完成5门打版相关课程', '通过实操技能考核', '完成3个真实打版订单'],
-    benefits: ['平台认证标识', '打版师星级评定加分', '专属接单通道']
+    benefits: ['平台认证标识', '打版师星级评定加分', '专属接单通道'],
   },
   {
     id: 3,
@@ -390,20 +591,25 @@ const certificates = ref([
     icon: '👑',
     description: '证明具备高级定制工艺能力，可承接高端定制项目',
     requirements: ['完成大师级课程', '通过专家评审', '提交3份定制作品'],
-    benefits: ['平台认证标识', '大师认证标签', '优先推荐高端订单', '专属技术支持']
-  }
-])
+    benefits: ['平台认证标识', '大师认证标签', '优先推荐高端订单', '专属技术支持'],
+  },
+]);
 
-const myCerts = ref([
-  { id: 1, title: '服装设计师初级认证', icon: '🎨', date: '2024-01-15', number: 'CDA20240115001' }
-])
+const myCerts = ref([{ id: 1, title: '服装设计师初级认证', icon: '🎨', date: '2024-01-15', number: 'CDA20240115001' }]);
 
 /**
  * 将后端Course数据映射为前端展示格式
  */
 function mapCourseToDisplay(course: Course): CourseDisplay {
-  const levelMap: Record<number, string> = { 0: 'beginner', 1: 'intermediate', 2: 'advanced', 3: 'master' }
-  const categoryMap: Record<number, string> = { 1: '设计基础', 2: '打版技术', 3: '工艺实操', 4: '面料知识', 5: 'CAD软件', 6: '行业趋势' }
+  const levelMap: Record<number, string> = { 0: 'beginner', 1: 'intermediate', 2: 'advanced', 3: 'master' };
+  const categoryMap: Record<number, string> = {
+    1: '设计基础',
+    2: '打版技术',
+    3: '工艺实操',
+    4: '面料知识',
+    5: 'CAD软件',
+    6: '行业趋势',
+  };
   return {
     id: course.id,
     title: course.title,
@@ -416,28 +622,28 @@ function mapCourseToDisplay(course: Course): CourseDisplay {
     rating: 4.5,
     price: 0,
     duration: course.duration ? `${course.duration}分钟` : '未知',
-    badge: course.status === 1 ? '热门' : ''
-  }
+    badge: course.status === 1 ? '热门' : '',
+  };
 }
 
 /**
  * 加载课程列表
  */
 async function loadCourses() {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
   try {
-    const res = await getCourseList({ pageNum: currentPage.value, pageSize: pageSize.value })
+    const res = await getCourseList({ pageNum: currentPage.value, pageSize: pageSize.value });
     if (res && res.code === 200) {
-      const list = Array.isArray(res.data) ? res.data : (res.data?.records || [])
-      courses.value = list.map(mapCourseToDisplay)
-      totalCount.value = res.data?.total || list.length
+      const list = Array.isArray(res.data) ? res.data : res.data?.records || [];
+      courses.value = list.map(mapCourseToDisplay);
+      totalCount.value = res.data?.total || list.length;
     }
-  } catch (err: any) {
-    error.value = err?.message || '加载课程数据失败'
-    console.error('加载课程列表失败:', err)
+  } catch (err: unknown) {
+    error.value = (err as Error)?.message || '加载课程数据失败';
+    console.error('加载课程列表失败:', err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -446,17 +652,14 @@ async function loadCourses() {
  */
 async function viewCourse(id: number) {
   try {
-    const [courseRes, chaptersRes] = await Promise.all([
-      getCourseDetail(id),
-      getCourseChapters(id)
-    ])
+    const [courseRes, chaptersRes] = await Promise.all([getCourseDetail(id), getCourseChapters(id)]);
     if (courseRes && courseRes.code === 200) {
-      const course = courseRes.data
-      const chapters = chaptersRes?.data || []
-      ElMessage.success(`课程: ${course?.title}, 共 ${chapters.length} 个章节`)
+      const course = courseRes.data;
+      const chapters = chaptersRes?.data || [];
+      ElMessage.success(`课程: ${course?.title}, 共 ${chapters.length} 个章节`);
     }
-  } catch (err: any) {
-    ElMessage.error(err?.message || '获取课程详情失败')
+  } catch (err: unknown) {
+    ElMessage.error((err as Error)?.message || '获取课程详情失败');
   }
 }
 
@@ -465,50 +668,50 @@ function getLevelName(level: string) {
     beginner: '入门',
     intermediate: '进阶',
     advanced: '高级',
-    master: '大师'
-  }
-  return levelMap[level] || level
+    master: '大师',
+  };
+  return levelMap[level] || level;
 }
 
 function handleSearch() {
-  currentPage.value = 1
-  loadCourses()
+  currentPage.value = 1;
+  loadCourses();
 }
 
 function handleSort() {
-  currentPage.value = 1
-  loadCourses()
+  currentPage.value = 1;
+  loadCourses();
 }
 
 function handlePageSizeChange(val: number) {
-  pageSize.value = val
-  currentPage.value = 1
-  loadCourses()
+  pageSize.value = val;
+  currentPage.value = 1;
+  loadCourses();
 }
 
 function handlePageChange(val: number) {
-  currentPage.value = val
-  loadCourses()
+  currentPage.value = val;
+  loadCourses();
 }
 
 function enrollTraining(id: number) {
-  ElMessage.info(`报名训练营 #${id}`)
+  ElMessage.info(`报名训练营 #${id}`);
 }
 
 function applyCert(id: number) {
-  ElMessage.info(`申请认证 #${id}`)
+  ElMessage.info(`申请认证 #${id}`);
 }
 
 // 监听分页变化重新加载
 watch([currentPage, pageSize], () => {
   if (activeTab.value === 'courses') {
-    loadCourses()
+    loadCourses();
   }
-})
+});
 
 onMounted(() => {
-  loadCourses()
-})
+  loadCourses();
+});
 </script>
 
 <style scoped>
@@ -1274,8 +1477,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state p {

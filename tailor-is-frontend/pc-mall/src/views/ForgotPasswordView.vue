@@ -1,6 +1,10 @@
 <template>
   <div class="forgot-view">
-    <div class="forgot-card" role="main" aria-label="找回密码页面">
+    <div
+      class="forgot-card"
+      role="main"
+      aria-label="找回密码页面"
+    >
       <div class="forgot-header">
         <h2>找回密码</h2>
         <p>通过手机或邮箱找回账号密码</p>
@@ -27,12 +31,15 @@
       <!-- 手机号找回 -->
       <el-form
         v-show="activeTab === 'phone'"
+        ref="phoneFormRef"
         :model="phoneForm"
         :rules="phoneRules"
-        ref="phoneFormRef"
         label-position="top"
       >
-        <el-form-item label="手机号" prop="phone">
+        <el-form-item
+          label="手机号"
+          prop="phone"
+        >
           <div class="phone-row">
             <el-input
               v-model="phoneForm.phone"
@@ -50,7 +57,10 @@
           </div>
         </el-form-item>
 
-        <el-form-item label="验证码" prop="code">
+        <el-form-item
+          label="验证码"
+          prop="code"
+        >
           <el-input
             v-model="phoneForm.code"
             placeholder="请输入6位验证码"
@@ -59,7 +69,10 @@
           />
         </el-form-item>
 
-        <el-form-item label="新密码" prop="newPassword">
+        <el-form-item
+          label="新密码"
+          prop="newPassword"
+        >
           <el-input
             v-model="phoneForm.newPassword"
             type="password"
@@ -70,7 +83,10 @@
           />
         </el-form-item>
 
-        <el-form-item label="确认密码" prop="confirmPassword">
+        <el-form-item
+          label="确认密码"
+          prop="confirmPassword"
+        >
           <el-input
             v-model="phoneForm.confirmPassword"
             type="password"
@@ -87,9 +103,9 @@
             type="primary"
             size="large"
             class="reset-btn"
-            @click="handleReset"
             :loading="loading"
             :disabled="!canReset"
+            @click="handleReset"
           >
             重置密码
           </el-button>
@@ -99,12 +115,15 @@
       <!-- 邮箱找回 -->
       <el-form
         v-show="activeTab === 'email'"
+        ref="emailFormRef"
         :model="emailForm"
         :rules="emailRules"
-        ref="emailFormRef"
         label-position="top"
       >
-        <el-form-item label="邮箱" prop="email">
+        <el-form-item
+          label="邮箱"
+          prop="email"
+        >
           <div class="phone-row">
             <el-input
               v-model="emailForm.email"
@@ -122,7 +141,10 @@
           </div>
         </el-form-item>
 
-        <el-form-item label="验证码" prop="code">
+        <el-form-item
+          label="验证码"
+          prop="code"
+        >
           <el-input
             v-model="emailForm.code"
             placeholder="请输入6位验证码"
@@ -131,7 +153,10 @@
           />
         </el-form-item>
 
-        <el-form-item label="新密码" prop="newPassword">
+        <el-form-item
+          label="新密码"
+          prop="newPassword"
+        >
           <el-input
             v-model="emailForm.newPassword"
             type="password"
@@ -142,7 +167,10 @@
           />
         </el-form-item>
 
-        <el-form-item label="确认密码" prop="confirmPassword">
+        <el-form-item
+          label="确认密码"
+          prop="confirmPassword"
+        >
           <el-input
             v-model="emailForm.confirmPassword"
             type="password"
@@ -159,9 +187,9 @@
             type="primary"
             size="large"
             class="reset-btn"
-            @click="handleEmailReset"
             :loading="loading"
             :disabled="!canEmailReset"
+            @click="handleEmailReset"
           >
             重置密码
           </el-button>
@@ -170,61 +198,66 @@
 
       <div class="forgot-footer">
         <span>想起密码了？</span>
-        <router-link to="/login" class="login-link">立即登录</router-link>
+        <router-link
+          to="/login"
+          class="login-link"
+        >
+          立即登录
+        </router-link>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
-import { Phone, Key, Lock, Message } from '@element-plus/icons-vue'
-import { sendResetCode, resetPassword } from '@/api/auth'
-import { validate } from '@/utils/validate'
-import { useCountdown } from '@/composables/useCountdown'
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import type { FormInstance, FormRules } from 'element-plus';
+import { Phone, Key, Lock, Message } from '@element-plus/icons-vue';
+import { sendResetCode, resetPassword } from '@/api/auth';
+import { validate } from '@/utils/validate';
+import { useCountdown } from '@/composables/useCountdown';
 
-const router = useRouter()
+const router = useRouter();
 
 // Tab 状态
-const activeTab = ref<'phone' | 'email'>('phone')
+const activeTab = ref<'phone' | 'email'>('phone');
 
 // 手机号表单
 const phoneForm = ref({
   phone: '',
   code: '',
   newPassword: '',
-  confirmPassword: ''
-})
-const phoneFormRef = ref<FormInstance>()
+  confirmPassword: '',
+});
+const phoneFormRef = ref<FormInstance>();
 
 // 邮箱表单
 const emailForm = ref({
   email: '',
   code: '',
   newPassword: '',
-  confirmPassword: ''
-})
-const emailFormRef = ref<FormInstance>()
+  confirmPassword: '',
+});
+const emailFormRef = ref<FormInstance>();
 
-const loading = ref(false)
-const sending = ref(false)
+const loading = ref(false);
+const sending = ref(false);
 
 // 倒计时
-const phoneCountdown = useCountdown(60)
-const emailCountdown = useCountdown(60)
+const phoneCountdown = useCountdown(60);
+const emailCountdown = useCountdown(60);
 
 // 手机号校验规则
 const phoneRules: FormRules = {
   phone: [
     { required: true, message: '请输入手机号', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入11位中国大陆手机号', trigger: 'blur' }
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入11位中国大陆手机号', trigger: 'blur' },
   ],
   code: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
-    { pattern: /^\d{6}$/, message: '请输入6位数字验证码', trigger: 'blur' }
+    { pattern: /^\d{6}$/, message: '请输入6位数字验证码', trigger: 'blur' },
   ],
   newPassword: [
     { required: true, message: '请设置新密码', trigger: 'blur' },
@@ -232,38 +265,38 @@ const phoneRules: FormRules = {
     {
       validator: (_rule, value, callback) => {
         if (!/(?=.*\d)(?=.*[a-zA-Z])(?=.*[^a-zA-Z0-9])/.test(value)) {
-          callback(new Error('密码需包含数字、字母和特殊字符'))
+          callback(new Error('密码需包含数字、字母和特殊字符'));
         } else {
-          callback()
+          callback();
         }
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         if (value !== phoneForm.value.newPassword) {
-          callback(new Error('两次输入的密码不一致'))
+          callback(new Error('两次输入的密码不一致'));
         } else {
-          callback()
+          callback();
         }
       },
-      trigger: 'blur'
-    }
-  ]
-}
+      trigger: 'blur',
+    },
+  ],
+};
 
 // 邮箱校验规则
 const emailRules: FormRules = {
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, message: '邮箱格式不正确', trigger: 'blur' }
+    { pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, message: '邮箱格式不正确', trigger: 'blur' },
   ],
   code: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
-    { pattern: /^\d{6}$/, message: '请输入6位数字验证码', trigger: 'blur' }
+    { pattern: /^\d{6}$/, message: '请输入6位数字验证码', trigger: 'blur' },
   ],
   newPassword: [
     { required: true, message: '请设置新密码', trigger: 'blur' },
@@ -271,137 +304,143 @@ const emailRules: FormRules = {
     {
       validator: (_rule, value, callback) => {
         if (!/(?=.*\d)(?=.*[a-zA-Z])(?=.*[^a-zA-Z0-9])/.test(value)) {
-          callback(new Error('密码需包含数字、字母和特殊字符'))
+          callback(new Error('密码需包含数字、字母和特殊字符'));
         } else {
-          callback()
+          callback();
         }
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         if (value !== emailForm.value.newPassword) {
-          callback(new Error('两次输入的密码不一致'))
+          callback(new Error('两次输入的密码不一致'));
         } else {
-          callback()
+          callback();
         }
       },
-      trigger: 'blur'
-    }
-  ]
-}
+      trigger: 'blur',
+    },
+  ],
+};
 
 // 按钮可用性
-const canSendCode = computed(() => validate.isPhone(phoneForm.value.phone))
-const canSendEmailCode = computed(() => validate.isEmail(emailForm.value.email))
+const canSendCode = computed(() => validate.isPhone(phoneForm.value.phone));
+const canSendEmailCode = computed(() => validate.isEmail(emailForm.value.email));
 const canReset = computed(() => {
-  return validate.isPhone(phoneForm.value.phone) &&
+  return (
+    validate.isPhone(phoneForm.value.phone) &&
     validate.isSixCode(phoneForm.value.code) &&
     phoneForm.value.newPassword.length >= 8 &&
     phoneForm.value.newPassword === phoneForm.value.confirmPassword
-})
+  );
+});
 const canEmailReset = computed(() => {
-  return validate.isEmail(emailForm.value.email) &&
+  return (
+    validate.isEmail(emailForm.value.email) &&
     validate.isSixCode(emailForm.value.code) &&
     emailForm.value.newPassword.length >= 8 &&
     emailForm.value.newPassword === emailForm.value.confirmPassword
-})
+  );
+});
 
 // 切换 Tab
 function switchTab(tab: 'phone' | 'email') {
-  activeTab.value = tab
+  activeTab.value = tab;
   // 清空校验
-  phoneFormRef.value?.clearValidate()
-  emailFormRef.value?.clearValidate()
+  phoneFormRef.value?.clearValidate();
+  emailFormRef.value?.clearValidate();
 }
 
 // 发送手机验证码
 async function handleSendCode() {
   if (!validate.isPhone(phoneForm.value.phone)) {
-    ElMessage.warning('请输入正确的手机号')
-    return
+    ElMessage.warning('请输入正确的手机号');
+    return;
   }
-  if (sending.value || phoneCountdown.counting.value) return
-  sending.value = true
+  if (sending.value || phoneCountdown.counting.value) return;
+  sending.value = true;
   try {
-    await sendResetCode({ target: phoneForm.value.phone, type: 'phone' })
-    ElMessage.success('验证码已发送')
-    phoneCountdown.start()
+    await sendResetCode({ target: phoneForm.value.phone, type: 'phone' });
+    ElMessage.success('验证码已发送');
+    phoneCountdown.start();
   } catch {
+    /* 发送失败静默处理 */
   } finally {
-    sending.value = false
+    sending.value = false;
   }
 }
 
 // 发送邮箱验证码
 async function handleSendEmailCode() {
   if (!validate.isEmail(emailForm.value.email)) {
-    ElMessage.warning('请输入正确的邮箱')
-    return
+    ElMessage.warning('请输入正确的邮箱');
+    return;
   }
-  if (sending.value || emailCountdown.counting.value) return
-  sending.value = true
+  if (sending.value || emailCountdown.counting.value) return;
+  sending.value = true;
   try {
-    await sendResetCode({ target: emailForm.value.email, type: 'email' })
-    ElMessage.success('验证码已发送')
-    emailCountdown.start()
+    await sendResetCode({ target: emailForm.value.email, type: 'email' });
+    ElMessage.success('验证码已发送');
+    emailCountdown.start();
   } catch {
+    /* 发送失败静默处理 */
   } finally {
-    sending.value = false
+    sending.value = false;
   }
 }
 
 // 手机号重置密码
 async function handleReset() {
-  if (!phoneFormRef.value) return
+  if (!phoneFormRef.value) return;
 
   await phoneFormRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true
+      loading.value = true;
       try {
         await resetPassword({
           target: phoneForm.value.phone,
           code: phoneForm.value.code,
           newPassword: phoneForm.value.newPassword,
-          type: 'phone'
-        })
-        ElMessage.success('密码重置成功，请登录')
-        router.push('/login')
+          type: 'phone',
+        });
+        ElMessage.success('密码重置成功，请登录');
+        router.push('/login');
       } catch {
-        ElMessage.error('重置失败，请检查信息后重试')
+        ElMessage.error('重置失败，请检查信息后重试');
       } finally {
-        loading.value = false
+        loading.value = false;
       }
     }
-  })
+  });
 }
 
 // 邮箱重置密码
 async function handleEmailReset() {
-  if (!emailFormRef.value) return
+  if (!emailFormRef.value) return;
 
   await emailFormRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true
+      loading.value = true;
       try {
         await resetPassword({
           target: emailForm.value.email,
           code: emailForm.value.code,
           newPassword: emailForm.value.newPassword,
-          type: 'email'
-        })
-        ElMessage.success('密码重置成功，请登录')
-        router.push('/login')
+          type: 'email',
+        });
+        ElMessage.success('密码重置成功，请登录');
+        router.push('/login');
       } catch {
-        ElMessage.error('重置失败，请检查信息后重试')
+        ElMessage.error('重置失败，请检查信息后重试');
       } finally {
-        loading.value = false
+        loading.value = false;
       }
     }
-  })
+  });
 }
 </script>
 

@@ -1,4 +1,4 @@
-import { createI18n } from 'vue-i18n'
+import { createI18n } from 'vue-i18n';
 
 /**
  * 平台管理后台国际化配置
@@ -27,27 +27,27 @@ const messages = {
       noData: '暂无数据',
       detail: '详情',
       export: '导出',
-      permissions: '权限'
+      permissions: '权限',
     },
     nav: {
       dashboard: '仪表盘',
       system: '系统管理',
       login: '登录',
-      logout: '退出登录'
+      logout: '退出登录',
     },
     auth: {
       username: '用户名',
       password: '密码',
       loginTitle: '平台管理登录',
       forgotPassword: '忘记密码',
-      rememberMe: '记住我'
+      rememberMe: '记住我',
     },
     menu: {
       dashboard: '仪表盘',
       userManage: '用户管理',
       roleManage: '角色管理',
       auditLog: '操作日志',
-      settings: '系统设置'
+      settings: '系统设置',
     },
     dashboard: {
       title: '仪表盘',
@@ -59,7 +59,7 @@ const messages = {
       orderGrowth: '订单增长',
       revenueGrowth: '收入增长',
       moduleStatus: '模块状态',
-      revenueTrend: '收入趋势'
+      revenueTrend: '收入趋势',
     },
     user: {
       title: '用户管理',
@@ -73,7 +73,7 @@ const messages = {
       disabled: '禁用',
       assignRole: '分配角色',
       toggleStatus: '切换状态',
-      resetPassword: '重置密码'
+      resetPassword: '重置密码',
     },
     role: {
       title: '角色管理',
@@ -82,7 +82,7 @@ const messages = {
       description: '描述',
       userCount: '关联用户数',
       addRole: '新增角色',
-      editRole: '编辑角色'
+      editRole: '编辑角色',
     },
     auditLog: {
       title: '操作日志',
@@ -100,13 +100,13 @@ const messages = {
       update: '更新',
       delete: '删除',
       export: '导出',
-      permission: '权限变更'
+      permission: '权限变更',
     },
     settings: {
       title: '系统设置',
       general: '通用设置',
       security: '安全设置',
-      notification: '通知设置'
+      notification: '通知设置',
     },
     error: {
       networkError: '网络连接失败',
@@ -114,8 +114,8 @@ const messages = {
       unauthorized: '未登录',
       forbidden: '无权限',
       notFound: '资源不存在',
-      timeout: '请求超时'
-    }
+      timeout: '请求超时',
+    },
   },
   'en-US': {
     common: {
@@ -138,27 +138,27 @@ const messages = {
       noData: 'No Data',
       detail: 'Detail',
       export: 'Export',
-      permissions: 'Permissions'
+      permissions: 'Permissions',
     },
     nav: {
       dashboard: 'Dashboard',
       system: 'System',
       login: 'Login',
-      logout: 'Logout'
+      logout: 'Logout',
     },
     auth: {
       username: 'Username',
       password: 'Password',
       loginTitle: 'Platform Admin Login',
       forgotPassword: 'Forgot Password',
-      rememberMe: 'Remember Me'
+      rememberMe: 'Remember Me',
     },
     menu: {
       dashboard: 'Dashboard',
       userManage: 'Users',
       roleManage: 'Roles',
       auditLog: 'Audit Logs',
-      settings: 'Settings'
+      settings: 'Settings',
     },
     dashboard: {
       title: 'Dashboard',
@@ -170,7 +170,7 @@ const messages = {
       orderGrowth: 'Order Growth',
       revenueGrowth: 'Revenue Growth',
       moduleStatus: 'Module Status',
-      revenueTrend: 'Revenue Trend'
+      revenueTrend: 'Revenue Trend',
     },
     user: {
       title: 'User Management',
@@ -184,7 +184,7 @@ const messages = {
       disabled: 'Disabled',
       assignRole: 'Assign Role',
       toggleStatus: 'Toggle Status',
-      resetPassword: 'Reset Password'
+      resetPassword: 'Reset Password',
     },
     role: {
       title: 'Role Management',
@@ -193,7 +193,7 @@ const messages = {
       description: 'Description',
       userCount: 'User Count',
       addRole: 'Add Role',
-      editRole: 'Edit Role'
+      editRole: 'Edit Role',
     },
     auditLog: {
       title: 'Audit Logs',
@@ -211,13 +211,13 @@ const messages = {
       update: 'Update',
       delete: 'Delete',
       export: 'Export',
-      permission: 'Permission'
+      permission: 'Permission',
     },
     settings: {
       title: 'Settings',
       general: 'General',
       security: 'Security',
-      notification: 'Notification'
+      notification: 'Notification',
     },
     error: {
       networkError: 'Network Error',
@@ -225,16 +225,16 @@ const messages = {
       unauthorized: 'Unauthorized',
       forbidden: 'Forbidden',
       notFound: 'Not Found',
-      timeout: 'Request Timeout'
-    }
-  }
-}
+      timeout: 'Request Timeout',
+    },
+  },
+};
 
 const i18n = createI18n({
   legacy: false,
   locale: localStorage.getItem('language') || 'zh-CN',
   fallbackLocale: 'zh-CN',
-  messages
-})
+  messages,
+});
 
-export default i18n
+export default i18n;

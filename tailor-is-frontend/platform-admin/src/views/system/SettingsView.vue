@@ -1,12 +1,26 @@
 <template>
-  <div class="settings-page" v-loading="loading">
+  <div
+    v-loading="loading"
+    class="settings-page"
+  >
     <div class="page-header">
-      <h2 class="page-title">系统设置</h2>
-      <p class="page-subtitle">管理平台全局配置参数</p>
+      <h2 class="page-title">
+        系统设置
+      </h2>
+      <p class="page-subtitle">
+        管理平台全局配置参数
+      </p>
     </div>
 
-    <el-tabs v-model="activeTab" type="border-card" class="settings-tabs">
-      <el-tab-pane label="基本设置" name="basic">
+    <el-tabs
+      v-model="activeTab"
+      type="border-card"
+      class="settings-tabs"
+    >
+      <el-tab-pane
+        label="基本设置"
+        name="basic"
+      >
         <el-form
           ref="basicFormRef"
           :model="basicForm"
@@ -14,8 +28,14 @@
           label-width="140px"
           class="settings-form"
         >
-          <el-form-item label="平台名称" prop="platformName">
-            <el-input v-model="basicForm.platformName" placeholder="请输入平台名称" />
+          <el-form-item
+            label="平台名称"
+            prop="platformName"
+          >
+            <el-input
+              v-model="basicForm.platformName"
+              placeholder="请输入平台名称"
+            />
           </el-form-item>
           <el-form-item label="平台Logo">
             <el-upload
@@ -24,15 +44,37 @@
               :show-file-list="false"
               :auto-upload="false"
             >
-              <el-icon v-if="!basicForm.logoUrl" class="upload-icon" :size="28"><Plus /></el-icon>
-              <img v-else :src="basicForm.logoUrl" class="uploaded-logo" />
+              <el-icon
+                v-if="!basicForm.logoUrl"
+                class="upload-icon"
+                :size="28"
+              >
+                <Plus />
+              </el-icon>
+              <img
+                v-else
+                :src="basicForm.logoUrl"
+                class="uploaded-logo"
+              >
             </el-upload>
           </el-form-item>
-          <el-form-item label="客服电话" prop="servicePhone">
-            <el-input v-model="basicForm.servicePhone" placeholder="请输入客服电话" />
+          <el-form-item
+            label="客服电话"
+            prop="servicePhone"
+          >
+            <el-input
+              v-model="basicForm.servicePhone"
+              placeholder="请输入客服电话"
+            />
           </el-form-item>
-          <el-form-item label="客服邮箱" prop="serviceEmail">
-            <el-input v-model="basicForm.serviceEmail" placeholder="请输入客服邮箱" />
+          <el-form-item
+            label="客服邮箱"
+            prop="serviceEmail"
+          >
+            <el-input
+              v-model="basicForm.serviceEmail"
+              placeholder="请输入客服邮箱"
+            />
           </el-form-item>
           <el-form-item label="平台公告">
             <el-input
@@ -43,14 +85,28 @@
             />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" :loading="saving" @click="handleSaveBasic">保存设置</el-button>
-            <el-button @click="handleResetBasic">重置</el-button>
+            <el-button
+              type="primary"
+              :loading="saving"
+              @click="handleSaveBasic"
+            >
+              保存设置
+            </el-button>
+            <el-button @click="handleResetBasic">
+              重置
+            </el-button>
           </el-form-item>
         </el-form>
       </el-tab-pane>
 
-      <el-tab-pane label="安全设置" name="security">
-        <el-form label-width="140px" class="settings-form">
+      <el-tab-pane
+        label="安全设置"
+        name="security"
+      >
+        <el-form
+          label-width="140px"
+          class="settings-form"
+        >
           <el-form-item label="登录验证码">
             <el-switch v-model="securityForm.captchaEnabled" />
           </el-form-item>
@@ -61,29 +117,56 @@
             <el-switch v-model="securityForm.smsVerification" />
           </el-form-item>
           <el-form-item label="登录失败锁定">
-            <el-input-number v-model="securityForm.loginFailLock" :min="3" :max="20" />
+            <el-input-number
+              v-model="securityForm.loginFailLock"
+              :min="3"
+              :max="20"
+            />
             <span class="form-tip">次失败后锁定账户</span>
           </el-form-item>
           <el-form-item label="会话超时">
-            <el-input-number v-model="securityForm.sessionTimeout" :min="15" :max="480" :step="15" />
+            <el-input-number
+              v-model="securityForm.sessionTimeout"
+              :min="15"
+              :max="480"
+              :step="15"
+            />
             <span class="form-tip">分钟无操作后自动退出</span>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" :loading="saving" @click="handleSaveSecurity">保存设置</el-button>
+            <el-button
+              type="primary"
+              :loading="saving"
+              @click="handleSaveSecurity"
+            >
+              保存设置
+            </el-button>
           </el-form-item>
         </el-form>
       </el-tab-pane>
 
-      <el-tab-pane label="第三方服务" name="thirdParty">
-        <el-form label-width="140px" class="settings-form">
+      <el-tab-pane
+        label="第三方服务"
+        name="thirdParty"
+      >
+        <el-form
+          label-width="140px"
+          class="settings-form"
+        >
           <el-form-item label="阿里云OSS">
             <el-switch v-model="thirdPartyForm.ossEnabled" />
           </el-form-item>
           <el-form-item label="OSS Endpoint">
-            <el-input v-model="thirdPartyForm.ossEndpoint" placeholder="oss-cn-hangzhou.aliyuncs.com" />
+            <el-input
+              v-model="thirdPartyForm.ossEndpoint"
+              placeholder="oss-cn-hangzhou.aliyuncs.com"
+            />
           </el-form-item>
           <el-form-item label="OSS Bucket">
-            <el-input v-model="thirdPartyForm.ossBucket" placeholder="tailor-is" />
+            <el-input
+              v-model="thirdPartyForm.ossBucket"
+              placeholder="tailor-is"
+            />
           </el-form-item>
           <el-form-item label="微信支付">
             <el-switch v-model="thirdPartyForm.wechatPayEnabled" />
@@ -92,7 +175,13 @@
             <el-switch v-model="thirdPartyForm.alipayEnabled" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" :loading="saving" @click="handleSaveThirdParty">保存设置</el-button>
+            <el-button
+              type="primary"
+              :loading="saving"
+              @click="handleSaveThirdParty"
+            >
+              保存设置
+            </el-button>
           </el-form-item>
         </el-form>
       </el-tab-pane>
@@ -101,16 +190,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
-import type { FormInstance, FormRules } from 'element-plus'
-import { ElMessage } from 'element-plus'
-import { getSettings, saveBasicSettings, saveSecuritySettings, saveThirdPartySettings } from '@/api/settings'
+import { ref, reactive, onMounted } from 'vue';
+import { Plus } from '@element-plus/icons-vue';
+import type { FormInstance, FormRules } from 'element-plus';
+import { ElMessage } from 'element-plus';
+import { getSettings, saveBasicSettings, saveSecuritySettings, saveThirdPartySettings } from '@/api/settings';
 
-const loading = ref(false)
-const saving = ref(false)
-const activeTab = ref('basic')
-const basicFormRef = ref<FormInstance>()
+const loading = ref(false);
+const saving = ref(false);
+const activeTab = ref('basic');
+const basicFormRef = ref<FormInstance>();
 
 const basicForm = reactive({
   platformName: '裁智云 - Tailor IS',
@@ -118,20 +207,16 @@ const basicForm = reactive({
   servicePhone: '400-888-9999',
   serviceEmail: 'support@tailoris.com',
   announcement: '',
-})
+});
 
 const basicRules: FormRules = {
-  platformName: [
-    { required: true, message: '请输入平台名称', trigger: 'blur' },
-  ],
-  servicePhone: [
-    { required: true, message: '请输入客服电话', trigger: 'blur' },
-  ],
+  platformName: [{ required: true, message: '请输入平台名称', trigger: 'blur' }],
+  servicePhone: [{ required: true, message: '请输入客服电话', trigger: 'blur' }],
   serviceEmail: [
     { required: true, message: '请输入客服邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
   ],
-}
+};
 
 const securityForm = reactive({
   captchaEnabled: true,
@@ -139,7 +224,7 @@ const securityForm = reactive({
   smsVerification: true,
   loginFailLock: 5,
   sessionTimeout: 120,
-})
+});
 
 const thirdPartyForm = reactive({
   ossEnabled: true,
@@ -147,70 +232,70 @@ const thirdPartyForm = reactive({
   ossBucket: 'tailor-is',
   wechatPayEnabled: true,
   alipayEnabled: true,
-})
+});
 
 async function handleSaveBasic() {
-  if (!basicFormRef.value) return
+  if (!basicFormRef.value) return;
   await basicFormRef.value.validate(async (valid) => {
-    if (!valid) return
+    if (!valid) return;
     // FE-M-6: 接入真实API，替代 setTimeout 假保存
-    saving.value = true
+    saving.value = true;
     try {
-      await saveBasicSettings({ ...basicForm })
-      ElMessage.success('基本设置保存成功')
+      await saveBasicSettings({ ...basicForm });
+      ElMessage.success('基本设置保存成功');
     } catch {
       // error handled by interceptor
     } finally {
-      saving.value = false
+      saving.value = false;
     }
-  })
+  });
 }
 
 function handleResetBasic() {
-  basicFormRef.value?.resetFields()
+  basicFormRef.value?.resetFields();
 }
 
 async function handleSaveSecurity() {
   // FE-M-6: 接入真实API，替代 setTimeout 假保存
-  saving.value = true
+  saving.value = true;
   try {
-    await saveSecuritySettings({ ...securityForm })
-    ElMessage.success('安全设置保存成功')
+    await saveSecuritySettings({ ...securityForm });
+    ElMessage.success('安全设置保存成功');
   } catch {
     // error handled by interceptor
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function handleSaveThirdParty() {
   // FE-M-6: 接入真实API，替代 setTimeout 假保存
-  saving.value = true
+  saving.value = true;
   try {
-    await saveThirdPartySettings({ ...thirdPartyForm })
-    ElMessage.success('第三方服务设置保存成功')
+    await saveThirdPartySettings({ ...thirdPartyForm });
+    ElMessage.success('第三方服务设置保存成功');
   } catch {
     // error handled by interceptor
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 onMounted(async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const data = await getSettings()
+    const data = await getSettings();
     if (data) {
-      Object.assign(basicForm, data.basic)
-      Object.assign(securityForm, data.security)
-      Object.assign(thirdPartyForm, data.thirdParty)
+      Object.assign(basicForm, data.basic);
+      Object.assign(securityForm, data.security);
+      Object.assign(thirdPartyForm, data.thirdParty);
     }
   } catch {
     // 首次加载若后端未配置则使用默认值
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 </script>
 
 <style scoped>

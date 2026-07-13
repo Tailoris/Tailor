@@ -20,8 +20,22 @@
 
 ## 当前活跃文档
 
-- `CORE-BUSINESS-TASKS-TRACKING.md` — 核心业务任务跟踪
+- `ARCHITECTURE-CONFORMANCE-REPORT.md` — 架构一致性报告
+- `FOLLOW-UP-WORK-PLAN.md` — 后续工作计划
+- `MODULE-QUALITY-AUDIT-REPORT.md` — 模块质量审计报告
+- `POST-DEPLOYMENT-ISSUE-INVENTORY.md` — 部署后问题清单
+- `POST-DEPLOYMENT-REMEDIATION-PLAN.md` — 部署后修复计划
 - `PROJECT-COMPREHENSIVE-ISSUE-INVENTORY-AND-REMEDIATION-PLAN.md` — 项目综合问题清单与修复计划
-- `Tailor-IS-代码质量改进与问题修复综合方案.md` — 代码质量改进方案
-- `Tailor-IS-全面核查验证与问题修复清单-2026Q2.md` — 2026 Q2 核查清单
-- `WCAG-COMPLIANCE-CHECKLIST.md` — WCAG 合规检查清单
+- `PROJECT-FINAL-ACCEPTANCE-REPORT-V2.md` — 项目最终验收报告 V2
+- `REMEDIATION-SUMMARY-REPORT.md` — 修复总结报告
+
+## 已归档文档
+
+以下文档已归档至 `docs/archive/2026Q2-reports/`：
+
+- `CORE-BUSINESS-TASKS-TRACKING.md` — 已被 PROJECT-COMPREHENSIVE-ISSUE-INVENTORY 替代
+- `Tailor-IS-代码质量改进与问题修复综合方案.md` — 已被 REMEDIATION-SUMMARY-REPORT 替代
+- `Tailor-IS-全面核查验证与问题修复清单-2026Q2.md` — Q2 已结束
+- `WCAG-COMPLIANCE-CHECKLIST.md` — 已被 MODULE-QUALITY-AUDIT-REPORT 覆盖
+- `Tailor-IS-质量保障修复总结报告-2026-06-23.md` — 日期戳文档
+- `Tailor-IS-质量保障验证工作记录-2026-06-23.md` — 日期戳工作记录

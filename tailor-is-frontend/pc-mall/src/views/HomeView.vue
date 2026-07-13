@@ -1,62 +1,114 @@
 <template>
-  <div class="home-view" role="main" aria-label="首页">
+  <div
+    class="home-view"
+    role="main"
+    aria-label="首页"
+  >
     <BannerCarousel />
 
     <CategoryNav :categories="categories" />
 
     <div class="modules-grid">
-      <router-link to="/patterns" class="module-card" aria-label="纸样商城">
-        <div class="module-icon">📐</div>
+      <router-link
+        to="/patterns"
+        class="module-card"
+        aria-label="纸样商城"
+      >
+        <div class="module-icon">
+          📐
+        </div>
         <div class="module-info">
           <h3>纸样商城</h3>
           <p>海量纸样任您挑选</p>
         </div>
-        <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+        <el-icon class="arrow-icon">
+          <ArrowRight />
+        </el-icon>
       </router-link>
 
-      <router-link to="/pattern-custom" class="module-card" aria-label="纸样定制">
-        <div class="module-icon">✂️</div>
+      <router-link
+        to="/pattern-custom"
+        class="module-card"
+        aria-label="纸样定制"
+      >
+        <div class="module-icon">
+          ✂️
+        </div>
         <div class="module-info">
           <h3>纸样定制</h3>
           <p>专业打版师一对一服务</p>
         </div>
-        <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+        <el-icon class="arrow-icon">
+          <ArrowRight />
+        </el-icon>
       </router-link>
 
-      <router-link to="/design" class="module-card" aria-label="服装设计">
-        <div class="module-icon">🎨</div>
+      <router-link
+        to="/design"
+        class="module-card"
+        aria-label="服装设计"
+      >
+        <div class="module-icon">
+          🎨
+        </div>
         <div class="module-info">
           <h3>服装设计</h3>
           <p>灵感库与协作工具</p>
         </div>
-        <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+        <el-icon class="arrow-icon">
+          <ArrowRight />
+        </el-icon>
       </router-link>
 
-      <router-link to="/community" class="module-card" aria-label="社区交流">
-        <div class="module-icon">💬</div>
+      <router-link
+        to="/community"
+        class="module-card"
+        aria-label="社区交流"
+      >
+        <div class="module-icon">
+          💬
+        </div>
         <div class="module-info">
           <h3>社区交流</h3>
           <p>技术交流与资源对接</p>
         </div>
-        <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+        <el-icon class="arrow-icon">
+          <ArrowRight />
+        </el-icon>
       </router-link>
 
-      <router-link to="/knowledge" class="module-card" aria-label="知识库">
-        <div class="module-icon">📚</div>
+      <router-link
+        to="/knowledge"
+        class="module-card"
+        aria-label="知识库"
+      >
+        <div class="module-icon">
+          📚
+        </div>
         <div class="module-info">
           <h3>知识库</h3>
           <p>专业知识与问答悬赏</p>
         </div>
-        <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+        <el-icon class="arrow-icon">
+          <ArrowRight />
+        </el-icon>
       </router-link>
 
-      <router-link to="/academy" class="module-card" aria-label="线上学堂">
-        <div class="module-icon">🎓</div>
+      <router-link
+        to="/academy"
+        class="module-card"
+        aria-label="线上学堂"
+      >
+        <div class="module-icon">
+          🎓
+        </div>
         <div class="module-info">
           <h3>线上学堂</h3>
           <p>课程学习与证书认证</p>
         </div>
-        <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+        <el-icon class="arrow-icon">
+          <ArrowRight />
+        </el-icon>
       </router-link>
     </div>
 
@@ -93,136 +145,132 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import BannerCarousel from '@/components/BannerCarousel.vue'
-import CategoryNav from '@/components/CategoryNav.vue'
-import SeckillSection from '@/components/SeckillSection.vue'
-import ProductGrid from '@/components/ProductGrid.vue'
-import CommunitySection from '@/components/CommunitySection.vue'
-import { getHotProducts, getNewProducts, getSeckillProducts, getCategories } from '@/api/product'
-import { getPosts } from '@/api/community'
-import { ArrowRight } from '@element-plus/icons-vue'
-import type { Product, ProductCategory, Post } from '@/types'
+import { ref, onMounted, onUnmounted } from 'vue';
+import BannerCarousel from '@/components/BannerCarousel.vue';
+import CategoryNav from '@/components/CategoryNav.vue';
+import SeckillSection from '@/components/SeckillSection.vue';
+import ProductGrid from '@/components/ProductGrid.vue';
+import CommunitySection from '@/components/CommunitySection.vue';
+import { getHotProducts, getNewProducts, getSeckillProducts, getCategories } from '@/api/product';
+import { getPosts } from '@/api/community';
+import { ArrowRight } from '@element-plus/icons-vue';
+import type { Product, ProductCategory, Post } from '@/types';
 
-const categories = ref<ProductCategory[]>([])
-const seckillProducts = ref<Product[]>([])
-const featuredProducts = ref<Product[]>([])
-const newProducts = ref<Product[]>([])
-const communityPosts = ref<Post[]>([])
+const categories = ref<ProductCategory[]>([]);
+const seckillProducts = ref<Product[]>([]);
+const featuredProducts = ref<Product[]>([]);
+const newProducts = ref<Product[]>([]);
+const communityPosts = ref<Post[]>([]);
 
-const seckillLoading = ref(true)
-const featuredLoading = ref(true)
-const newLoading = ref(true)
-const communityLoading = ref(true)
+const seckillLoading = ref(true);
+const featuredLoading = ref(true);
+const newLoading = ref(true);
+const communityLoading = ref(true);
 
-const categoriesError = ref(false)
-const seckillError = ref(false)
-const featuredError = ref(false)
-const newError = ref(false)
-const communityError = ref(false)
+const categoriesError = ref(false);
+const seckillError = ref(false);
+const featuredError = ref(false);
+const newError = ref(false);
+const communityError = ref(false);
 
-const isAllLoaded = computed(() => {
-  return !seckillLoading.value && !featuredLoading.value && !newLoading.value && !communityLoading.value
-})
+const countdownHours = ref('02');
+const countdownMinutes = ref('00');
+const countdownSeconds = ref('00');
 
-const countdownHours = ref('02')
-const countdownMinutes = ref('00')
-const countdownSeconds = ref('00')
-
-let countdownTimer: ReturnType<typeof setInterval> | null = null
-let targetTime: Date = new Date()
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
+let targetTime: Date = new Date();
 
 function startCountdown() {
-  targetTime = new Date()
-  targetTime.setHours(targetTime.getHours() + 2)
+  targetTime = new Date();
+  targetTime.setHours(targetTime.getHours() + 2);
   countdownTimer = setInterval(() => {
-    const now = new Date()
-    const diff = targetTime.getTime() - now.getTime()
+    const now = new Date();
+    const diff = targetTime.getTime() - now.getTime();
     if (diff <= 0) {
-      countdownHours.value = '00'
-      countdownMinutes.value = '00'
-      countdownSeconds.value = '00'
-      return
+      countdownHours.value = '00';
+      countdownMinutes.value = '00';
+      countdownSeconds.value = '00';
+      return;
     }
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-    countdownHours.value = String(hours).padStart(2, '0')
-    countdownMinutes.value = String(minutes).padStart(2, '0')
-    countdownSeconds.value = String(seconds).padStart(2, '0')
-  }, 1000)
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    countdownHours.value = String(hours).padStart(2, '0');
+    countdownMinutes.value = String(minutes).padStart(2, '0');
+    countdownSeconds.value = String(seconds).padStart(2, '0');
+  }, 1000);
 }
 
 async function loadCategories() {
   try {
-    categories.value = await getCategories()
-    categoriesError.value = false
+    categories.value = await getCategories();
+    categoriesError.value = false;
   } catch {
-    categories.value = []
-    categoriesError.value = true
+    categories.value = [];
+    categoriesError.value = true;
   }
 }
 
 async function loadSeckillProducts() {
   try {
-    seckillProducts.value = await getSeckillProducts({ showError: false })
-    seckillError.value = false
+    seckillProducts.value = await getSeckillProducts({ showError: false });
+    seckillError.value = false;
   } catch {
-    seckillProducts.value = []
-    seckillError.value = true
+    seckillProducts.value = [];
+    seckillError.value = true;
   } finally {
-    seckillLoading.value = false
+    seckillLoading.value = false;
   }
 }
 
 async function loadFeaturedProducts() {
   try {
-    featuredProducts.value = await getHotProducts({ showError: false })
-    featuredError.value = false
+    featuredProducts.value = await getHotProducts({ showError: false });
+    featuredError.value = false;
   } catch {
-    featuredProducts.value = []
-    featuredError.value = true
+    featuredProducts.value = [];
+    featuredError.value = true;
   } finally {
-    featuredLoading.value = false
+    featuredLoading.value = false;
   }
 }
 
 async function loadNewProducts() {
   try {
-    newProducts.value = await getNewProducts({ showError: false })
-    newError.value = false
+    newProducts.value = await getNewProducts({ showError: false });
+    newError.value = false;
   } catch {
-    newProducts.value = []
-    newError.value = true
+    newProducts.value = [];
+    newError.value = true;
   } finally {
-    newLoading.value = false
+    newLoading.value = false;
   }
 }
 
 async function loadCommunityPosts() {
   try {
-    const res = await getPosts({ current: 1, size: 3 }, { showError: false })
-    communityPosts.value = res.records || []
-    communityError.value = false
+    const res = await getPosts({ current: 1, size: 3 }, { showError: false });
+    communityPosts.value = res.records || [];
+    communityError.value = false;
   } catch {
-    communityPosts.value = []
-    communityError.value = true
+    communityPosts.value = [];
+    communityError.value = true;
   } finally {
-    communityLoading.value = false
+    communityLoading.value = false;
   }
 }
 
 onMounted(async () => {
-  startCountdown()
-  await Promise.all([loadCategories(), loadSeckillProducts()])
+  startCountdown();
+  await Promise.all([loadCategories(), loadSeckillProducts()]);
   setTimeout(async () => {
-    await Promise.all([loadFeaturedProducts(), loadNewProducts(), loadCommunityPosts()])
-  }, 100)
-})
+    await Promise.all([loadFeaturedProducts(), loadNewProducts(), loadCommunityPosts()]);
+  }, 100);
+});
 
 onUnmounted(() => {
-  if (countdownTimer) clearInterval(countdownTimer)
-})
+  if (countdownTimer) clearInterval(countdownTimer);
+});
 </script>
 
 <style scoped>

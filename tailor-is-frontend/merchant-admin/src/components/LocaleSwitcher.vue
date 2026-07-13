@@ -1,5 +1,9 @@
 <template>
-  <div class="locale-switcher" role="radiogroup" aria-label="Language Selection">
+  <div
+    class="locale-switcher"
+    role="radiogroup"
+    aria-label="Language Selection"
+  >
     <button
       :class="['locale-btn', { active: currentLocale === 'zh-CN' }]"
       role="radio"
@@ -25,16 +29,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 
-const { locale } = useI18n()
-const currentLocale = ref(locale.value)
+const { locale } = useI18n();
+const currentLocale = ref(locale.value);
 
 function changeLocale(lang: string) {
-  currentLocale.value = lang
-  locale.value = lang
-  localStorage.setItem('tailor-is-admin-locale', lang)
+  currentLocale.value = lang;
+  locale.value = lang;
+  localStorage.setItem('tailor-is-admin-locale', lang);
 }
 </script>
 

@@ -109,8 +109,10 @@ for conf_file in "$NGINX_CONF_DIR"/*.conf; do
 
   for port in "${BUSINESS_PORTS[@]}"; do
     # 检测 upstream 中是否直接指向业务端口
-    if grep -nE "server\s+[^;]+:$port" "$conf_file" | grep -v "core_gateway\|lite_gateway\|graphql"; then
+    DIRECT_UPSTREAM=$(grep -nE "server\s+[^;]+:$port" "$conf_file" | grep -v "core_gateway\|lite_gateway\|graphql" || true)
+    if [[ -n "$DIRECT_UPSTREAM" ]]; then
       log_critical "$conf_file 包含指向业务服务端口 $port 的 upstream，v4.0 规范禁止直连业务微服务"
+      echo "$DIRECT_UPSTREAM"
       CRITICAL_COUNT=$((CRITICAL_COUNT + 1))
     fi
   done
@@ -137,8 +139,10 @@ for conf_file in "$NGINX_CONF_DIR"/*.conf; do
   done
 
   # 检测 proxy_pass 直接指向 IP:端口形式（非 upstream）
-  if grep -nE 'proxy_pass\s+http://[0-9]' "$conf_file" | grep -v "127.0.0.1:9000\|172.17.0.1:9000\|host.docker.internal:9000\|127.0.0.1:8081\|172.17.0.1:8081\|host.docker.internal:8081\|127.0.0.1:4000\|172.17.0.1:4000\|host.docker.internal:4000"; then
+  DIRECT_PROXY=$(grep -nE 'proxy_pass\s+http://[0-9]' "$conf_file" | grep -v "127.0.0.1:9000\|172.17.0.1:9000\|host.docker.internal:9000\|127.0.0.1:8081\|172.17.0.1:8081\|host.docker.internal:8081\|127.0.0.1:4000\|172.17.0.1:4000\|host.docker.internal:4000" || true)
+  if [[ -n "$DIRECT_PROXY" ]]; then
     log_critical "$conf_file 包含非网关的直连 proxy_pass，所有 API 必须经过网关转发"
+    echo "$DIRECT_PROXY"
     CRITICAL_COUNT=$((CRITICAL_COUNT + 1))
   fi
 done
@@ -155,23 +159,27 @@ for conf_file in "$NGINX_CONF_DIR"/*.conf; do
     continue
   fi
 
-  # core-gateway 端口检测：允许两种合法配置
+  # core-gateway 端口检测：允许三种合法配置
   # 1. Docker 内部网络: tailor-is-core-gateway:8080（容器名称 + 容器端口）
-  # 2. Host 网络: localhost:9000 或 127.0.0.1:9000（宿主机端口）
-  CORE_GATEWAY_VALID=$(grep -E 'tailoris_core_gateway.*8080|localhost:9000|127\.0\.0\.1:9000' "$conf_file")
+  # 2. Docker 内部网络: tailoris_core_gateway（upstream 名称 + 8080）
+  # 3. Host 网络: localhost:9000 或 127.0.0.1:9000 或 host.docker.internal:9000（宿主机端口）
+  CORE_GATEWAY_VALID=$(grep -E 'tailor-is-core-gateway.*8080|tailoris_core_gateway.*8080|localhost:9000|127\.0\.0\.1:9000|host\.docker\.internal:9000' "$conf_file" || true)
   if [[ -n "$CORE_GATEWAY_VALID" ]]; then
     log_ok "$conf_file core-gateway 端口配置正确"
   else
-    if grep -nE '8080' "$conf_file" | grep -v "server_name\|listen\|ssl\|Nacos\|tailoris_core_gateway"; then
+    NON_GATEWAY_8080=$(grep -nE '8080' "$conf_file" | grep -v "server_name\|listen\|ssl\|Nacos\|tailoris_core_gateway\|tailor-is-core-gateway" || true)
+    if [[ -n "$NON_GATEWAY_8080" ]]; then
       log_critical "$conf_file 包含非网关的 8080 端口配置"
+      echo "$NON_GATEWAY_8080"
       CRITICAL_COUNT=$((CRITICAL_COUNT + 1))
     fi
   fi
 
-  # lite-gateway 端口检测：允许两种合法配置
+  # lite-gateway 端口检测：允许三种合法配置
   # 1. Docker 内部网络: tailor-is-lite-gateway:8081
-  # 2. Host 网络: localhost:8081 或 127.0.0.1:8081
-  LITE_GATEWAY_VALID=$(grep -E 'tailoris_lite_gateway.*8081|localhost:8081|127\.0\.0\.1:8081' "$conf_file")
+  # 2. Docker 内部网络: tailoris_lite_gateway（upstream 名称 + 8081）
+  # 3. Host 网络: localhost:8081 或 127.0.0.1:8081 或 host.docker.internal:8081
+  LITE_GATEWAY_VALID=$(grep -E 'tailor-is-lite-gateway.*8081|tailoris_lite_gateway.*8081|localhost:8081|127\.0\.0\.1:8081|host\.docker\.internal:8081' "$conf_file" || true)
   if [[ -n "$LITE_GATEWAY_VALID" ]]; then
     log_ok "$conf_file lite-gateway 端口配置正确"
   else

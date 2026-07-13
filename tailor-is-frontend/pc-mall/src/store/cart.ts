@@ -1,30 +1,30 @@
-import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
-import { useUserStore } from './user'
+import { defineStore } from 'pinia';
+import { ref, computed, watch } from 'vue';
+import { useUserStore } from './user';
 import {
   getCart as apiGetCart,
   addToCart as apiAddToCart,
   updateCart as apiUpdateCart,
-  deleteCart as apiDeleteCart
-} from '@/api/cart'
-import type { CartItem } from '@/types'
+  deleteCart as apiDeleteCart,
+} from '@/api/cart';
+import type { CartItem } from '@/types';
 
 // 🔒 F-H07: 购物车本地存储key
-const CART_STORAGE_KEY = 'tailor_is_cart'
+const CART_STORAGE_KEY = 'tailor_is_cart';
 
 /**
  * 🔒 F-H07: 从localStorage恢复购物车数据
  */
 function loadCartFromStorage(): CartItem[] {
   try {
-    const stored = localStorage.getItem(CART_STORAGE_KEY)
+    const stored = localStorage.getItem(CART_STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored) as CartItem[]
+      return JSON.parse(stored) as CartItem[];
     }
   } catch (e) {
-    console.warn('购物车数据恢复失败:', e)
+    console.warn('购物车数据恢复失败:', e);
   }
-  return []
+  return [];
 }
 
 /**
@@ -32,90 +32,88 @@ function loadCartFromStorage(): CartItem[] {
  */
 function saveCartToStorage(items: CartItem[]): void {
   try {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
   } catch (e) {
-    console.warn('购物车数据保存失败:', e)
+    console.warn('购物车数据保存失败:', e);
   }
 }
 
 export const useCartStore = defineStore('cart', () => {
   // 🔒 F-H07: 初始值从localStorage恢复
-  const items = ref<CartItem[]>(loadCartFromStorage())
+  const items = ref<CartItem[]>(loadCartFromStorage());
 
   // 🔒 F-H07: 监听变化自动持久化
   watch(
     items,
     (newItems) => {
-      saveCartToStorage(newItems)
+      saveCartToStorage(newItems);
     },
     { deep: true }
-  )
+  );
 
-  const totalCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
+  const totalCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0));
 
   const totalPrice = computed(() =>
-    items.value
-      .filter((item) => item.checked)
-      .reduce((sum, item) => sum + item.price * item.quantity, 0)
-  )
+    items.value.filter((item) => item.checked).reduce((sum, item) => sum + item.price * item.quantity, 0)
+  );
 
-  const checkedCount = computed(() => items.value.filter((item) => item.checked).length)
+  const checkedCount = computed(() => items.value.filter((item) => item.checked).length);
 
-  const isAllChecked = computed(() => items.value.length > 0 && checkedCount.value === items.value.length)
+  const isAllChecked = computed(() => items.value.length > 0 && checkedCount.value === items.value.length);
 
   async function fetchCart() {
-    const userStore = useUserStore()
+    const userStore = useUserStore();
     if (!userStore.userInfo?.id) {
-      return
+      return;
     }
     try {
-      const res = await apiGetCart()
-      items.value = res
-      saveCartToStorage(items.value)
+      const res = await apiGetCart();
+      items.value = res;
+      saveCartToStorage(items.value);
     } catch (e) {
-      console.warn('获取购物车失败:', e)
+      console.warn('获取购物车失败:', e);
     }
   }
 
   async function addItem(data: { productId: number; skuId: number; quantity: number }) {
-    await apiAddToCart(data)
-    await fetchCart()
+    await apiAddToCart(data);
+    await fetchCart();
   }
 
   async function updateQuantity(id: number, quantity: number) {
-    await apiUpdateCart(id, { quantity })
-    await fetchCart()
+    await apiUpdateCart(id, { quantity });
+    await fetchCart();
   }
 
   async function removeFromCart(id: number) {
-    await apiDeleteCart(id)
-    await fetchCart()
+    await apiDeleteCart(id);
+    await fetchCart();
   }
 
   async function toggleCheck(id: number) {
-    const item = items.value.find((i) => i.id === id)
+    const item = items.value.find((i) => i.id === id);
     if (item) {
-      await apiUpdateCart(id, { checked: !item.checked })
-      await fetchCart()
+      await apiUpdateCart(id, { checked: !item.checked });
+      await fetchCart();
     }
   }
 
   async function toggleAll() {
-    const target = !isAllChecked.value
-    const promises = items.value.map((item) => apiUpdateCart(item.id, { checked: target }))
-    await Promise.all(promises)
-    await fetchCart()
+    const target = !isAllChecked.value;
+    const promises = items.value.map((item) => apiUpdateCart(item.id, { checked: target }));
+    await Promise.all(promises);
+    await fetchCart();
   }
 
   async function clearCart() {
-    items.value = []
+    items.value = [];
     // 🔒 F-H07: 清空本地存储
-    localStorage.removeItem(CART_STORAGE_KEY)
+    localStorage.removeItem(CART_STORAGE_KEY);
   }
 
   function checkout() {
-    const checkedItems = items.value.filter((item) => item.checked)
-    return checkedItems
+    const checkedItems = items.value.filter((item) => item.checked);
+    return checkedItems;
   }
 
   return {
@@ -131,6 +129,6 @@ export const useCartStore = defineStore('cart', () => {
     toggleCheck,
     toggleAll,
     clearCart,
-    checkout
-  }
-})
+    checkout,
+  };
+});

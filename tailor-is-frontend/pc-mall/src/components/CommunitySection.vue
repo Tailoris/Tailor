@@ -1,15 +1,36 @@
 <template>
   <section class="section">
     <div class="section-header">
-      <h2 class="section-title">社区精选</h2>
-      <router-link to="/community" class="view-more">查看更多 →</router-link>
+      <h2 class="section-title">
+        社区精选
+      </h2>
+      <router-link
+        to="/community"
+        class="view-more"
+      >
+        查看更多 →
+      </router-link>
     </div>
-    <el-skeleton :loading="loading" animated :rows="1">
-      <div v-if="error" class="empty-state">
-        <el-icon class="empty-icon"><Warning /></el-icon>
-        <p class="empty-text">数据加载失败，请稍后重试</p>
+    <el-skeleton
+      :loading="loading"
+      animated
+      :rows="1"
+    >
+      <div
+        v-if="error"
+        class="empty-state"
+      >
+        <el-icon class="empty-icon">
+          <Warning />
+        </el-icon>
+        <p class="empty-text">
+          数据加载失败，请稍后重试
+        </p>
       </div>
-      <div v-else class="community-grid">
+      <div
+        v-else
+        class="community-grid"
+      >
         <div
           v-for="post in posts"
           :key="post.id"
@@ -17,16 +38,31 @@
           @click="$router.push(`/community/${post.id}`)"
         >
           <div class="post-header">
-            <el-avatar :size="32" :src="post.userAvatar || PLACEHOLDER_32x32" />
+            <el-avatar
+              :size="32"
+              :src="post.userAvatar || PLACEHOLDER_32x32"
+            />
             <div class="post-user">
               <span class="user-name">{{ post.userName }}</span>
               <span class="post-time">{{ formatDate(post.createdAt) }}</span>
             </div>
           </div>
-          <h4 class="post-title">{{ post.title }}</h4>
-          <p class="post-content">{{ truncateText(post.content, 80) }}</p>
-          <div v-if="post.images && post.images.length > 0" class="post-images">
-            <img v-for="(img, i) in post.images.slice(0, 3)" :key="i" :src="img" loading="lazy" />
+          <h4 class="post-title">
+            {{ post.title }}
+          </h4>
+          <p class="post-content">
+            {{ truncateText(post.content, 80) }}
+          </p>
+          <div
+            v-if="post.images && post.images.length > 0"
+            class="post-images"
+          >
+            <img
+              v-for="(img, i) in post.images.slice(0, 3)"
+              :key="i"
+              :src="img"
+              loading="lazy"
+            >
           </div>
           <div class="post-stats">
             <span><el-icon><View /></el-icon> {{ post.viewCount }}</span>
@@ -34,9 +70,16 @@
             <span><el-icon><ChatLineRound /></el-icon> {{ post.commentCount }}</span>
           </div>
         </div>
-        <div v-if="posts.length === 0 && !loading" class="empty-state">
-          <el-icon class="empty-icon"><ChatDotRound /></el-icon>
-          <p class="empty-text">暂无社区内容</p>
+        <div
+          v-if="posts.length === 0 && !loading"
+          class="empty-state"
+        >
+          <el-icon class="empty-icon">
+            <ChatDotRound />
+          </el-icon>
+          <p class="empty-text">
+            暂无社区内容
+          </p>
         </div>
       </div>
     </el-skeleton>
@@ -44,16 +87,16 @@
 </template>
 
 <script setup lang="ts">
-import { View, Star, ChatLineRound, Warning, ChatDotRound } from '@element-plus/icons-vue'
-import { formatDate, truncateText } from '@/utils/format'
-import type { Post } from '@/types'
-import { PLACEHOLDER_32x32 } from '@shared/utils/placeholder'
+import { View, Star, ChatLineRound, Warning, ChatDotRound } from '@element-plus/icons-vue';
+import { formatDate, truncateText } from '@/utils/format';
+import type { Post } from '@/types';
+import { PLACEHOLDER_32x32 } from '@shared/utils/placeholder';
 
 defineProps<{
-  posts: Post[]
-  loading: boolean
-  error?: boolean
-}>()
+  posts: Post[];
+  loading: boolean;
+  error?: boolean;
+}>();
 </script>
 
 <style scoped>

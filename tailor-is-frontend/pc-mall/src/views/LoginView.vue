@@ -1,27 +1,47 @@
 <template>
   <div class="login-view">
-    <div class="login-card" role="main" aria-label="登录页面">
+    <div
+      class="login-card"
+      role="main"
+      aria-label="登录页面"
+    >
       <div class="login-header">
         <h2>欢迎登录</h2>
         <p>裁智云 Tailor IS</p>
       </div>
 
-      <el-tabs v-model="activeTab" class="login-tabs" aria-label="登录方式选择">
+      <el-tabs
+        v-model="activeTab"
+        class="login-tabs"
+        aria-label="登录方式选择"
+      >
         <!-- 密码登录 Tab -->
-        <el-tab-pane label="密码登录" name="password">
-          <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" aria-label="密码登录表单">
+        <el-tab-pane
+          label="密码登录"
+          name="password"
+        >
+          <el-form
+            ref="passwordFormRef"
+            :model="passwordForm"
+            :rules="passwordRules"
+            aria-label="密码登录表单"
+          >
             <el-form-item prop="account">
               <el-input
                 v-model="passwordForm.account"
                 placeholder="用户名 / 手机号 / 邮箱"
                 size="large"
                 :prefix-icon="User"
-                @input="onAccountInput"
                 aria-required="true"
                 data-testid="username-input"
                 :aria-describedby="accountType ? 'account-type-hint' : undefined"
+                @input="onAccountInput"
               />
-              <span v-if="accountType" class="account-type-hint" id="account-type-hint">
+              <span
+                v-if="accountType"
+                id="account-type-hint"
+                class="account-type-hint"
+              >
                 {{ accountTypeHint }}
               </span>
             </el-form-item>
@@ -40,8 +60,16 @@
             </el-form-item>
             <el-form-item>
               <div class="remember-row">
-                <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-                <el-link type="primary" :underline="false" @click="goToForgot">忘记密码？</el-link>
+                <el-checkbox v-model="rememberMe">
+                  记住我
+                </el-checkbox>
+                <el-link
+                  type="primary"
+                  :underline="false"
+                  @click="goToForgot"
+                >
+                  忘记密码？
+                </el-link>
               </div>
             </el-form-item>
             <el-form-item>
@@ -49,11 +77,11 @@
                 type="primary"
                 size="large"
                 class="login-btn"
-                @click="handlePasswordLogin"
                 :loading="loading"
                 :disabled="!canPasswordLogin"
                 aria-label="密码登录"
                 data-testid="login-button"
+                @click="handlePasswordLogin"
               >
                 登录
               </el-button>
@@ -62,8 +90,15 @@
         </el-tab-pane>
 
         <!-- 短信登录 Tab -->
-        <el-tab-pane label="短信登录" name="code">
-          <el-form :model="codeForm" :rules="codeRules" ref="codeFormRef">
+        <el-tab-pane
+          label="短信登录"
+          name="code"
+        >
+          <el-form
+            ref="codeFormRef"
+            :model="codeForm"
+            :rules="codeRules"
+          >
             <el-form-item prop="account">
               <el-input
                 v-model="codeForm.account"
@@ -72,7 +107,10 @@
                 :prefix-icon="Phone"
                 @input="onCodeAccountInput"
               />
-              <span v-if="codeAccountType" class="account-type-hint">
+              <span
+                v-if="codeAccountType"
+                class="account-type-hint"
+              >
                 {{ codeAccountTypeHint }}
               </span>
             </el-form-item>
@@ -99,9 +137,9 @@
                 type="primary"
                 size="large"
                 class="login-btn"
-                @click="handleCodeLogin"
                 :loading="loading"
                 :disabled="!canCodeLogin"
+                @click="handleCodeLogin"
               >
                 登录
               </el-button>
@@ -112,44 +150,49 @@
 
       <div class="login-footer">
         <span>还没有账号？</span>
-        <router-link to="/register" class="register-link">立即注册</router-link>
+        <router-link
+          to="/register"
+          class="register-link"
+        >
+          立即注册
+        </router-link>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
-import { User, Lock, Phone, Key } from '@element-plus/icons-vue'
-import { useUserStore } from '@/store/user'
-import { login as apiLogin, sendVerificationCode, loginByCode, sendEmailCode } from '@/api/auth'
-import { validate } from '@/utils/validate'
-import { storage } from '@/utils/storage'
-import { encryptSync } from '@/utils/crypto'
-import { useCountdown } from '@/composables/useCountdown'
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import type { FormInstance, FormRules } from 'element-plus';
+import { User, Lock, Phone, Key } from '@element-plus/icons-vue';
+import { useUserStore } from '@/store/user';
+import { sendVerificationCode, loginByCode } from '@/api/auth';
+import { validate } from '@/utils/validate';
+import { storage } from '@/utils/storage';
+import { encryptSync } from '@/utils/crypto';
+import { useCountdown } from '@/composables/useCountdown';
 
-const router = useRouter()
-const route = useRoute()
-const userStore = useUserStore()
+const router = useRouter();
+const route = useRoute();
+const userStore = useUserStore();
 
-const activeTab = ref('password')
-const loading = ref(false)
-const rememberMe = ref(false)
+const activeTab = ref('password');
+const loading = ref(false);
+const rememberMe = ref(false);
 
 // 密码登录表单
 const passwordForm = ref({
   account: '',
-  password: ''
-})
-const passwordFormRef = ref<FormInstance>()
-const accountType = ref<'phone' | 'email' | 'username' | 'unknown'>('unknown')
+  password: '',
+});
+const passwordFormRef = ref<FormInstance>();
+const accountType = ref<'phone' | 'email' | 'username' | 'unknown'>('unknown');
 
 // 识别账号类型
 function onAccountInput(val: string) {
-  accountType.value = validate.identifyAccount(val)
+  accountType.value = validate.identifyAccount(val);
 }
 
 const accountTypeHint = computed(() => {
@@ -157,10 +200,10 @@ const accountTypeHint = computed(() => {
     phone: '📱 手机号',
     email: '📧 邮箱',
     username: '👤 用户名',
-    unknown: ''
-  }
-  return map[accountType.value] || ''
-})
+    unknown: '',
+  };
+  return map[accountType.value] || '';
+});
 
 // 表单校验规则
 const passwordRules: FormRules = {
@@ -169,53 +212,53 @@ const passwordRules: FormRules = {
     {
       validator: (_rule, value: string, callback) => {
         if (!value) {
-          callback(new Error('请输入用户名/手机号/邮箱'))
-          return
+          callback(new Error('请输入用户名/手机号/邮箱'));
+          return;
         }
-        const type = validate.identifyAccount(value)
+        const type = validate.identifyAccount(value);
         if (type === 'phone' && !validate.isPhone(value)) {
-          callback(new Error('手机号格式不正确'))
-          return
+          callback(new Error('手机号格式不正确'));
+          return;
         }
         if (type === 'email' && !validate.isEmail(value)) {
-          callback(new Error('邮箱格式不正确'))
-          return
+          callback(new Error('邮箱格式不正确'));
+          return;
         }
-        callback()
+        callback();
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-}
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+};
 
 const canPasswordLogin = computed(() => {
-  return passwordForm.value.account.trim() !== '' && passwordForm.value.password.trim() !== ''
-})
+  return passwordForm.value.account.trim() !== '' && passwordForm.value.password.trim() !== '';
+});
 
 // 短信登录表单
 const codeForm = ref({
   account: '',
-  code: ''
-})
-const codeFormRef = ref<FormInstance>()
-const codeAccountType = ref<'phone' | 'email' | 'unknown'>('unknown')
-const sending = ref(false)
+  code: '',
+});
+const codeFormRef = ref<FormInstance>();
+const codeAccountType = ref<'phone' | 'email' | 'unknown'>('unknown');
+const sending = ref(false);
 
 function onCodeAccountInput(val: string) {
-  const type = validate.identifyAccount(val)
-  codeAccountType.value = type === 'phone' ? 'phone' : type === 'email' ? 'email' : 'unknown'
+  const type = validate.identifyAccount(val);
+  codeAccountType.value = type === 'phone' ? 'phone' : type === 'email' ? 'email' : 'unknown';
 }
 
 const codeAccountTypeHint = computed(() => {
-  if (codeAccountType.value === 'phone') return '📱 将发送短信验证码'
-  if (codeAccountType.value === 'email') return '📧 将发送邮箱验证码'
-  return ''
-})
+  if (codeAccountType.value === 'phone') return '📱 将发送短信验证码';
+  if (codeAccountType.value === 'email') return '📧 将发送邮箱验证码';
+  return '';
+});
 
 const canSendCode = computed(() => {
-  return codeAccountType.value === 'phone' || codeAccountType.value === 'email'
-})
+  return codeAccountType.value === 'phone' || codeAccountType.value === 'email';
+});
 
 const codeRules: FormRules = {
   account: [
@@ -223,151 +266,151 @@ const codeRules: FormRules = {
     {
       validator: (_rule, value: string, callback) => {
         if (!value) {
-          callback(new Error('请输入手机号/邮箱'))
-          return
+          callback(new Error('请输入手机号/邮箱'));
+          return;
         }
-        const type = validate.identifyAccount(value)
+        const type = validate.identifyAccount(value);
         if (type === 'phone' && !validate.isPhone(value)) {
-          callback(new Error('手机号格式不正确'))
-          return
+          callback(new Error('手机号格式不正确'));
+          return;
         }
         if (type === 'email' && !validate.isEmail(value)) {
-          callback(new Error('邮箱格式不正确'))
-          return
+          callback(new Error('邮箱格式不正确'));
+          return;
         }
         if (type === 'username') {
-          callback(new Error('请输入手机号或邮箱'))
-          return
+          callback(new Error('请输入手机号或邮箱'));
+          return;
         }
-        callback()
+        callback();
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   code: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
-    { pattern: /^\d{6}$/, message: '请输入6位验证码', trigger: 'blur' }
-  ]
-}
+    { pattern: /^\d{6}$/, message: '请输入6位验证码', trigger: 'blur' },
+  ],
+};
 
 const canCodeLogin = computed(() => {
-  const accountOk = codeAccountType.value === 'phone' || codeAccountType.value === 'email'
-  return accountOk && validate.isSixCode(codeForm.value.code)
-})
+  const accountOk = codeAccountType.value === 'phone' || codeAccountType.value === 'email';
+  return accountOk && validate.isSixCode(codeForm.value.code);
+});
 
 // 倒计时
-const countdown = useCountdown(60)
+const countdown = useCountdown(60);
 
 // 页面加载时回填记住的账号
 onMounted(() => {
-  const savedAccount = storage.get()
+  const savedAccount = storage.get();
   if (savedAccount) {
-    passwordForm.value.account = savedAccount
-    rememberMe.value = true
+    passwordForm.value.account = savedAccount;
+    rememberMe.value = true;
   }
-})
+});
 
 // 切换Tab时清空
 watch(activeTab, () => {
-  passwordFormRef.value?.clearValidate()
-  codeFormRef.value?.clearValidate()
-})
+  passwordFormRef.value?.clearValidate();
+  codeFormRef.value?.clearValidate();
+});
 
 async function handlePasswordLogin() {
-  if (!passwordFormRef.value) return
+  if (!passwordFormRef.value) return;
   await passwordFormRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true
+      loading.value = true;
       try {
         await userStore.login({
           username: passwordForm.value.account,
-          password: passwordForm.value.password
-        })
+          password: passwordForm.value.password,
+        });
         if (rememberMe.value) {
-          storage.set(passwordForm.value.account)
+          storage.set(passwordForm.value.account);
         } else {
-          storage.clear()
+          storage.clear();
         }
-        ElMessage.success('登录成功')
-        const redirect = (route.query.redirect as string) || '/'
-        router.push(redirect)
+        ElMessage.success('登录成功');
+        const redirect = (route.query.redirect as string) || '/';
+        router.push(redirect);
       } catch (error) {
-        const errMsg = error instanceof Error ? error.message : ''
+        const errMsg = error instanceof Error ? error.message : '';
         if (errMsg.includes('503') || errMsg.includes('服务') || errMsg.includes('不可用')) {
-          return
+          return;
         }
         if (!errMsg.includes('服务器') && !errMsg.includes('网络') && !errMsg.includes('连接')) {
-          ElMessage.error('账号或密码错误，请重新输入')
+          ElMessage.error('账号或密码错误，请重新输入');
         }
       } finally {
-        loading.value = false
+        loading.value = false;
       }
     }
-  })
+  });
 }
 
 async function handleSendCode() {
   if (!codeForm.value.account) {
-    ElMessage.warning('请先输入手机号/邮箱')
-    return
+    ElMessage.warning('请先输入手机号/邮箱');
+    return;
   }
-  const type = validate.identifyAccount(codeForm.value.account)
+  const type = validate.identifyAccount(codeForm.value.account);
   if (type !== 'phone' && type !== 'email') {
-    ElMessage.warning('请输入正确的手机号或邮箱')
-    return
+    ElMessage.warning('请输入正确的手机号或邮箱');
+    return;
   }
 
   // 防重复点击
-  if (sending.value || countdown.counting.value) return
-  sending.value = true
+  if (sending.value || countdown.counting.value) return;
+  sending.value = true;
 
   try {
-    await sendVerificationCode(codeForm.value.account, type)
-    ElMessage.success('验证码已发送')
-    countdown.start()
+    await sendVerificationCode(codeForm.value.account, type);
+    ElMessage.success('验证码已发送');
+    countdown.start();
   } catch {
-    ElMessage.error('发送失败')
+    ElMessage.error('发送失败');
   } finally {
-    sending.value = false
+    sending.value = false;
   }
 }
 
 async function handleCodeLogin() {
-  if (!codeFormRef.value) return
+  if (!codeFormRef.value) return;
   await codeFormRef.value.validate(async (valid) => {
     if (valid) {
-      const type = codeAccountType.value
+      const type = codeAccountType.value;
       if (type !== 'phone' && type !== 'email') {
-        ElMessage.warning('请输入正确的手机号或邮箱')
-        return
+        ElMessage.warning('请输入正确的手机号或邮箱');
+        return;
       }
-      loading.value = true
+      loading.value = true;
       try {
         const res = await loginByCode({
           target: codeForm.value.account,
           code: codeForm.value.code,
-          type
-        })
-        userStore.token = res.token
-        userStore.userInfo = res.userInfo
-        localStorage.setItem('token', encryptSync(res.token))
+          type,
+        });
+        userStore.token = res.token;
+        userStore.userInfo = res.userInfo;
+        localStorage.setItem('token', encryptSync(res.token));
         if (res.csrfToken) {
-          localStorage.setItem('csrf_token', res.csrfToken)
+          localStorage.setItem('csrf_token', res.csrfToken);
         }
-        ElMessage.success('登录成功')
-        const redirect = (route.query.redirect as string) || '/'
-        router.push(redirect)
+        ElMessage.success('登录成功');
+        const redirect = (route.query.redirect as string) || '/';
+        router.push(redirect);
       } catch {
-        ElMessage.error('验证码错误或已过期')
+        ElMessage.error('验证码错误或已过期');
       } finally {
-        loading.value = false
+        loading.value = false;
       }
     }
-  })
+  });
 }
 
 function goToForgot() {
-  router.push('/forgot-password')
+  router.push('/forgot-password');
 }
 </script>
 

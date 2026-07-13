@@ -5,56 +5,62 @@
  * 用于模态框、弹窗等场景，确保焦点在弹出层内循环，
  * 不会 Tab 到背景页面元素。
  */
-import { ref, onMounted, onUnmounted } from 'vue'
-import { focusTrap } from '@/utils/a11y'
+import { ref, onMounted, onUnmounted } from 'vue';
+import { focusTrap } from '@/utils/a11y';
 
-const props = withDefaults(defineProps<{
-  /** 是否激活焦点陷阱 */
-  active?: boolean
-  /** 是否自动聚焦第一个可聚焦元素 */
-  autoFocus?: boolean
-}>(), {
-  active: true,
-  autoFocus: true
-})
+const props = withDefaults(
+  defineProps<{
+    /** 是否激活焦点陷阱 */
+    active?: boolean;
+    /** 是否自动聚焦第一个可聚焦元素 */
+    autoFocus?: boolean;
+  }>(),
+  {
+    active: true,
+    autoFocus: true,
+  }
+);
 
 const emit = defineEmits<{
-  (e: 'escape'): void
-}>()
+  (_: 'escape'): void;
+}>();
 
-const containerRef = ref<HTMLElement | null>(null)
-let cleanup: (() => void) | null = null
+const containerRef = ref<HTMLElement | null>(null);
+let cleanup: (() => void) | null = null;
 
 function activate() {
-  if (!containerRef.value) return
-  cleanup = focusTrap(containerRef.value)
+  if (!containerRef.value) return;
+  cleanup = focusTrap(containerRef.value);
 }
 
 function deactivate() {
-  cleanup?.()
-  cleanup = null
+  cleanup?.();
+  cleanup = null;
 }
 
 onMounted(() => {
   if (props.active) {
-    activate()
+    activate();
   }
   if (containerRef.value) {
     containerRef.value.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        emit('escape')
+        emit('escape');
       }
-    })
+    });
   }
-})
+});
 
 onUnmounted(() => {
-  deactivate()
-})
+  deactivate();
+});
 </script>
 
 <template>
-  <div ref="containerRef" class="focus-trap-container">
+  <div
+    ref="containerRef"
+    class="focus-trap-container"
+  >
     <slot />
   </div>
 </template>

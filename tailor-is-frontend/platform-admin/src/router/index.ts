@@ -1,10 +1,10 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router';
 
 declare module 'vue-router' {
   interface RouteMeta {
-    requiresAuth?: boolean
-    title?: string
+    requiresAuth?: boolean;
+    title?: string;
   }
 }
 
@@ -53,32 +53,32 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-]
+];
 
 const router = createRouter({
   history: createWebHistory('/admin'),
   routes,
-})
+});
 
 router.beforeEach((to, _from, next) => {
-  document.title = `${to.meta.title || '裁智云平台管理'} - Tailor IS`
-  
-  const token = localStorage.getItem('token')
-  const isAuthenticated = !!token
-  
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false)
-  
-  if (requiresAuth && !isAuthenticated) {
-    next({ path: '/login', query: { redirect: to.fullPath } })
-    return
-  }
-  
-  if (isAuthenticated && to.path === '/login') {
-    next({ path: '/dashboard' })
-    return
-  }
-  
-  next()
-})
+  document.title = `${to.meta.title || '裁智云平台管理'} - Tailor IS`;
 
-export default router
+  const token = localStorage.getItem('token');
+  const isAuthenticated = !!token;
+
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth !== false);
+
+  if (requiresAuth && !isAuthenticated) {
+    next({ path: '/login', query: { redirect: to.fullPath } });
+    return;
+  }
+
+  if (isAuthenticated && to.path === '/login') {
+    next({ path: '/dashboard' });
+    return;
+  }
+
+  next();
+});
+
+export default router;

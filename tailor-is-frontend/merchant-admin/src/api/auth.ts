@@ -1,15 +1,15 @@
-import request from './request'
-import type { Merchant } from '@/types'
+import request from './request';
+import type { Merchant } from '@/types';
 
 interface LoginParams {
-  shopName: string
-  username: string
-  password: string
+  shopName: string;
+  username: string;
+  password: string;
 }
 
 interface LoginResult {
-  token: string
-  userInfo: Merchant
+  token: string;
+  userInfo: Merchant;
 }
 
 export const adminLogin = (data: LoginParams) => {
@@ -17,29 +17,29 @@ export const adminLogin = (data: LoginParams) => {
     url: '/auth/login',
     method: 'POST',
     data,
-  })
-}
+  });
+};
 
 export const getAdminInfo = () => {
   return request<Record<string, unknown>, Merchant>({
     url: '/auth/info',
     method: 'GET',
-  })
-}
+  });
+};
 
 // 注册相关接口
 export interface RegisterByPhoneParams {
-  phone: string
-  code: string
-  password: string
-  shopName: string
+  phone: string;
+  code: string;
+  password: string;
+  shopName: string;
 }
 
 export interface RegisterByEmailParams {
-  email: string
-  code: string
-  password: string
-  shopName: string
+  email: string;
+  code: string;
+  password: string;
+  shopName: string;
 }
 
 export const registerByPhone = (data: RegisterByPhoneParams) => {
@@ -47,70 +47,76 @@ export const registerByPhone = (data: RegisterByPhoneParams) => {
     url: '/auth/register/phone',
     method: 'POST',
     data,
-  })
-}
+  });
+};
 
 export const registerByEmail = (data: RegisterByEmailParams) => {
   return request<Record<string, unknown>, void>({
     url: '/auth/register/email',
     method: 'POST',
     data,
-  })
-}
+  });
+};
 
 export const sendSmsCode = (phone: string) => {
   return request<Record<string, unknown>, void>({
     url: '/auth/sms-code',
     method: 'POST',
     data: { phone },
-  })
-}
+  });
+};
 
 export const sendEmailCode = (email: string) => {
   return request<Record<string, unknown>, void>({
     url: '/auth/email-code',
     method: 'POST',
     data: { email },
-  })
-}
+  });
+};
 
 export const loginByCode = (data: { target: string; code: string; type: 'phone' | 'email' }) => {
   return request<Record<string, unknown>, { token: string; userInfo: Merchant }>({
     url: '/auth/login/code',
     method: 'POST',
     data,
-  })
-}
+  });
+};
 
 export const logout = () => {
   return request<Record<string, unknown>, void>({
     url: '/auth/logout',
     method: 'POST',
-  })
-}
+  });
+};
 
 // 找回密码相关接口
 export const sendResetCode = (data: { target: string; type: 'phone' | 'email' }) => {
-  const { target, type } = data
+  const { target, type } = data;
   if (type === 'phone') {
     return request<Record<string, unknown>, void>({
       url: '/auth/sms-code',
       method: 'POST',
       data: { phone: target },
-    })
+    });
   } else {
     return request<Record<string, unknown>, void>({
       url: '/auth/email-code',
       method: 'POST',
       data: { email: target },
-    })
+    });
   }
-}
+};
 
-export const resetPassword = (data: { target: string; code: string; newPassword: string; type: 'phone' | 'email'; shopName: string }) => {
+export const resetPassword = (data: {
+  target: string;
+  code: string;
+  newPassword: string;
+  type: 'phone' | 'email';
+  shopName: string;
+}) => {
   return request<Record<string, unknown>, void>({
     url: '/auth/reset-password',
     method: 'POST',
     data,
-  })
-}
+  });
+};

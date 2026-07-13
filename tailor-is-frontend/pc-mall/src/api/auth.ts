@@ -1,34 +1,34 @@
-import request from './request'
-import type { User } from '@/types'
+import request from './request';
+import type { User } from '@/types';
 
 interface LoginParams {
-  username: string
-  password: string
+  username: string;
+  password: string;
 }
 
 interface RegisterParams {
-  phone: string
-  smsCode: string
-  password: string
+  phone: string;
+  smsCode: string;
+  password: string;
 }
 
 interface EmailRegisterParams {
-  email: string
-  code: string
-  password: string
+  email: string;
+  code: string;
+  password: string;
 }
 
 interface SendCodeParams {
-  target: string
-  type: 'phone' | 'email'
+  target: string;
+  type: 'phone' | 'email';
 }
 
 export function login(data: LoginParams) {
   return request<Record<string, unknown>, { token: string; userInfo: User; csrfToken?: string }>({
     url: '/api/v1/auth/login',
     method: 'post',
-    data
-  })
+    data,
+  });
 }
 
 /** 手机号注册 */
@@ -36,8 +36,8 @@ export function register(data: RegisterParams) {
   return request<Record<string, unknown>, boolean>({
     url: '/api/v1/auth/register',
     method: 'post',
-    data
-  })
+    data,
+  });
 }
 
 /** 邮箱注册 */
@@ -45,22 +45,22 @@ export function registerByEmail(data: EmailRegisterParams) {
   return request<Record<string, unknown>, boolean>({
     url: '/api/v1/auth/register/email',
     method: 'post',
-    data
-  })
+    data,
+  });
 }
 
 export function getUserInfo() {
   return request<Record<string, unknown>, User>({
     url: '/api/v1/auth/userinfo',
-    method: 'get'
-  })
+    method: 'get',
+  });
 }
 
 export function logout() {
   return request<Record<string, unknown>, void>({
     url: '/api/v1/auth/logout',
-    method: 'post'
-  })
+    method: 'post',
+  });
 }
 
 /** 发送验证码（自动区分手机/邮箱） */
@@ -68,8 +68,8 @@ export function sendSmsCode(phone: string) {
   return request<Record<string, unknown>, boolean>({
     url: '/api/v1/auth/sms-code',
     method: 'post',
-    data: { phone }
-  })
+    data: { phone },
+  });
 }
 
 /** 发送邮箱验证码 */
@@ -77,8 +77,8 @@ export function sendEmailCode(email: string) {
   return request<Record<string, unknown>, boolean>({
     url: '/api/v1/auth/email-code',
     method: 'post',
-    data: { email }
-  })
+    data: { email },
+  });
 }
 
 /** 统一验证码发送 - 根据类型自动分发 */
@@ -86,8 +86,8 @@ export function sendVerificationCode(target: string, type: 'phone' | 'email') {
   return request<Record<string, unknown>, boolean>({
     url: type === 'phone' ? '/api/v1/auth/sms-code' : '/api/v1/auth/email-code',
     method: 'post',
-    data: type === 'phone' ? { phone: target } : { email: target }
-  })
+    data: type === 'phone' ? { phone: target } : { email: target },
+  });
 }
 
 /** 验证码免密登录 */
@@ -95,25 +95,25 @@ export function loginByCode(data: { target: string; code: string; type: 'phone' 
   return request<Record<string, unknown>, { token: string; userInfo: User; csrfToken?: string }>({
     url: '/api/v1/auth/login/code',
     method: 'post',
-    data
-  })
+    data,
+  });
 }
 
 /** 找回密码 - 发送验证码 */
 export function sendResetCode(data: SendCodeParams) {
-  const { target, type } = data
+  const { target, type } = data;
   if (type === 'phone') {
     return request<Record<string, unknown>, boolean>({
       url: '/api/v1/auth/sms-code',
       method: 'post',
-      data: { phone: target }
-    })
+      data: { phone: target },
+    });
   } else {
     return request<Record<string, unknown>, boolean>({
       url: '/api/v1/auth/email-code',
       method: 'post',
-      data: { email: target }
-    })
+      data: { email: target },
+    });
   }
 }
 
@@ -122,6 +122,6 @@ export function resetPassword(data: { target: string; code: string; newPassword:
   return request<Record<string, unknown>, boolean>({
     url: '/api/v1/auth/reset-password',
     method: 'post',
-    data
-  })
+    data,
+  });
 }

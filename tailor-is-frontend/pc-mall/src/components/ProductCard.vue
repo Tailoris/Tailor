@@ -4,37 +4,37 @@
  *
  * <p>支持图片懒加载、骨架屏占位、错误回退的通用商品卡片。</p>
  */
-import { ref, onMounted, onUnmounted } from 'vue'
-import type { Product } from '@/types'
+import { ref, onMounted, onUnmounted } from 'vue';
+import type { Product } from '@/types';
 
 const props = defineProps<{
-  product: Product
-}>()
+  product: Product;
+}>();
 
 const emit = defineEmits<{
-  (e: 'click', product: Product): void
-}>()
+  (_: 'click', _product: Product): void;
+}>();
 
-const imageRef = ref<HTMLImageElement | null>(null)
-const wrapperRef = ref<HTMLElement | null>(null)
-const loaded = ref(false)
-const error = ref(false)
-const inViewport = ref(false)
+const imageRef = ref<HTMLImageElement | null>(null);
+const wrapperRef = ref<HTMLElement | null>(null);
+const loaded = ref(false);
+const error = ref(false);
+const inViewport = ref(false);
 
-let observer: IntersectionObserver | null = null
+let observer: IntersectionObserver | null = null;
 
 function onImageLoad() {
-  loaded.value = true
-  error.value = false
+  loaded.value = true;
+  error.value = false;
 }
 
 function onImageError() {
-  loaded.value = true
-  error.value = true
+  loaded.value = true;
+  error.value = true;
 }
 
 function onCardClick() {
-  emit('click', props.product)
+  emit('click', props.product);
 }
 
 onMounted(() => {
@@ -42,40 +42,48 @@ onMounted(() => {
     (entries) => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
-          inViewport.value = true
-          observer?.disconnect()
-          observer = null
-          break
+          inViewport.value = true;
+          observer?.disconnect();
+          observer = null;
+          break;
         }
       }
     },
     { rootMargin: '200px' }
-  )
+  );
   if (wrapperRef.value) {
-    observer.observe(wrapperRef.value)
+    observer.observe(wrapperRef.value);
   }
-})
+});
 
 onUnmounted(() => {
-  observer?.disconnect()
-  observer = null
-})
+  observer?.disconnect();
+  observer = null;
+});
 </script>
 
 <template>
   <div
     ref="wrapperRef"
     class="product-card"
-    @click="onCardClick"
     role="button"
     :aria-label="`商品 ${product.name}`"
     tabindex="0"
+    @click="onCardClick"
   >
     <div class="product-image-wrapper">
       <!-- 骨架屏占位 -->
-      <div v-if="!loaded" class="image-placeholder" aria-hidden="true" />
+      <div
+        v-if="!loaded"
+        class="image-placeholder"
+        aria-hidden="true"
+      />
       <!-- 错误回退 -->
-      <div v-else-if="error" class="image-error" aria-hidden="true">
+      <div
+        v-else-if="error"
+        class="image-error"
+        aria-hidden="true"
+      >
         <span>图片加载失败</span>
       </div>
       <!-- 实际图片（懒加载） -->
@@ -90,11 +98,15 @@ onUnmounted(() => {
         :class="{ 'is-loaded': loaded && !error }"
         @load="onImageLoad"
         @error="onImageError"
-      />
+      >
     </div>
     <div class="product-info">
-      <h3 class="product-name">{{ product.name }}</h3>
-      <p class="product-price">¥{{ product.price }}</p>
+      <h3 class="product-name">
+        {{ product.name }}
+      </h3>
+      <p class="product-price">
+        ¥{{ product.price }}
+      </p>
     </div>
   </div>
 </template>
@@ -105,7 +117,9 @@ onUnmounted(() => {
   border: 1px solid #eee;
   border-radius: 8px;
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .product-card:hover,
@@ -176,7 +190,11 @@ onUnmounted(() => {
 }
 
 @keyframes skeleton {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 </style>

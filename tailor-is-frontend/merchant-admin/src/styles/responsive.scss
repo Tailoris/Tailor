@@ -6,26 +6,39 @@ $breakpoints: (
   'md': 768px,
   'lg': 992px,
   'xl': 1200px,
-  'xxl': 1400px
+  'xxl': 1400px,
 );
 
 @mixin respond-to($breakpoint) {
   @if $breakpoint == 'xs' {
-    @media (max-width: 575px) { @content; }
+    @media (max-width: 575px) {
+      @content;
+    }
   } @else if $breakpoint == 'sm' {
-    @media (min-width: 576px) { @content; }
+    @media (min-width: 576px) {
+      @content;
+    }
   } @else if $breakpoint == 'md' {
-    @media (min-width: 768px) { @content; }
+    @media (min-width: 768px) {
+      @content;
+    }
   } @else if $breakpoint == 'lg' {
-    @media (min-width: 992px) { @content; }
+    @media (min-width: 992px) {
+      @content;
+    }
   } @else if $breakpoint == 'xl' {
-    @media (min-width: 1200px) { @content; }
+    @media (min-width: 1200px) {
+      @content;
+    }
   } @else if $breakpoint == 'xxl' {
-    @media (min-width: 1400px) { @content; }
+    @media (min-width: 1400px) {
+      @content;
+    }
   }
 }
 
-html, body {
+html,
+body {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }

@@ -1,35 +1,88 @@
 <template>
-  <div class="order-list-view" role="main" aria-label="我的订单页面">
-    <el-breadcrumb separator="/" aria-label="面包屑导航">
-      <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+  <div
+    class="order-list-view"
+    role="main"
+    aria-label="我的订单页面"
+  >
+    <el-breadcrumb
+      separator="/"
+      aria-label="面包屑导航"
+    >
+      <el-breadcrumb-item :to="{ path: '/' }">
+        首页
+      </el-breadcrumb-item>
       <el-breadcrumb-item>我的订单</el-breadcrumb-item>
     </el-breadcrumb>
 
-    <h2 class="page-title">我的订单</h2>
+    <h2 class="page-title">
+      我的订单
+    </h2>
 
-    <el-tabs v-model="activeTab" @tab-click="handleTabClick">
-      <el-tab-pane label="全部" name="" />
-      <el-tab-pane label="待付款" name="0" />
-      <el-tab-pane label="待发货" name="1" />
-      <el-tab-pane label="待收货" name="2" />
-      <el-tab-pane label="已完成" name="3" />
-      <el-tab-pane label="已取消" name="4" />
+    <el-tabs
+      v-model="activeTab"
+      @tab-click="handleTabClick"
+    >
+      <el-tab-pane
+        label="全部"
+        name=""
+      />
+      <el-tab-pane
+        label="待付款"
+        name="0"
+      />
+      <el-tab-pane
+        label="待发货"
+        name="1"
+      />
+      <el-tab-pane
+        label="待收货"
+        name="2"
+      />
+      <el-tab-pane
+        label="已完成"
+        name="3"
+      />
+      <el-tab-pane
+        label="已取消"
+        name="4"
+      />
     </el-tabs>
 
-    <el-skeleton :loading="loading" animated :rows="3">
+    <el-skeleton
+      :loading="loading"
+      animated
+      :rows="3"
+    >
       <template v-if="orders.length > 0">
-        <div v-for="order in orders" :key="order.id" class="order-card">
+        <div
+          v-for="order in orders"
+          :key="order.id"
+          class="order-card"
+        >
           <div class="order-header">
             <span class="order-no">订单号: {{ order.orderNo }}</span>
             <span class="order-time">{{ formatDate(order.createdAt) }}</span>
-            <el-tag :type="getStatusType(order.status)">{{ formatOrderStatus(order.status) }}</el-tag>
+            <el-tag :type="getStatusType(order.status)">
+              {{ formatOrderStatus(order.status) }}
+            </el-tag>
           </div>
           <div class="order-items">
-            <div v-for="item in order.items" :key="item.id" class="order-item">
-              <img :src="item.productImage || PLACEHOLDER_60x60" loading="lazy" />
+            <div
+              v-for="item in order.items"
+              :key="item.id"
+              class="order-item"
+            >
+              <img
+                :src="item.productImage || PLACEHOLDER_60x60"
+                loading="lazy"
+              >
               <div class="item-info">
                 <span class="item-name">{{ item.productName }}</span>
-                <span class="item-attrs">{{ Object.entries(item.skuAttributes).map(([k, v]) => `${k}: ${v}`).join('; ') }}</span>
+                <span class="item-attrs">{{
+                  Object.entries(item.skuAttributes)
+                    .map(([k, v]) => `${k}: ${v}`)
+                    .join('; ')
+                }}</span>
               </div>
               <span class="item-price">{{ formatPrice(item.price) }}</span>
               <span class="item-qty">x{{ item.quantity }}</span>
@@ -42,10 +95,35 @@
               <em>{{ formatPrice(order.payAmount) }}</em>
             </span>
             <div class="order-actions">
-              <el-button v-if="order.status === 0" type="danger" size="small" @click="handlePay(order.orderNo)">付款</el-button>
-              <el-button v-if="order.status === 0" size="small" @click="handleCancel(order.orderNo)">取消</el-button>
-              <el-button v-if="order.status === 2" type="primary" size="small" @click="handleConfirm(order.orderNo)">确认收货</el-button>
-              <el-button size="small" @click="$router.push(`/order/${order.orderNo}`)">查看详情</el-button>
+              <el-button
+                v-if="order.status === 0"
+                type="danger"
+                size="small"
+                @click="handlePay(order.orderNo)"
+              >
+                付款
+              </el-button>
+              <el-button
+                v-if="order.status === 0"
+                size="small"
+                @click="handleCancel(order.orderNo)"
+              >
+                取消
+              </el-button>
+              <el-button
+                v-if="order.status === 2"
+                type="primary"
+                size="small"
+                @click="handleConfirm(order.orderNo)"
+              >
+                确认收货
+              </el-button>
+              <el-button
+                size="small"
+                @click="$router.push(`/order/${order.orderNo}`)"
+              >
+                查看详情
+              </el-button>
             </div>
           </div>
         </div>
@@ -59,65 +137,68 @@
           />
         </div>
       </template>
-      <el-empty v-else-if="!loading" description="暂无订单" />
+      <el-empty
+        v-else-if="!loading"
+        description="暂无订单"
+      />
     </el-skeleton>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getOrders, payOrder, cancelOrder, confirmOrder } from '@/api/order'
-import { formatDate, formatOrderStatus, formatPrice } from '@/utils/format'
-import type { Order } from '@/types'
-import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder'
+import { ref, onMounted } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { getOrders, payOrder, cancelOrder, confirmOrder } from '@/api/order';
+import { formatDate, formatOrderStatus, formatPrice } from '@/utils/format';
+import type { Order } from '@/types';
+import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder';
 
-const orders = ref<Order[]>([])
-const loading = ref(true)
-const activeTab = ref('')
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
+const orders = ref<Order[]>([]);
+const loading = ref(true);
+const activeTab = ref('');
+const currentPage = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
 
 async function loadOrders() {
-  loading.value = true
+  loading.value = true;
   try {
     const res = await getOrders({
       status: activeTab.value ? Number(activeTab.value) : undefined,
       current: currentPage.value,
-      size: pageSize.value
-    })
-    orders.value = res.records
-    total.value = res.total
+      size: pageSize.value,
+    });
+    orders.value = res.records;
+    total.value = res.total;
   } catch {
-    orders.value = []
-    total.value = 0
+    orders.value = [];
+    total.value = 0;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function handleTabClick() {
-  currentPage.value = 1
-  loadOrders()
+  currentPage.value = 1;
+  loadOrders();
 }
 
 async function handlePay(orderNo: string) {
   try {
-    await payOrder(orderNo)
-    ElMessage.success('支付成功')
-    loadOrders()
+    await payOrder(orderNo);
+    ElMessage.success('支付成功');
+    loadOrders();
   } catch {
-    ElMessage.error('支付失败')
+    ElMessage.error('支付失败');
   }
 }
 
 async function handleCancel(orderNo: string) {
   try {
-    await ElMessageBox.confirm('确定要取消该订单吗？', '提示', { type: 'warning' })
-    await cancelOrder(orderNo)
-    ElMessage.success('订单已取消')
-    loadOrders()
+    await ElMessageBox.confirm('确定要取消该订单吗？', '提示', { type: 'warning' });
+    await cancelOrder(orderNo);
+    ElMessage.success('订单已取消');
+    loadOrders();
   } catch {
     // cancelled or error
   }
@@ -125,10 +206,10 @@ async function handleCancel(orderNo: string) {
 
 async function handleConfirm(orderNo: string) {
   try {
-    await ElMessageBox.confirm('确认已收到货物？', '确认收货', { type: 'info' })
-    await confirmOrder(orderNo)
-    ElMessage.success('已确认收货')
-    loadOrders()
+    await ElMessageBox.confirm('确认已收到货物？', '确认收货', { type: 'info' });
+    await confirmOrder(orderNo);
+    ElMessage.success('已确认收货');
+    loadOrders();
   } catch {
     // cancelled or error
   }
@@ -140,14 +221,14 @@ function getStatusType(status: number) {
     1: '',
     2: 'primary',
     3: 'success',
-    4: 'info'
-  }
-  return map[status] || 'info'
+    4: 'info',
+  };
+  return map[status] || 'info';
 }
 
 onMounted(() => {
-  loadOrders()
-})
+  loadOrders();
+});
 </script>
 
 <style scoped>
@@ -218,7 +299,8 @@ onMounted(() => {
   font-size: 12px;
   color: #999;
 }
-.item-price, .item-qty {
+.item-price,
+.item-qty {
   font-size: 14px;
   color: #666;
   min-width: 60px;

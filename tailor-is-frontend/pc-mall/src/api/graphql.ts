@@ -1,19 +1,19 @@
-import { ref, computed } from 'vue'
-import { decryptSync } from '@/utils/crypto'
+import { ref } from 'vue';
+import { decryptSync } from '@/utils/crypto';
 
 // GraphQL endpoint
-const GRAPHQL_ENDPOINT = import.meta.env.VITE_GRAPHQL_ENDPOINT || '/graphql'
+const GRAPHQL_ENDPOINT = import.meta.env.VITE_GRAPHQL_ENDPOINT || '/graphql';
 
 // Generic GraphQL response types
 interface GraphQLError {
-  message: string
-  path?: string[]
-  extensions?: Record<string, unknown>
+  message: string;
+  path?: string[];
+  extensions?: Record<string, unknown>;
 }
 
 interface GraphQLResponse<T> {
-  data?: T
-  errors?: GraphQLError[]
+  data?: T;
+  errors?: GraphQLError[];
 }
 
 /**
@@ -23,53 +23,53 @@ async function doGraphQLRequest<T>(query: string, variables: Record<string, unkn
   try {
     // FE-H-3: 统一 Token 格式 - 使用 decryptSync 解密加密存储的 Token
     // 与 request.ts / router / store 保持一致，避免密文当明文使用
-    const rawToken = localStorage.getItem('token')
-    const token = rawToken ? decryptSync(rawToken) : ''
+    const rawToken = localStorage.getItem('token');
+    const token = rawToken ? decryptSync(rawToken) : '';
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    }
+      'Content-Type': 'application/json',
+    };
     if (token) {
-      headers.Authorization = `Bearer ${token}`
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(GRAPHQL_ENDPOINT, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ query, variables })
-    })
+      body: JSON.stringify({ query, variables }),
+    });
 
-    const result: GraphQLResponse<T> = await response.json()
+    const result: GraphQLResponse<T> = await response.json();
 
     if (result.errors && result.errors.length > 0) {
-      console.error('[GraphQL] Query errors:', result.errors)
-      return null
+      console.error('[GraphQL] Query errors:', result.errors);
+      return null;
     }
 
-    return result.data || null
+    return result.data || null;
   } catch (error) {
-    console.error('[GraphQL] Request failed:', error)
-    return null
+    console.error('[GraphQL] Request failed:', error);
+    return null;
   }
 }
 
 // 进行中的请求去重缓存：相同 query+variables 复用同一个 Promise
-const pendingRequests = new Map<string, Promise<unknown>>()
+const pendingRequests = new Map<string, Promise<unknown>>();
 
 /**
  * Generic GraphQL query executor with request deduplication.
  * 同一时刻对相同 query+variables 的请求会复用同一个 Promise，避免重复请求。
  */
 async function graphqlQuery<T>(query: string, variables: Record<string, unknown> = {}): Promise<T | null> {
-  const cacheKey = JSON.stringify({ query, variables })
-  const existing = pendingRequests.get(cacheKey)
+  const cacheKey = JSON.stringify({ query, variables });
+  const existing = pendingRequests.get(cacheKey);
   if (existing) {
-    return existing as Promise<T | null>
+    return existing as Promise<T | null>;
   }
   const promise = doGraphQLRequest<T>(query, variables).finally(() => {
-    pendingRequests.delete(cacheKey)
-  })
-  pendingRequests.set(cacheKey, promise)
-  return promise
+    pendingRequests.delete(cacheKey);
+  });
+  pendingRequests.set(cacheKey, promise);
+  return promise;
 }
 
 // ========== GraphQL Queries ==========
@@ -105,7 +105,7 @@ export const PRODUCT_DETAIL_QUERY = /* GraphQL */ `
       createdAt
     }
   }
-`
+`;
 
 /**
  * Product list query with pagination and filters
@@ -146,7 +146,7 @@ export const PRODUCTS_QUERY = /* GraphQL */ `
       size
     }
   }
-`
+`;
 
 /**
  * Order detail query with items
@@ -180,7 +180,7 @@ export const ORDER_DETAIL_QUERY = /* GraphQL */ `
       }
     }
   }
-`
+`;
 
 /**
  * Hot products query
@@ -195,130 +195,124 @@ export const HOT_PRODUCTS_QUERY = /* GraphQL */ `
       saleCount
     }
   }
-`
+`;
 
 // ========== Composable for Product Detail ==========
 
 export interface ProductSkuAttribute {
-  key: string
-  value: string
+  key: string;
+  value: string;
 }
 
 export interface ProductSku {
-  id: number
-  skuCode: string
-  attributes: ProductSkuAttribute[]
-  price: number
-  stock: number
-  status: number
+  id: number;
+  skuCode: string;
+  attributes: ProductSkuAttribute[];
+  price: number;
+  stock: number;
+  status: number;
 }
 
 export interface GraphQLProduct {
-  id: number
-  name: string
-  subTitle: string
-  mainImage: string
-  images: string[]
-  description: string
-  price: number
-  saleCount: number
-  viewCount: number
-  productType: number
-  status: number
-  skus?: ProductSku[]
-  createdAt: string
+  id: number;
+  name: string;
+  subTitle: string;
+  mainImage: string;
+  images: string[];
+  description: string;
+  price: number;
+  saleCount: number;
+  viewCount: number;
+  productType: number;
+  status: number;
+  skus?: ProductSku[];
+  createdAt: string;
 }
 
 /**
  * Composable for fetching product detail via GraphQL
  */
 export function useProductGraphQL(id: number) {
-  const product = ref<GraphQLProduct | null>(null)
-  const loading = ref(true)
-  const error = ref<string | null>(null)
+  const product = ref<GraphQLProduct | null>(null);
+  const loading = ref(true);
+  const error = ref<string | null>(null);
 
   async function fetch() {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
 
     try {
-      const data = await graphqlQuery<{ product: GraphQLProduct }>(
-        PRODUCT_DETAIL_QUERY,
-        { id: String(id) }
-      )
+      const data = await graphqlQuery<{ product: GraphQLProduct }>(PRODUCT_DETAIL_QUERY, { id: String(id) });
 
       if (data?.product) {
-        product.value = data.product
+        product.value = data.product;
       } else {
-        error.value = 'Product not found'
+        error.value = 'Product not found';
       }
     } catch (e) {
-      error.value = (e as Error).message
+      error.value = (e as Error).message;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
-  return { product, loading, error, fetch }
+  return { product, loading, error, fetch };
 }
 
 /**
  * Composable for fetching order detail via GraphQL
  */
 export interface OrderItem {
-  id: number
-  productId: number
-  productName: string
-  productImage: string
-  skuAttributes: ProductSkuAttribute[]
-  quantity: number
-  price: number
-  subtotal: number
+  id: number;
+  productId: number;
+  productName: string;
+  productImage: string;
+  skuAttributes: ProductSkuAttribute[];
+  quantity: number;
+  price: number;
+  subtotal: number;
 }
 
 export interface GraphQLOrder {
-  id: number
-  orderNo: string
-  status: number
-  totalAmount: number
-  discountAmount: number
-  payAmount: number
-  payType: number
-  payStatus: number
-  remark: string
-  createdAt: string
-  paidAt: string
-  items: OrderItem[]
+  id: number;
+  orderNo: string;
+  status: number;
+  totalAmount: number;
+  discountAmount: number;
+  payAmount: number;
+  payType: number;
+  payStatus: number;
+  remark: string;
+  createdAt: string;
+  paidAt: string;
+  items: OrderItem[];
 }
 
 export function useOrderGraphQL(id: number) {
-  const order = ref<GraphQLOrder | null>(null)
-  const loading = ref(true)
-  const error = ref<string | null>(null)
+  const order = ref<GraphQLOrder | null>(null);
+  const loading = ref(true);
+  const error = ref<string | null>(null);
 
   async function fetch() {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
 
     try {
-      const data = await graphqlQuery<{ order: GraphQLOrder }>(
-        ORDER_DETAIL_QUERY,
-        { id: String(id) }
-      )
+      const data = await graphqlQuery<{ order: GraphQLOrder }>(ORDER_DETAIL_QUERY, { id: String(id) });
 
       if (data?.order) {
-        order.value = data.order
+        order.value = data.order;
       } else {
-        error.value = 'Order not found'
+        error.value = 'Order not found';
       }
     } catch (e) {
-      error.value = (e as Error).message
+      error.value = (e as Error).message;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
-  return { order, loading, error, fetch }
+  return { order, loading, error, fetch };
 }
 
-export default graphqlQuery
+export default graphqlQuery;

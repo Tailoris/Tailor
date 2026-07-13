@@ -35,8 +35,12 @@
         <el-icon><Shop /></el-icon>
         <span>店铺管理</span>
       </template>
-      <el-menu-item index="/shop/employees">员工管理</el-menu-item>
-      <el-menu-item index="/shop/settings">店铺设置</el-menu-item>
+      <el-menu-item index="/shop/employees">
+        员工管理
+      </el-menu-item>
+      <el-menu-item index="/shop/settings">
+        店铺设置
+      </el-menu-item>
     </el-sub-menu>
 
     <el-sub-menu index="finance">
@@ -44,8 +48,12 @@
         <el-icon><Money /></el-icon>
         <span>财务结算</span>
       </template>
-      <el-menu-item index="/finance/settlement">结算记录</el-menu-item>
-      <el-menu-item index="/finance/withdraw">提现管理</el-menu-item>
+      <el-menu-item index="/finance/settlement">
+        结算记录
+      </el-menu-item>
+      <el-menu-item index="/finance/withdraw">
+        提现管理
+      </el-menu-item>
     </el-sub-menu>
 
     <el-sub-menu index="marketing">
@@ -53,42 +61,38 @@
         <el-icon><Present /></el-icon>
         <span>营销中心</span>
       </template>
-      <el-menu-item index="/marketing/coupon">优惠券</el-menu-item>
-      <el-menu-item index="/marketing/seckill">秒杀活动</el-menu-item>
+      <el-menu-item index="/marketing/coupon">
+        优惠券
+      </el-menu-item>
+      <el-menu-item index="/marketing/seckill">
+        秒杀活动
+      </el-menu-item>
     </el-sub-menu>
   </el-menu>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { useAppStore } from '@/store/app'
-import {
-  HomeFilled,
-  Goods,
-  Document,
-  Service,
-  Shop,
-  Money,
-  Present,
-} from '@element-plus/icons-vue'
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { useAppStore } from '@/store/app';
+import { HomeFilled, Goods, Document, Service, Shop, Money, Present } from '@element-plus/icons-vue';
 
-const route = useRoute()
-const appStore = useAppStore()
+const route = useRoute();
+const appStore = useAppStore();
 
 const activeMenu = computed(() => {
-  const path = route.path
-  if (path.startsWith('/product')) return '/product'
-  if (path.startsWith('/order')) return '/order'
-  if (path.startsWith('/aftersale')) return '/aftersale'
-  if (path.startsWith('/shop/employees')) return '/shop/employees'
-  if (path.startsWith('/shop/settings')) return '/shop/settings'
-  if (path.startsWith('/finance/settlement')) return '/finance/settlement'
-  if (path.startsWith('/finance/withdraw')) return '/finance/withdraw'
-  if (path.startsWith('/marketing/coupon')) return '/marketing/coupon'
-  if (path.startsWith('/marketing/seckill')) return '/marketing/seckill'
-  return path
-})
+  const path = route.path;
+  if (path.startsWith('/product')) return '/product';
+  if (path.startsWith('/order')) return '/order';
+  if (path.startsWith('/aftersale')) return '/aftersale';
+  if (path.startsWith('/shop/employees')) return '/shop/employees';
+  if (path.startsWith('/shop/settings')) return '/shop/settings';
+  if (path.startsWith('/finance/settlement')) return '/finance/settlement';
+  if (path.startsWith('/finance/withdraw')) return '/finance/withdraw';
+  if (path.startsWith('/marketing/coupon')) return '/marketing/coupon';
+  if (path.startsWith('/marketing/seckill')) return '/marketing/seckill';
+  return path;
+});
 </script>
 
 <style scoped>

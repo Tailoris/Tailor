@@ -1,9 +1,17 @@
 <template>
   <el-container class="app-layout">
-    <el-aside :width="isCollapsed ? '64px' : '220px'" class="app-sidebar">
+    <el-aside
+      :width="isCollapsed ? '64px' : '220px'"
+      class="app-sidebar"
+    >
       <div class="sidebar-logo">
-        <el-icon :size="28"><Monitor /></el-icon>
-        <span v-show="!isCollapsed" class="logo-text">裁智云管理</span>
+        <el-icon :size="28">
+          <Monitor />
+        </el-icon>
+        <span
+          v-show="!isCollapsed"
+          class="logo-text"
+        >裁智云管理</span>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -17,15 +25,21 @@
       >
         <el-menu-item index="/dashboard">
           <el-icon><DataAnalysis /></el-icon>
-          <template #title>仪表盘</template>
+          <template #title>
+            仪表盘
+          </template>
         </el-menu-item>
         <el-menu-item index="/users">
           <el-icon><UserFilled /></el-icon>
-          <template #title>用户管理</template>
+          <template #title>
+            用户管理
+          </template>
         </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
-          <template #title>系统设置</template>
+          <template #title>
+            系统设置
+          </template>
         </el-menu-item>
       </el-menu>
       <div class="sidebar-footer">
@@ -41,21 +55,33 @@
       <el-header class="app-header">
         <div class="header-left">
           <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+            <el-breadcrumb-item :to="{ path: '/' }">
+              首页
+            </el-breadcrumb-item>
             <el-breadcrumb-item>{{ currentTitle }}</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         <div class="header-right">
           <el-dropdown trigger="click">
             <span class="avatar-wrapper">
-              <el-avatar :size="32" icon="UserFilled" />
+              <el-avatar
+                :size="32"
+                icon="UserFilled"
+              />
               <span class="admin-name">管理员</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">个人信息</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                <el-dropdown-item command="profile">
+                  个人信息
+                </el-dropdown-item>
+                <el-dropdown-item
+                  command="logout"
+                  divided
+                >
+                  退出登录
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -69,26 +95,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import {
-  Monitor,
-  DataAnalysis,
-  UserFilled,
-  Setting,
-  Expand,
-  Fold,
-  ArrowDown,
-} from '@element-plus/icons-vue'
+import { ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { Monitor, DataAnalysis, UserFilled, Setting, Expand, Fold, ArrowDown } from '@element-plus/icons-vue';
 
-const route = useRoute()
-const isCollapsed = ref(false)
+const route = useRoute();
+const isCollapsed = ref(false);
 
-const activeMenu = computed(() => route.path)
-const currentTitle = computed(() => route.meta.title as string || '')
+const activeMenu = computed(() => route.path);
+const currentTitle = computed(() => (route.meta.title as string) || '');
 
 function toggleSidebar() {
-  isCollapsed.value = !isCollapsed.value
+  isCollapsed.value = !isCollapsed.value;
 }
 </script>
 
@@ -98,7 +116,7 @@ function toggleSidebar() {
 }
 
 .app-sidebar {
-  background-color: #1F2937;
+  background-color: #1f2937;
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
@@ -111,7 +129,7 @@ function toggleSidebar() {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: #FFFFFF;
+  color: #ffffff;
   border-bottom: 1px solid #374151;
   flex-shrink: 0;
 }
@@ -141,11 +159,11 @@ function toggleSidebar() {
 }
 
 .collapse-btn {
-  color: #9CA3AF;
+  color: #9ca3af;
 }
 
 .collapse-btn:hover {
-  color: #FFFFFF;
+  color: #ffffff;
 }
 
 .app-header {

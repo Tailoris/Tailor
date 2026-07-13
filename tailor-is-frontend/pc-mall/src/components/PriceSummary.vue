@@ -1,5 +1,8 @@
 <template>
-  <div class="price-summary" aria-label="费用明细">
+  <div
+    class="price-summary"
+    aria-label="费用明细"
+  >
     <h3>费用明细</h3>
     <div class="summary-item">
       <span>商品合计</span>
@@ -13,31 +16,37 @@
       <span>运费</span>
       <span>{{ formatPrice(shipping) }}</span>
     </div>
-    <div class="summary-divider"></div>
+    <div class="summary-divider" />
     <div class="summary-total">
       <span>应付总额</span>
       <span class="total-price">{{ formatPrice(total) }}</span>
     </div>
-    <el-button type="primary" size="large" class="submit-btn" @click="$emit('submit')" :loading="submitting">
+    <el-button
+      type="primary"
+      size="large"
+      class="submit-btn"
+      :loading="submitting"
+      @click="$emit('submit')"
+    >
       提交订单
     </el-button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { formatPrice } from '@/utils/format'
+import { formatPrice } from '@/utils/format';
 
 defineProps<{
-  subtotal: number
-  discount: number
-  shipping: number
-  total: number
-  submitting: boolean
-}>()
+  subtotal: number;
+  discount: number;
+  shipping: number;
+  total: number;
+  submitting: boolean;
+}>();
 
 defineEmits<{
-  (e: 'submit'): void
-}>()
+  (_: 'submit'): void;
+}>();
 </script>
 
 <style scoped>

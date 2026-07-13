@@ -1,7 +1,16 @@
 <template>
-  <div class="product-list-view" role="main" aria-label="商品列表页面">
-    <el-breadcrumb separator="/" aria-label="面包屑导航">
-      <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+  <div
+    class="product-list-view"
+    role="main"
+    aria-label="商品列表页面"
+  >
+    <el-breadcrumb
+      separator="/"
+      aria-label="面包屑导航"
+    >
+      <el-breadcrumb-item :to="{ path: '/' }">
+        首页
+      </el-breadcrumb-item>
       <el-breadcrumb-item>商品列表</el-breadcrumb-item>
     </el-breadcrumb>
 
@@ -20,10 +29,28 @@
         <div class="filter-section">
           <h3>价格区间</h3>
           <div class="price-filter">
-            <el-input-number v-model="minPrice" :min="0" :precision="2" placeholder="最低价" controls-position="right" />
+            <el-input-number
+              v-model="minPrice"
+              :min="0"
+              :precision="2"
+              placeholder="最低价"
+              controls-position="right"
+            />
             <span>-</span>
-            <el-input-number v-model="maxPrice" :min="0" :precision="2" placeholder="最高价" controls-position="right" />
-            <el-button type="primary" size="small" @click="handlePriceFilter">确定</el-button>
+            <el-input-number
+              v-model="maxPrice"
+              :min="0"
+              :precision="2"
+              placeholder="最高价"
+              controls-position="right"
+            />
+            <el-button
+              type="primary"
+              size="small"
+              @click="handlePriceFilter"
+            >
+              确定
+            </el-button>
           </div>
         </div>
       </aside>
@@ -43,10 +70,18 @@
           <span class="total-text">共 {{ total }} 件商品</span>
         </div>
 
-        <el-skeleton :loading="loading" animated :rows="4">
+        <el-skeleton
+          :loading="loading"
+          animated
+          :rows="4"
+        >
           <template v-if="products.length > 0">
             <div class="product-grid">
-              <ProductCard v-for="product in products" :key="product.id" :product="product" />
+              <ProductCard
+                v-for="product in products"
+                :key="product.id"
+                :product="product"
+              />
             </div>
             <div class="pagination-wrapper">
               <el-pagination
@@ -60,7 +95,10 @@
               />
             </div>
           </template>
-          <el-empty v-else-if="!loading" description="暂无商品" />
+          <el-empty
+            v-else-if="!loading"
+            description="暂无商品"
+          />
         </el-skeleton>
       </main>
     </div>
@@ -68,45 +106,45 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import ProductCard from '@/components/ProductCard.vue'
-import { getProducts, getCategories } from '@/api/product'
-import type { Product, ProductCategory } from '@/types'
+import { ref, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import ProductCard from '@/components/ProductCard.vue';
+import { getProducts, getCategories } from '@/api/product';
+import type { Product, ProductCategory } from '@/types';
 
-const route = useRoute()
+const route = useRoute();
 
-const categories = ref<ProductCategory[]>([])
-const products = ref<Product[]>([])
-const loading = ref(true)
-const total = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(12)
-const sort = ref('')
-const minPrice = ref<number>()
-const maxPrice = ref<number>()
-const selectedCategoryId = ref<number>()
+const categories = ref<ProductCategory[]>([]);
+const products = ref<Product[]>([]);
+const loading = ref(true);
+const total = ref(0);
+const currentPage = ref(1);
+const pageSize = ref(12);
+const sort = ref('');
+const minPrice = ref<number>();
+const maxPrice = ref<number>();
+const selectedCategoryId = ref<number>();
 
 const sortOptions = [
   { label: '综合', value: '' },
   { label: '销量', value: 'sales' },
   { label: '价格 ↑', value: 'price_asc' },
   { label: '价格 ↓', value: 'price_desc' },
-  { label: '新品', value: 'new' }
-]
+  { label: '新品', value: 'new' },
+];
 
 async function loadCategories() {
   try {
-    categories.value = await getCategories()
+    categories.value = await getCategories();
   } catch {
-    categories.value = []
+    categories.value = [];
   }
 }
 
 async function loadProducts() {
-  loading.value = true
+  loading.value = true;
   try {
-    const keyword = route.query.keyword as string | undefined
+    const keyword = route.query.keyword as string | undefined;
     const res = await getProducts({
       categoryId: selectedCategoryId.value,
       keyword,
@@ -114,63 +152,63 @@ async function loadProducts() {
       minPrice: minPrice.value,
       maxPrice: maxPrice.value,
       current: currentPage.value,
-      size: pageSize.value
-    })
-    products.value = res.records
-    total.value = res.total
+      size: pageSize.value,
+    });
+    products.value = res.records;
+    total.value = res.total;
   } catch {
-    products.value = []
-    total.value = 0
+    products.value = [];
+    total.value = 0;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 // 自定义防抖：快速点击筛选时合并为一次请求，避免竞态
 // 🔒 M-23修复: 使用 unknown[] 替代 any[]，保持类型安全
-function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number): T {
-  let timer: ReturnType<typeof setTimeout>
+function debounce<T extends (..._args: unknown[]) => void>(fn: T, delay: number): T {
+  let timer: ReturnType<typeof setTimeout>;
   return ((...args: unknown[]) => {
-    clearTimeout(timer)
-    timer = setTimeout(() => fn(...args), delay)
-  }) as T
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  }) as T;
 }
 
 // 筛选操作（排序/分类/价格）使用防抖加载
-const debouncedLoadProducts = debounce(loadProducts, 300)
+const debouncedLoadProducts = debounce(loadProducts, 300);
 
 function handleCategoryClick(node: ProductCategory) {
-  selectedCategoryId.value = node.id
-  currentPage.value = 1
-  debouncedLoadProducts()
+  selectedCategoryId.value = node.id;
+  currentPage.value = 1;
+  debouncedLoadProducts();
 }
 
 function handleSort(value: string) {
-  sort.value = value
-  currentPage.value = 1
-  debouncedLoadProducts()
+  sort.value = value;
+  currentPage.value = 1;
+  debouncedLoadProducts();
 }
 
 function handlePriceFilter() {
-  currentPage.value = 1
-  debouncedLoadProducts()
+  currentPage.value = 1;
+  debouncedLoadProducts();
 }
 
 // 监听路由 keyword 变化（如首页搜索框跳转），keep-alive 下也能刷新列表
 watch(
   () => route.query.keyword,
   () => {
-    currentPage.value = 1
-    loadProducts()
+    currentPage.value = 1;
+    loadProducts();
   }
-)
+);
 
 onMounted(async () => {
   if (route.query.categoryId) {
-    selectedCategoryId.value = Number(route.query.categoryId)
+    selectedCategoryId.value = Number(route.query.categoryId);
   }
-  await Promise.all([loadCategories(), loadProducts()])
-})
+  await Promise.all([loadCategories(), loadProducts()]);
+});
 </script>
 
 <style scoped>

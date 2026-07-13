@@ -1,20 +1,20 @@
 export function formatPrice(price: number | string | null | undefined): string {
-  if (price === null || price === undefined || price === '') return '¥0.00'
-  const num = Number(price)
-  if (isNaN(num)) return '¥0.00'
-  return `¥${num.toFixed(2)}`
+  if (price === null || price === undefined || price === '') return '¥0.00';
+  const num = Number(price);
+  if (isNaN(num)) return '¥0.00';
+  return `¥${num.toFixed(2)}`;
 }
 
 export function formatDate(date: string | Date | null | undefined): string {
-  if (!date) return '-'
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return '-'
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  const hours = String(d.getHours()).padStart(2, '0')
-  const minutes = String(d.getMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day} ${hours}:${minutes}`
+  if (!date) return '-';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '-';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
 
 export function formatOrderStatus(status: number): string {
@@ -24,21 +24,21 @@ export function formatOrderStatus(status: number): string {
     2: '待收货',
     3: '已完成',
     4: '已取消',
-    5: '已退款'
-  }
-  return map[status] || '未知状态'
+    5: '已退款',
+  };
+  return map[status] || '未知状态';
 }
 
 export function formatProductType(type: number): string {
   const map: Record<number, string> = {
     0: '数字纸样',
     1: '定制服务',
-    2: '实物商品'
-  }
-  return map[type] || '未知类型'
+    2: '实物商品',
+  };
+  return map[type] || '未知类型';
 }
 
 export function truncateText(text: string, maxLen: number): string {
-  if (text.length <= maxLen) return text
-  return text.slice(0, maxLen) + '...'
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen) + '...';
 }

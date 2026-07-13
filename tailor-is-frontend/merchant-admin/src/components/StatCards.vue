@@ -1,27 +1,45 @@
 <template>
   <div class="stat-cards">
-    <div class="stat-card" v-for="stat in stats" :key="stat.title">
-      <div class="stat-icon" :style="{ background: stat.color }">
-        <el-icon :size="28"><component :is="stat.icon" /></el-icon>
+    <div
+      v-for="stat in stats"
+      :key="stat.title"
+      class="stat-card"
+    >
+      <div
+        class="stat-icon"
+        :style="{ background: stat.color }"
+      >
+        <el-icon :size="28">
+          <component :is="stat.icon" />
+        </el-icon>
       </div>
       <div class="stat-content">
-        <div class="stat-title">{{ stat.title }}</div>
-        <div class="stat-value">{{ stat.value }}</div>
-        <div v-if="stat.subtitle" class="stat-subtitle">{{ stat.subtitle }}</div>
+        <div class="stat-title">
+          {{ stat.title }}
+        </div>
+        <div class="stat-value">
+          {{ stat.value }}
+        </div>
+        <div
+          v-if="stat.subtitle"
+          class="stat-subtitle"
+        >
+          {{ stat.subtitle }}
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Document, Money, Service, Clock } from '@element-plus/icons-vue'
+import { Document, Money, Service, Clock } from '@element-plus/icons-vue';
 
 const props = defineProps<{
-  todayOrders: number
-  todayRevenue: number
-  pendingOrders: number
-  pendingAftersale: number
-}>()
+  todayOrders: number;
+  todayRevenue: number;
+  pendingOrders: number;
+  pendingAftersale: number;
+}>();
 
 const stats = [
   {
@@ -50,7 +68,7 @@ const stats = [
     icon: Service,
     color: 'linear-gradient(135deg, #EF4444 0%, #F87171 100%)',
   },
-]
+];
 </script>
 
 <style scoped>
@@ -69,7 +87,9 @@ const stats = [
   align-items: center;
   gap: 16px;
   box-shadow: var(--shadow-sm);
-  transition: transform var(--transition), box-shadow var(--transition);
+  transition:
+    transform var(--transition),
+    box-shadow var(--transition);
 }
 
 .stat-card:hover {

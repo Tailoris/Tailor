@@ -180,8 +180,9 @@ log_section "步骤 4: 检测前端代码中硬编码的 API 前缀"
 
 FRONTEND_DIR="tailor-is-frontend"
 if [[ -d "$FRONTEND_DIR" ]]; then
-  # 搜索硬编码的完整 URL
-  HARDCODED_URLS=$(grep -rE 'http://[^/]+:[0-9]+' "$FRONTEND_DIR" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" | head -20)
+  # 搜索硬编码的完整 URL（排除 node_modules）
+  # 使用临时文件避免 pipefail 导致的 SIGPIPE 错误
+  HARDCODED_URLS=$(grep -rE 'http://[^/]+:[0-9]+' "$FRONTEND_DIR" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules 2>/dev/null > /tmp/hardcoded_urls.txt; head -20 /tmp/hardcoded_urls.txt 2>/dev/null || true; rm -f /tmp/hardcoded_urls.txt)
   
   if [[ -n "$HARDCODED_URLS" ]]; then
     log_warning "前端代码中存在硬编码的服务地址:"
@@ -192,7 +193,7 @@ if [[ -d "$FRONTEND_DIR" ]]; then
   fi
   
   # 搜索 API 基础路径配置
-  API_BASE_URLS=$(grep -rE 'API_BASE_URL|apiBaseUrl|baseURL' "$FRONTEND_DIR" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" | head -20)
+  API_BASE_URLS=$(grep -rE 'API_BASE_URL|apiBaseUrl|baseURL' "$FRONTEND_DIR" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" 2>/dev/null > /tmp/api_base_urls.txt; head -20 /tmp/api_base_urls.txt 2>/dev/null || true; rm -f /tmp/api_base_urls.txt)
   
   if [[ -n "$API_BASE_URLS" ]]; then
     log_info "检测到 API 基础路径配置:"

@@ -1,0 +1,32 @@
+{
+  "name": "tailor-is-monorepo",
+  "private": true,
+  "scripts": {
+    "lint": "eslint . --ext .vue,.ts,.tsx,.js,.jsx",
+    "format": "prettier --write \"**/*.{vue,ts,tsx,js,json,css,scss,md}\""
+  },
+  "lint-staged": {
+    "tailor-is-frontend/platform-admin/src/**/*.{vue,ts,tsx,js,jsx}": [
+      "bash -c \"cd tailor-is-frontend/platform-admin && npx eslint --fix $@\" --"
+    ],
+    "tailor-is-frontend/platform-admin/**/*.{json,css,scss,md}": [
+      "bash -c \"cd tailor-is-frontend/platform-admin && npx prettier --write $@\" --"
+    ],
+    "tailor-is-frontend/merchant-admin/src/**/*.{vue,ts,tsx,js,jsx}": [
+      "bash -c \"cd tailor-is-frontend/merchant-admin && npx eslint --fix $@\" --"
+    ],
+    "tailor-is-frontend/merchant-admin/**/*.{json,css,scss,md}": [
+      "bash -c \"cd tailor-is-frontend/merchant-admin && npx prettier --write $@\" --"
+    ],
+    "tailor-is-frontend/pc-mall/src/**/*.{vue,ts,tsx,js,jsx}": [
+      "bash -c \"cd tailor-is-frontend/pc-mall && npx eslint --fix $@\" --"
+    ],
+    "tailor-is-frontend/pc-mall/**/*.{json,css,scss,md}": [
+      "bash -c \"cd tailor-is-frontend/pc-mall && npx prettier --write $@\" --"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8"
+  }
+}

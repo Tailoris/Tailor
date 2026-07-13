@@ -1,44 +1,50 @@
 <template>
   <router-view v-slot="{ Component, route }">
-    <transition name="fade" mode="out-in">
-      <component :is="Component" :key="route.fullPath" />
+    <transition
+      name="fade"
+      mode="out-in"
+    >
+      <component
+        :is="Component"
+        :key="route.fullPath"
+      />
     </transition>
   </router-view>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
-import { useWindowSize } from '@vueuse/core'
+import { onMounted, onUnmounted } from 'vue';
+import { useWindowSize } from '@vueuse/core';
 
 // 响应式窗口尺寸
-const { width } = useWindowSize()
+const { width } = useWindowSize();
 
 // 移动端断点
-const MOBILE_BREAKPOINT = 768
-const isMobile = () => width.value < MOBILE_BREAKPOINT
+const MOBILE_BREAKPOINT = 768;
+const isMobile = () => width.value < MOBILE_BREAKPOINT;
 
 // 移动端菜单状态
-import { ref } from 'vue'
-const sidebarOpen = ref(false)
+import { ref } from 'vue';
+const sidebarOpen = ref(false);
 
 const onResize = () => {
   if (width.value >= MOBILE_BREAKPOINT) {
-    sidebarOpen.value = false
+    sidebarOpen.value = false;
   }
-}
+};
 
 onMounted(() => {
-  window.addEventListener('resize', onResize)
-})
+  window.addEventListener('resize', onResize);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('resize', onResize)
-})
+  window.removeEventListener('resize', onResize);
+});
 
 // 提供给子组件
-import { provide } from 'vue'
-provide('isMobile', isMobile)
-provide('sidebarOpen', sidebarOpen)
+import { provide } from 'vue';
+provide('isMobile', isMobile);
+provide('sidebarOpen', sidebarOpen);
 </script>
 
 <style>

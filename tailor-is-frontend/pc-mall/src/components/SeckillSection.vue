@@ -1,12 +1,18 @@
 <template>
   <section class="section">
     <div class="section-header">
-      <h2 class="section-title">限时秒杀</h2>
+      <h2 class="section-title">
+        限时秒杀
+      </h2>
       <div class="countdown">
         <span>{{ hours }}:{{ minutes }}:{{ seconds }}</span>
       </div>
     </div>
-    <el-skeleton :loading="loading" animated :rows="1">
+    <el-skeleton
+      :loading="loading"
+      animated
+      :rows="1"
+    >
       <div class="product-scroll">
         <ProductCard
           v-for="product in products"
@@ -20,16 +26,16 @@
 </template>
 
 <script setup lang="ts">
-import ProductCard from '@/components/ProductCard.vue'
-import type { Product } from '@/types'
+import ProductCard from '@/components/ProductCard.vue';
+import type { Product } from '@/types';
 
 defineProps<{
-  products: Product[]
-  loading: boolean
-  hours: string
-  minutes: string
-  seconds: string
-}>()
+  products: Product[];
+  loading: boolean;
+  hours: string;
+  minutes: string;
+  seconds: string;
+}>();
 </script>
 
 <style scoped>

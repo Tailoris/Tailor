@@ -30,7 +30,8 @@ Tailor IS（裁智云）是一个面向服装产业的全链路数字化平台�
 ```
 tailoris/
 ├── tailor-is/                  # 后端微服务（Spring Cloud）
-│   ├── tailor-is-gateway/      # API 网关
+│   ├── tailor-is-core-gateway/ # 核心网关
+│   ├── tailor-is-lite-gateway/ # 轻量网关
 │   ├── tailor-is-user/         # 用户服务
 │   ├── tailor-is-product/      # 商品服务
 │   ├── tailor-is-order/        # 订单服务
@@ -43,18 +44,37 @@ tailoris/
 │   ├── tailor-is-pattern/      # 纸样定制服务
 │   ├── tailor-is-supply/       # 供应链服务
 │   ├── tailor-is-message/      # 消息服务
+│   ├── tailor-is-academy/      # 学堂服务
+│   ├── tailor-is-design/       # 设计服务
+│   ├── tailor-is-knowledge/    # 知识库服务
+│   ├── tailor-is-analytics/    # 数据分析服务
+│   ├── sql/                    # 聚合 SQL 初始化脚本
 │   └── docs/                   # 后端文档
 ├── tailor-is-frontend/         # 前端项目
 │   ├── pc-mall/                # PC 端商城（Vue 3）
 │   ├── merchant-admin/         # 商户管理后台
 │   ├── platform-admin/         # 平台管理后台
 │   ├── mobile-app/             # 移动端（UniApp）
+│   ├── shared/                 # 共享组件
 │   └── docs/                   # 前端文档
-├── deploy/                     # 部署相关（Docker Compose、Nginx 等）
+├── deploy/                     # 部署配置（唯一入口：Docker Compose、K8s、Nginx、监控等）
+│   ├── k8s/production/         # Kubernetes 生产环境配置
+│   ├── prometheus/             # Prometheus 监控配置
+│   ├── monitoring/             # 监控仪表盘与告警
+│   ├── sentinel/               # Sentinel 限流规则
+│   ├── serverless/             # Serverless 模板
+│   ├── scripts/                # 部署脚本
+│   └── docker-compose.*.yml    # Docker Compose 编排文件
 ├── docs/                       # 项目文档
-├── modules/                    # 模块开发文档
-└── docker-compose.yml          # Docker Compose 编排文件
+│   ├── architecture/           # 架构文档
+│   ├── reports/                # 当前活跃报告
+│   ├── archive/                # 归档文档（过期但保留历史）
+│   └── ...                     # 其他专题文档
+├── e2e-tests/                  # 端到端测试
+└── .github/workflows/          # CI/CD 工作流
 ```
+
+> **注意**：部署配置统一由 `deploy/` 目录管理，`tailor-is/` 下不再包含 `deploy/` 子目录。
 
 ## 快速开始
 

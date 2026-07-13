@@ -1,13 +1,21 @@
 <template>
   <div class="register-view">
-    <div class="register-card" role="main" aria-label="注册页面">
+    <div
+      class="register-card"
+      role="main"
+      aria-label="注册页面"
+    >
       <div class="register-header">
         <h2>注册账号</h2>
         <p>加入裁智云 Tailor IS</p>
       </div>
 
       <!-- Tab 切换 -->
-      <div class="register-tabs" role="tablist" aria-label="注册方式选择">
+      <div
+        class="register-tabs"
+        role="tablist"
+        aria-label="注册方式选择"
+      >
         <div
           class="tab-item"
           :class="{ active: activeRegisterTab === 'phone' }"
@@ -37,12 +45,15 @@
       <!-- 手机号注册表单 -->
       <el-form
         v-show="activeRegisterTab === 'phone'"
+        ref="phoneFormRef"
         :model="phoneForm"
         :rules="phoneRules"
-        ref="phoneFormRef"
         label-position="top"
       >
-        <el-form-item label="手机号" prop="phone">
+        <el-form-item
+          label="手机号"
+          prop="phone"
+        >
           <div class="phone-row">
             <el-input
               v-model="phoneForm.phone"
@@ -60,7 +71,10 @@
           </div>
         </el-form-item>
 
-        <el-form-item label="验证码" prop="code">
+        <el-form-item
+          label="验证码"
+          prop="code"
+        >
           <el-input
             v-model="phoneForm.code"
             placeholder="请输入短信验证码"
@@ -69,7 +83,10 @@
           />
         </el-form-item>
 
-        <el-form-item label="密码" prop="password">
+        <el-form-item
+          label="密码"
+          prop="password"
+        >
           <el-input
             v-model="phoneForm.password"
             type="password"
@@ -80,7 +97,10 @@
           />
         </el-form-item>
 
-        <el-form-item label="确认密码" prop="confirmPassword">
+        <el-form-item
+          label="确认密码"
+          prop="confirmPassword"
+        >
           <el-input
             v-model="phoneForm.confirmPassword"
             type="password"
@@ -93,7 +113,21 @@
 
         <el-form-item prop="agreement">
           <el-checkbox v-model="isAgree">
-            我已阅读并同意 <el-link type="primary" :underline="false" @click.stop="showAgreement('user')">《用户协议》</el-link> 和 <el-link type="primary" :underline="false" @click.stop="showAgreement('privacy')">《隐私政策》</el-link>
+            我已阅读并同意
+            <el-link
+              type="primary"
+              :underline="false"
+              @click.stop="showAgreement('user')"
+            >
+              《用户协议》
+            </el-link> 和
+            <el-link
+              type="primary"
+              :underline="false"
+              @click.stop="showAgreement('privacy')"
+            >
+              《隐私政策》
+            </el-link>
           </el-checkbox>
         </el-form-item>
 
@@ -102,9 +136,9 @@
             type="primary"
             size="large"
             class="register-btn"
-            @click="handlePhoneRegister"
             :loading="phoneLoading"
             :disabled="!isAgree || isPhoneSubmitting"
+            @click="handlePhoneRegister"
           >
             注册
           </el-button>
@@ -114,12 +148,15 @@
       <!-- 邮箱注册表单 -->
       <el-form
         v-show="activeRegisterTab === 'email'"
+        ref="emailFormRef"
         :model="emailForm"
         :rules="emailRules"
-        ref="emailFormRef"
         label-position="top"
       >
-        <el-form-item label="邮箱" prop="email">
+        <el-form-item
+          label="邮箱"
+          prop="email"
+        >
           <div class="phone-row">
             <el-input
               v-model="emailForm.email"
@@ -137,7 +174,10 @@
           </div>
         </el-form-item>
 
-        <el-form-item label="验证码" prop="code">
+        <el-form-item
+          label="验证码"
+          prop="code"
+        >
           <el-input
             v-model="emailForm.code"
             placeholder="请输入邮箱收到的6位验证码"
@@ -146,7 +186,10 @@
           />
         </el-form-item>
 
-        <el-form-item label="密码" prop="password">
+        <el-form-item
+          label="密码"
+          prop="password"
+        >
           <el-input
             v-model="emailForm.password"
             type="password"
@@ -157,7 +200,10 @@
           />
         </el-form-item>
 
-        <el-form-item label="确认密码" prop="confirmPassword">
+        <el-form-item
+          label="确认密码"
+          prop="confirmPassword"
+        >
           <el-input
             v-model="emailForm.confirmPassword"
             type="password"
@@ -170,7 +216,21 @@
 
         <el-form-item prop="agreement">
           <el-checkbox v-model="isAgree">
-            我已阅读并同意 <el-link type="primary" :underline="false" @click.stop="showAgreement('user')">《用户协议》</el-link> 和 <el-link type="primary" :underline="false" @click.stop="showAgreement('privacy')">《隐私政策》</el-link>
+            我已阅读并同意
+            <el-link
+              type="primary"
+              :underline="false"
+              @click.stop="showAgreement('user')"
+            >
+              《用户协议》
+            </el-link> 和
+            <el-link
+              type="primary"
+              :underline="false"
+              @click.stop="showAgreement('privacy')"
+            >
+              《隐私政策》
+            </el-link>
           </el-checkbox>
         </el-form-item>
 
@@ -179,9 +239,9 @@
             type="primary"
             size="large"
             class="register-btn"
-            @click="handleEmailRegister"
             :loading="emailLoading"
             :disabled="!isAgree || isEmailSubmitting"
+            @click="handleEmailRegister"
           >
             注册
           </el-button>
@@ -190,7 +250,12 @@
 
       <div class="register-footer">
         <span>已有账号？</span>
-        <router-link to="/login" class="login-link">立即登录</router-link>
+        <router-link
+          to="/login"
+          class="login-link"
+        >
+          立即登录
+        </router-link>
       </div>
     </div>
 
@@ -231,52 +296,59 @@
       </template>
       <p>切换注册方式将清空当前已填内容，是否继续？</p>
       <template #footer>
-        <el-button @click="cancelSwitch">取消</el-button>
-        <el-button type="primary" @click="confirmSwitch">确认</el-button>
+        <el-button @click="cancelSwitch">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          @click="confirmSwitch"
+        >
+          确认
+        </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
-import { Phone, Key, Lock, Message } from '@element-plus/icons-vue'
-import { register as apiRegister, registerByEmail, sendSmsCode, sendEmailCode } from '@/api/auth'
-import { validate } from '@/utils/validate'
-import { useCountdown } from '@/composables/useCountdown'
+import { ref, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import type { FormInstance, FormRules } from 'element-plus';
+import { Phone, Key, Lock, Message } from '@element-plus/icons-vue';
+import { register as apiRegister, registerByEmail, sendSmsCode, sendEmailCode } from '@/api/auth';
+import { validate } from '@/utils/validate';
+import { useCountdown } from '@/composables/useCountdown';
 
-const router = useRouter()
+const router = useRouter();
 
 // Tab 状态
-const activeRegisterTab = ref<'phone' | 'email'>('phone')
+const activeRegisterTab = ref<'phone' | 'email'>('phone');
 
 // 协议勾选（跨 Tab 共享）
-const isAgree = ref(false)
+const isAgree = ref(false);
 
 // 切换确认弹窗
-const switchConfirmVisible = ref(false)
-const pendingTab = ref<'phone' | 'email'>('phone')
+const switchConfirmVisible = ref(false);
+const pendingTab = ref<'phone' | 'email'>('phone');
 
 // 协议弹窗
-const agreementVisible = ref(false)
-const agreementType = ref<'user' | 'privacy'>('user')
-const agreementTitle = computed(() => agreementType.value === 'user' ? '用户协议' : '隐私政策')
+const agreementVisible = ref(false);
+const agreementType = ref<'user' | 'privacy'>('user');
+const agreementTitle = computed(() => (agreementType.value === 'user' ? '用户协议' : '隐私政策'));
 
 function showAgreement(type: 'user' | 'privacy') {
-  agreementType.value = type
-  agreementVisible.value = true
+  agreementType.value = type;
+  agreementVisible.value = true;
 }
 
 // 同步复选框状态到表单模型，触发验证清除
 watch(isAgree, (val) => {
-  emailForm.value.agreement = val
-  phoneForm.value.agreement = val
-  emailFormRef.value?.clearValidate('agreement')
-  phoneFormRef.value?.clearValidate('agreement')
-})
+  emailForm.value.agreement = val;
+  phoneForm.value.agreement = val;
+  emailFormRef.value?.clearValidate('agreement');
+  phoneFormRef.value?.clearValidate('agreement');
+});
 
 // 手机号表单
 const phoneForm = ref({
@@ -284,12 +356,12 @@ const phoneForm = ref({
   code: '',
   password: '',
   confirmPassword: '',
-  agreement: false
-})
-const phoneFormRef = ref<FormInstance>()
-const phoneLoading = ref(false)
-const phoneSending = ref(false)
-const isPhoneSubmitting = ref(false)
+  agreement: false,
+});
+const phoneFormRef = ref<FormInstance>();
+const phoneLoading = ref(false);
+const phoneSending = ref(false);
+const isPhoneSubmitting = ref(false);
 
 // 邮箱表单
 const emailForm = ref({
@@ -297,67 +369,67 @@ const emailForm = ref({
   code: '',
   password: '',
   confirmPassword: '',
-  agreement: false
-})
-const emailFormRef = ref<FormInstance>()
-const emailLoading = ref(false)
-const emailSending = ref(false)
-const isEmailSubmitting = ref(false)
+  agreement: false,
+});
+const emailFormRef = ref<FormInstance>();
+const emailLoading = ref(false);
+const emailSending = ref(false);
+const isEmailSubmitting = ref(false);
 
 // 倒计时
-const phoneCountdown = useCountdown(60)
-const emailCountdown = useCountdown(60)
+const phoneCountdown = useCountdown(60);
+const emailCountdown = useCountdown(60);
 
 // 手机号校验规则
 const phoneRules: FormRules = {
   phone: [
     { required: true, message: '请输入手机号', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入11位中国大陆手机号', trigger: 'blur' }
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入11位中国大陆手机号', trigger: 'blur' },
   ],
   code: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
-    { pattern: /^\d{6}$/, message: '请输入6位数字验证码', trigger: 'blur' }
+    { pattern: /^\d{6}$/, message: '请输入6位数字验证码', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请设置密码', trigger: 'blur' },
-    { min: 6, message: '密码不少于6位', trigger: 'blur' }
+    { min: 6, message: '密码不少于6位', trigger: 'blur' },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         if (value !== phoneForm.value.password) {
-          callback(new Error('两次输入的密码不一致'))
+          callback(new Error('两次输入的密码不一致'));
         } else {
-          callback()
+          callback();
         }
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   agreement: [
     {
       validator: (_rule, value, callback) => {
         if (!isAgree.value) {
-          callback(new Error('请先同意用户协议和隐私政策'))
+          callback(new Error('请先同意用户协议和隐私政策'));
         } else {
-          callback()
+          callback();
         }
       },
-      trigger: 'change'
-    }
-  ]
-}
+      trigger: 'change',
+    },
+  ],
+};
 
 // 邮箱校验规则
 const emailRules: FormRules = {
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, message: '邮箱格式不正确', trigger: 'blur' }
+    { pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, message: '邮箱格式不正确', trigger: 'blur' },
   ],
   code: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
-    { pattern: /^\d{6}$/, message: '请输入6位数字验证码', trigger: 'blur' }
+    { pattern: /^\d{6}$/, message: '请输入6位数字验证码', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请设置密码', trigger: 'blur' },
@@ -365,175 +437,180 @@ const emailRules: FormRules = {
     {
       validator: (_rule, value, callback) => {
         if (!/(?=.*\d)(?=.*[a-zA-Z])(?=.*[^a-zA-Z0-9])/.test(value)) {
-          callback(new Error('密码需包含数字、字母和特殊字符'))
+          callback(new Error('密码需包含数字、字母和特殊字符'));
         } else {
-          callback()
+          callback();
         }
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
         if (value !== emailForm.value.password) {
-          callback(new Error('两次输入的密码不一致'))
+          callback(new Error('两次输入的密码不一致'));
         } else {
-          callback()
+          callback();
         }
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   agreement: [
     {
       validator: (_rule, value, callback) => {
         if (!isAgree.value) {
-          callback(new Error('请先同意用户协议和隐私政策'))
+          callback(new Error('请先同意用户协议和隐私政策'));
         } else {
-          callback()
+          callback();
         }
       },
-      trigger: 'change'
-    }
-  ]
-}
+      trigger: 'change',
+    },
+  ],
+};
 
 // 发送验证码按钮可用性
 const canSendPhoneCode = computed(() => {
-  return validate.isPhone(phoneForm.value.phone)
-})
+  return validate.isPhone(phoneForm.value.phone);
+});
 
 const canSendEmailCode = computed(() => {
-  return validate.isEmail(emailForm.value.email)
-})
+  return validate.isEmail(emailForm.value.email);
+});
 
 // 切换注册 Tab
 function switchRegisterTab(tab: 'phone' | 'email') {
-  if (tab === activeRegisterTab.value) return
+  if (tab === activeRegisterTab.value) return;
 
   // 检查当前 Tab 是否有输入内容
-  const hasInput = activeRegisterTab.value === 'phone'
-    ? phoneForm.value.phone || phoneForm.value.code || phoneForm.value.password
-    : emailForm.value.email || emailForm.value.code || emailForm.value.password
+  const hasInput =
+    activeRegisterTab.value === 'phone'
+      ? phoneForm.value.phone || phoneForm.value.code || phoneForm.value.password
+      : emailForm.value.email || emailForm.value.code || emailForm.value.password;
 
   if (hasInput) {
-    pendingTab.value = tab
-    switchConfirmVisible.value = true
+    pendingTab.value = tab;
+    switchConfirmVisible.value = true;
   } else {
-    activeRegisterTab.value = tab
+    activeRegisterTab.value = tab;
   }
 }
 
 function cancelSwitch() {
-  switchConfirmVisible.value = false
+  switchConfirmVisible.value = false;
 }
 
 function confirmSwitch() {
   // 清空表单和校验
   if (activeRegisterTab.value === 'phone') {
-    phoneForm.value = { phone: '', code: '', password: '', confirmPassword: '', agreement: isAgree.value }
-    phoneFormRef.value?.clearValidate()
+    phoneForm.value = { phone: '', code: '', password: '', confirmPassword: '', agreement: isAgree.value };
+    phoneFormRef.value?.clearValidate();
   } else {
-    emailForm.value = { email: '', code: '', password: '', confirmPassword: '', agreement: isAgree.value }
-    emailFormRef.value?.clearValidate()
+    emailForm.value = { email: '', code: '', password: '', confirmPassword: '', agreement: isAgree.value };
+    emailFormRef.value?.clearValidate();
   }
-  activeRegisterTab.value = pendingTab.value
-  switchConfirmVisible.value = false
+  activeRegisterTab.value = pendingTab.value;
+  switchConfirmVisible.value = false;
 }
 
 // 发送手机验证码
 async function handleSendPhoneCode() {
   if (!validate.isPhone(phoneForm.value.phone)) {
-    ElMessage.warning('请输入正确的手机号')
-    return
+    ElMessage.warning('请输入正确的手机号');
+    return;
   }
-  if (phoneSending.value || phoneCountdown.counting.value) return
+  if (phoneSending.value || phoneCountdown.counting.value) return;
 
-  phoneSending.value = true
+  phoneSending.value = true;
   try {
-    await sendSmsCode(phoneForm.value.phone)
-    ElMessage.success('验证码已发送')
-    phoneCountdown.start()
+    await sendSmsCode(phoneForm.value.phone);
+    ElMessage.success('验证码已发送');
+    phoneCountdown.start();
   } catch {
+    /* 发送失败静默处理 */
   } finally {
-    phoneSending.value = false
+    phoneSending.value = false;
   }
 }
 
 // 发送邮箱验证码
 async function handleSendEmailCode() {
   if (!validate.isEmail(emailForm.value.email)) {
-    ElMessage.warning('请输入正确的邮箱')
-    return
+    ElMessage.warning('请输入正确的邮箱');
+    return;
   }
-  if (emailSending.value || emailCountdown.counting.value) return
+  if (emailSending.value || emailCountdown.counting.value) return;
 
-  emailSending.value = true
+  emailSending.value = true;
   try {
-    await sendEmailCode(emailForm.value.email)
-    ElMessage.success('验证码已发送，请查收邮件')
-    emailCountdown.start()
-  } catch (error: any) {
-    const errMessage = error?.message || error?.response?.data?.message || '发送失败，请稍后重试'
-    ElMessage.error(errMessage)
+    await sendEmailCode(emailForm.value.email);
+    ElMessage.success('验证码已发送，请查收邮件');
+    emailCountdown.start();
+  } catch (error: unknown) {
+    const errMessage =
+      (error as Error)?.message ||
+      (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      '发送失败，请稍后重试';
+    ElMessage.error(errMessage);
   } finally {
-    emailSending.value = false
+    emailSending.value = false;
   }
 }
 
 // 手机号注册
 async function handlePhoneRegister() {
-  if (!phoneFormRef.value) return
+  if (!phoneFormRef.value) return;
 
   // 防重复提交
-  if (isPhoneSubmitting.value) return
-  isPhoneSubmitting.value = true
+  if (isPhoneSubmitting.value) return;
+  isPhoneSubmitting.value = true;
 
   try {
-    await phoneFormRef.value.validate()
+    await phoneFormRef.value.validate();
 
-    phoneLoading.value = true
+    phoneLoading.value = true;
     await apiRegister({
       phone: phoneForm.value.phone,
       smsCode: phoneForm.value.code,
-      password: phoneForm.value.password
-    })
-    ElMessage.success('注册成功，请登录')
-    router.push('/login')
+      password: phoneForm.value.password,
+    });
+    ElMessage.success('注册成功，请登录');
+    router.push('/login');
   } catch {
-    ElMessage.error('注册失败，请检查信息后重试')
+    ElMessage.error('注册失败，请检查信息后重试');
   } finally {
-    phoneLoading.value = false
-    isPhoneSubmitting.value = false
+    phoneLoading.value = false;
+    isPhoneSubmitting.value = false;
   }
 }
 
 // 邮箱注册
 async function handleEmailRegister() {
-  if (!emailFormRef.value) return
+  if (!emailFormRef.value) return;
 
   // 防重复提交
-  if (isEmailSubmitting.value) return
-  isEmailSubmitting.value = true
+  if (isEmailSubmitting.value) return;
+  isEmailSubmitting.value = true;
 
   try {
-    await emailFormRef.value.validate()
+    await emailFormRef.value.validate();
 
-    emailLoading.value = true
+    emailLoading.value = true;
     await registerByEmail({
       email: emailForm.value.email,
       code: emailForm.value.code,
-      password: emailForm.value.password
-    })
-    ElMessage.success('注册成功，请登录')
-    router.push('/login')
+      password: emailForm.value.password,
+    });
+    ElMessage.success('注册成功，请登录');
+    router.push('/login');
   } catch {
-    ElMessage.error('注册失败，请检查信息后重试')
+    ElMessage.error('注册失败，请检查信息后重试');
   } finally {
-    emailLoading.value = false
-    isEmailSubmitting.value = false
+    emailLoading.value = false;
+    isEmailSubmitting.value = false;
   }
 }
 </script>

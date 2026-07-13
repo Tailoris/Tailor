@@ -1,5 +1,8 @@
 <template>
-  <section class="section" aria-label="订单商品列表">
+  <section
+    class="section"
+    aria-label="订单商品列表"
+  >
     <h3>订单商品</h3>
     <div class="items-header">
       <span class="col-product">商品信息</span>
@@ -7,12 +10,24 @@
       <span class="col-quantity">数量</span>
       <span class="col-subtotal">小计</span>
     </div>
-    <div v-for="item in items" :key="item.id" class="order-item">
+    <div
+      v-for="item in items"
+      :key="item.id"
+      class="order-item"
+    >
       <div class="product-info">
-        <img :src="item.productImage || PLACEHOLDER_60x60" :alt="item.productName" loading="lazy" />
+        <img
+          :src="item.productImage || PLACEHOLDER_60x60"
+          :alt="item.productName"
+          loading="lazy"
+        >
         <div>
           <span class="product-name">{{ item.productName }}</span>
-          <span class="sku-attrs">{{ Object.entries(item.skuAttributes).map(([k, v]) => `${k}: ${v}`).join('; ') }}</span>
+          <span class="sku-attrs">{{
+            Object.entries(item.skuAttributes)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join('; ')
+          }}</span>
         </div>
       </div>
       <span class="price">{{ formatPrice(item.price) }}</span>
@@ -23,13 +38,13 @@
 </template>
 
 <script setup lang="ts">
-import { formatPrice } from '@/utils/format'
-import type { CartItem } from '@/types'
-import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder'
+import { formatPrice } from '@/utils/format';
+import type { CartItem } from '@/types';
+import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder';
 
 defineProps<{
-  items: CartItem[]
-}>()
+  items: CartItem[];
+}>();
 </script>
 
 <style scoped>
@@ -57,10 +72,21 @@ defineProps<{
   padding: 12px 0;
   border-bottom: 1px solid #eee;
 }
-.col-product { flex: 1; }
-.col-price { width: 100px; text-align: center; }
-.col-quantity { width: 80px; text-align: center; }
-.col-subtotal { width: 100px; text-align: center; }
+.col-product {
+  flex: 1;
+}
+.col-price {
+  width: 100px;
+  text-align: center;
+}
+.col-quantity {
+  width: 80px;
+  text-align: center;
+}
+.col-subtotal {
+  width: 100px;
+  text-align: center;
+}
 .product-info {
   flex: 1;
   display: flex;
@@ -83,7 +109,8 @@ defineProps<{
   font-size: 12px;
   color: #999;
 }
-.price, .quantity {
+.price,
+.quantity {
   width: 100px;
   text-align: center;
   font-size: 14px;

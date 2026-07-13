@@ -1,7 +1,20 @@
 <template>
-  <div class="search-bar" role="search" aria-label="商品搜索区域">
-    <el-select v-model="selectedCategory" placeholder="全部分类" class="category-select" clearable aria-label="选择商品分类">
-      <el-option label="全部分类" value="" />
+  <div
+    class="search-bar"
+    role="search"
+    aria-label="商品搜索区域"
+  >
+    <el-select
+      v-model="selectedCategory"
+      placeholder="全部分类"
+      class="category-select"
+      clearable
+      aria-label="选择商品分类"
+    >
+      <el-option
+        label="全部分类"
+        value=""
+      />
       <el-option
         v-for="cat in categories"
         :key="cat.id"
@@ -18,48 +31,55 @@
       @keyup.enter="handleSearch"
     >
       <template #prefix>
-        <el-icon aria-hidden="true"><Search /></el-icon>
+        <el-icon aria-hidden="true">
+          <Search />
+        </el-icon>
       </template>
     </el-input>
-    <el-button type="primary" class="search-btn" @click="handleSearch" aria-label="执行搜索">
+    <el-button
+      type="primary"
+      class="search-btn"
+      aria-label="执行搜索"
+      @click="handleSearch"
+    >
       搜索
     </el-button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Search } from '@element-plus/icons-vue'
-import { getCategories } from '@/api/product'
-import type { ProductCategory } from '@/types'
+import { ref, onMounted } from 'vue';
+import { Search } from '@element-plus/icons-vue';
+import { getCategories } from '@/api/product';
+import type { ProductCategory } from '@/types';
 
 const emit = defineEmits<{
-  search: [data: { keyword: string; categoryId: number | '' }]
-}>()
+  search: [data: { keyword: string; categoryId: number | '' }];
+}>();
 
-const keyword = ref('')
-const selectedCategory = ref<number | ''>('')
-const categories = ref<ProductCategory[]>([])
+const keyword = ref('');
+const selectedCategory = ref<number | ''>('');
+const categories = ref<ProductCategory[]>([]);
 
 async function loadCategories() {
   try {
-    const res = await getCategories()
-    categories.value = res.filter((c: ProductCategory) => c.parentId === 0)
+    const res = await getCategories();
+    categories.value = res.filter((c: ProductCategory) => c.parentId === 0);
   } catch {
-    categories.value = []
+    categories.value = [];
   }
 }
 
 function handleSearch() {
   emit('search', {
     keyword: keyword.value,
-    categoryId: selectedCategory.value
-  })
+    categoryId: selectedCategory.value,
+  });
 }
 
 onMounted(() => {
-  loadCategories()
-})
+  loadCategories();
+});
 </script>
 
 <style scoped>

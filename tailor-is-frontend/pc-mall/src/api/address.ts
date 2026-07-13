@@ -1,59 +1,59 @@
-import request from './request'
-import type { Address } from '@/types'
+import request from './request';
+import type { Address } from '@/types';
 
 interface CreateAddressData {
-  name: string
-  phone: string
-  province: string
-  city: string
-  district: string
-  detail: string
-  isDefault?: number
+  name: string;
+  phone: string;
+  province: string;
+  city: string;
+  district: string;
+  detail: string;
+  isDefault?: number;
 }
 
 interface UpdateAddressData {
-  name?: string
-  phone?: string
-  province?: string
-  city?: string
-  district?: string
-  detail?: string
-  isDefault?: number
+  name?: string;
+  phone?: string;
+  province?: string;
+  city?: string;
+  district?: string;
+  detail?: string;
+  isDefault?: number;
 }
 
 export function getAddresses() {
   return request<Record<string, unknown>, Address[]>({
     url: '/api/v1/user/address',
-    method: 'get'
-  })
+    method: 'get',
+  });
 }
 
 export function createAddress(data: CreateAddressData) {
   return request<Record<string, unknown>, number>({
     url: '/api/v1/user/address',
     method: 'post',
-    data
-  })
+    data,
+  });
 }
 
 export function updateAddress(id: number, data: UpdateAddressData) {
   return request<Record<string, unknown>, boolean>({
     url: `/api/v1/user/address/${id}`,
     method: 'put',
-    data
-  })
+    data,
+  });
 }
 
 export function deleteAddress(id: number) {
   return request<Record<string, unknown>, boolean>({
     url: `/api/v1/user/address/${id}`,
-    method: 'delete'
-  })
+    method: 'delete',
+  });
 }
 
 export function setDefaultAddress(id: number) {
   return request<Record<string, unknown>, boolean>({
     url: `/api/v1/user/address/${id}/default`,
-    method: 'put'
-  })
+    method: 'put',
+  });
 }

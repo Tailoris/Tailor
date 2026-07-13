@@ -1,19 +1,31 @@
 <template>
-  <section class="section" aria-label="商品分类">
-    <h2 class="section-title">商品分类</h2>
-    <div class="category-grid" role="list" aria-label="分类列表">
+  <section
+    class="section"
+    aria-label="商品分类"
+  >
+    <h2 class="section-title">
+      商品分类
+    </h2>
+    <div
+      class="category-grid"
+      role="list"
+      aria-label="分类列表"
+    >
       <div
         v-for="cat in categories.slice(0, 8)"
         :key="cat.id"
         class="category-item"
         role="listitem"
         tabindex="0"
+        :aria-label="`分类: ${cat.name}`"
         @click="$router.push(`/products?categoryId=${cat.id}`)"
         @keydown.enter="$router.push(`/products?categoryId=${cat.id}`)"
         @keydown.space.prevent="$router.push(`/products?categoryId=${cat.id}`)"
-        :aria-label="`分类: ${cat.name}`"
       >
-        <img :src="cat.icon || PLACEHOLDER_60x60" :alt="cat.name" />
+        <img
+          :src="cat.icon || PLACEHOLDER_60x60"
+          :alt="cat.name"
+        >
         <span>{{ cat.name }}</span>
       </div>
     </div>
@@ -21,12 +33,12 @@
 </template>
 
 <script setup lang="ts">
-import type { Category } from '@/types'
-import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder'
+import type { ProductCategory } from '@/types';
+import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder';
 
 defineProps<{
-  categories: ProductCategory[]
-}>()
+  categories: ProductCategory[];
+}>();
 </script>
 
 <style scoped>

@@ -137,23 +137,23 @@ declare module '*.json' {
 
 // Element Plus locale modules
 declare module 'element-plus/dist/locale/*.mjs' {
-  import type { Language } from 'element-plus/es/locale'
-  const locale: Language
-  export default locale
+  import type { Language } from 'element-plus/es/locale';
+  const locale: Language;
+  export default locale;
 }
 
 // Shared modules
 declare module '@shared/plugins/a11y-directive' {
-  import type { App, Directive, DirectiveBinding } from 'vue'
-  export function installA11yDirectives(app: App): void
-  export const a11yDirective: Directive<HTMLElement, string>
+  import type { App, Directive, DirectiveBinding } from 'vue';
+  export function installA11yDirectives(app: App): void;
+  export const a11yDirective: Directive<HTMLElement, string>;
 }
 declare module '@shared/utils/storage' {
   export function createStorage(key: string): {
-    get: <T>(key: string) => T | null
-    set: <T>(key: string, value: T) => void
-    remove: (key: string) => void
-  }
+    get: <T>(key: string) => T | null;
+    set: <T>(key: string, value: T) => void;
+    remove: (key: string) => void;
+  };
 }
 declare module '@shared/utils/validate' {
   export const validate: {

@@ -1,79 +1,187 @@
 <template>
-  <div class="pattern-custom-view" role="main" aria-label="纸样定制">
+  <div
+    class="pattern-custom-view"
+    role="main"
+    aria-label="纸样定制"
+  >
     <div class="view-header">
-      <h1 class="page-title">纸样定制</h1>
-      <p class="page-subtitle">专业打版师一对一服务，定制专属纸样</p>
+      <h1 class="page-title">
+        纸样定制
+      </h1>
+      <p class="page-subtitle">
+        专业打版师一对一服务，定制专属纸样
+      </p>
     </div>
 
     <div class="tabs-container">
       <div class="tabs">
-        <button :class="{ active: activeTab === 'create' }" @click="activeTab = 'create'">
+        <button
+          :class="{ active: activeTab === 'create' }"
+          @click="activeTab = 'create'"
+        >
           <el-icon><Plus /></el-icon>
           <span>发布定制需求</span>
         </button>
-        <button :class="{ active: activeTab === 'progress' }" @click="activeTab = 'progress'">
+        <button
+          :class="{ active: activeTab === 'progress' }"
+          @click="activeTab = 'progress'"
+        >
           <el-icon><Loading /></el-icon>
           <span>打版进度</span>
         </button>
-        <button :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">
+        <button
+          :class="{ active: activeTab === 'history' }"
+          @click="activeTab = 'history'"
+        >
           <el-icon><Clock /></el-icon>
           <span>历史订单</span>
         </button>
       </div>
     </div>
 
-    <div v-if="activeTab === 'create'" class="tab-content">
+    <div
+      v-if="activeTab === 'create'"
+      class="tab-content"
+    >
       <div class="form-container">
-        <el-form ref="customFormRef" :model="customForm" label-width="120px" class="custom-form">
-          <el-form-item label="款式类型" required>
-            <el-select v-model="customForm.styleType" placeholder="请选择款式类型">
-              <el-option label="连衣裙" value="dress" />
-              <el-option label="上衣" value="top" />
-              <el-option label="裤子" value="pants" />
-              <el-option label="外套" value="coat" />
-              <el-option label="半身裙" value="skirt" />
-              <el-option label="衬衫" value="shirt" />
-              <el-option label="其他" value="other" />
+        <el-form
+          ref="customFormRef"
+          :model="customForm"
+          label-width="120px"
+          class="custom-form"
+        >
+          <el-form-item
+            label="款式类型"
+            required
+          >
+            <el-select
+              v-model="customForm.styleType"
+              placeholder="请选择款式类型"
+            >
+              <el-option
+                label="连衣裙"
+                value="dress"
+              />
+              <el-option
+                label="上衣"
+                value="top"
+              />
+              <el-option
+                label="裤子"
+                value="pants"
+              />
+              <el-option
+                label="外套"
+                value="coat"
+              />
+              <el-option
+                label="半身裙"
+                value="skirt"
+              />
+              <el-option
+                label="衬衫"
+                value="shirt"
+              />
+              <el-option
+                label="其他"
+                value="other"
+              />
             </el-select>
           </el-form-item>
 
-          <el-form-item label="版型风格" required>
+          <el-form-item
+            label="版型风格"
+            required
+          >
             <div class="style-options">
-              <button v-for="style in styleOptions" :key="style.value"
+              <button
+                v-for="style in styleOptions"
+                :key="style.value"
                 :class="{ active: customForm.patternStyle === style.value }"
-                @click="customForm.patternStyle = style.value">
+                @click="customForm.patternStyle = style.value"
+              >
                 {{ style.label }}
               </button>
             </div>
           </el-form-item>
 
-          <el-form-item label="目标人群" required>
-            <el-select v-model="customForm.targetAudience" placeholder="请选择目标人群">
-              <el-option label="成人女性" value="women" />
-              <el-option label="成人男性" value="men" />
-              <el-option label="儿童" value="children" />
-              <el-option label="大码" value="plus-size" />
-              <el-option label="Petite" value="petite" />
+          <el-form-item
+            label="目标人群"
+            required
+          >
+            <el-select
+              v-model="customForm.targetAudience"
+              placeholder="请选择目标人群"
+            >
+              <el-option
+                label="成人女性"
+                value="women"
+              />
+              <el-option
+                label="成人男性"
+                value="men"
+              />
+              <el-option
+                label="儿童"
+                value="children"
+              />
+              <el-option
+                label="大码"
+                value="plus-size"
+              />
+              <el-option
+                label="Petite"
+                value="petite"
+              />
             </el-select>
           </el-form-item>
 
-          <el-form-item label="尺寸范围" required>
+          <el-form-item
+            label="尺寸范围"
+            required
+          >
             <div class="size-range">
-              <input v-model.number="customForm.minSize" type="number" placeholder="最小码" />
+              <input
+                v-model.number="customForm.minSize"
+                type="number"
+                placeholder="最小码"
+              >
               <span class="separator">-</span>
-              <input v-model.number="customForm.maxSize" type="number" placeholder="最大码" />
+              <input
+                v-model.number="customForm.maxSize"
+                type="number"
+                placeholder="最大码"
+              >
               <span class="size-unit">码数</span>
             </div>
           </el-form-item>
 
           <el-form-item label="工艺要求">
             <el-checkbox-group v-model="customForm.techRequirements">
-              <el-checkbox label="明线工艺" value="visible-stitch" />
-              <el-checkbox label="暗线工艺" value="hidden-stitch" />
-              <el-checkbox label="包缝处理" value="overlock" />
-              <el-checkbox label="锁眼工艺" value="buttonhole" />
-              <el-checkbox label="拉链工艺" value="zipper" />
-              <el-checkbox label="烫衬处理" value="interlining" />
+              <el-checkbox
+                label="明线工艺"
+                value="visible-stitch"
+              />
+              <el-checkbox
+                label="暗线工艺"
+                value="hidden-stitch"
+              />
+              <el-checkbox
+                label="包缝处理"
+                value="overlock"
+              />
+              <el-checkbox
+                label="锁眼工艺"
+                value="buttonhole"
+              />
+              <el-checkbox
+                label="拉链工艺"
+                value="zipper"
+              />
+              <el-checkbox
+                label="烫衬处理"
+                value="interlining"
+              />
             </el-checkbox-group>
           </el-form-item>
 
@@ -88,23 +196,40 @@
                 :file-list="imageFiles"
                 multiple
               >
-                <el-icon class="upload-icon"><Upload /></el-icon>
-                <div class="upload-text">拖拽文件到此处，或<em>点击上传</em></div>
-                <div class="upload-hint">支持 JPG、PNG、PDF 格式，单个文件不超过 10MB</div>
+                <el-icon class="upload-icon">
+                  <Upload />
+                </el-icon>
+                <div class="upload-text">
+                  拖拽文件到此处，或<em>点击上传</em>
+                </div>
+                <div class="upload-hint">
+                  支持 JPG、PNG、PDF 格式，单个文件不超过 10MB
+                </div>
               </el-upload>
             </div>
           </el-form-item>
 
           <el-form-item label="详细描述">
-            <el-textarea v-model="customForm.description" :rows="4"
-              placeholder="请详细描述您的定制需求，包括版型特点、特殊要求、参考款式等..." />
+            <el-textarea
+              v-model="customForm.description"
+              :rows="4"
+              placeholder="请详细描述您的定制需求，包括版型特点、特殊要求、参考款式等..."
+            />
           </el-form-item>
 
           <el-form-item label="预算范围">
             <div class="budget-range">
-              <input v-model.number="customForm.minBudget" type="number" placeholder="最低预算" />
+              <input
+                v-model.number="customForm.minBudget"
+                type="number"
+                placeholder="最低预算"
+              >
               <span class="separator">-</span>
-              <input v-model.number="customForm.maxBudget" type="number" placeholder="最高预算" />
+              <input
+                v-model.number="customForm.maxBudget"
+                type="number"
+                placeholder="最高预算"
+              >
               <span class="budget-unit">元</span>
             </div>
           </el-form-item>
@@ -120,32 +245,76 @@
 
           <el-form-item>
             <div class="form-actions">
-              <el-button type="primary" size="large" @click="submitForm">提交定制需求</el-button>
-              <el-button size="large" @click="resetForm">重置</el-button>
+              <el-button
+                type="primary"
+                size="large"
+                @click="submitForm"
+              >
+                提交定制需求
+              </el-button>
+              <el-button
+                size="large"
+                @click="resetForm"
+              >
+                重置
+              </el-button>
             </div>
           </el-form-item>
         </el-form>
       </div>
     </div>
 
-    <div v-if="activeTab === 'progress'" class="tab-content">
-      <div v-if="loading" class="loading-state">
-        <el-icon class="loading-icon"><Loading /></el-icon>
+    <div
+      v-if="activeTab === 'progress'"
+      class="tab-content"
+    >
+      <div
+        v-if="loading"
+        class="loading-state"
+      >
+        <el-icon class="loading-icon">
+          <Loading />
+        </el-icon>
         <p>加载中...</p>
       </div>
-      <div v-else-if="error" class="error-state">
+      <div
+        v-else-if="error"
+        class="error-state"
+      >
         <p>{{ error }}</p>
-        <el-button @click="loadPatterns">重试</el-button>
+        <el-button @click="loadPatterns">
+          重试
+        </el-button>
       </div>
-      <div v-else class="progress-container">
-        <div v-if="orders.length === 0" class="empty-state">
-          <div class="empty-icon">📋</div>
+      <div
+        v-else
+        class="progress-container"
+      >
+        <div
+          v-if="orders.length === 0"
+          class="empty-state"
+        >
+          <div class="empty-icon">
+            📋
+          </div>
           <p>暂无进行中的版型</p>
-          <el-button type="primary" @click="activeTab = 'create'">发布定制需求</el-button>
+          <el-button
+            type="primary"
+            @click="activeTab = 'create'"
+          >
+            发布定制需求
+          </el-button>
         </div>
 
-        <div v-else class="orders-list">
-          <div v-for="pattern in orders" :key="pattern.id" class="order-card">
+        <div
+          v-else
+          class="orders-list"
+        >
+          <div
+            v-for="pattern in orders"
+            :key="pattern.id"
+            class="order-card"
+          >
             <div class="order-header">
               <div class="order-info">
                 <span class="order-id">版型ID：{{ pattern.id }}</span>
@@ -157,16 +326,24 @@
             </div>
 
             <div class="progress-timeline">
-              <div v-for="(step, index) in progressSteps" :key="step.key"
-                :class="['timeline-item', { active: index <= 1, completed: index < 1 }]">
+              <div
+                v-for="(step, index) in progressSteps"
+                :key="step.key"
+                :class="['timeline-item', { active: index <= 1, completed: index < 1 }]"
+              >
                 <div class="timeline-dot">
-                  <el-icon v-if="index < 1"><Check /></el-icon>
+                  <el-icon v-if="index < 1">
+                    <Check />
+                  </el-icon>
                   <span v-else>{{ index + 1 }}</span>
                 </div>
                 <div class="timeline-content">
                   <span class="step-name">{{ step.name }}</span>
                 </div>
-                <div v-if="index < progressSteps.length - 1" class="timeline-line"></div>
+                <div
+                  v-if="index < progressSteps.length - 1"
+                  class="timeline-line"
+                />
               </div>
             </div>
 
@@ -190,31 +367,67 @@
             </div>
 
             <div class="order-actions">
-              <el-button @click="viewDetail(pattern.id)">查看详情</el-button>
-              <el-button v-if="pattern.status !== 1" type="primary" @click="requestModify(pattern.id)">申请修改</el-button>
+              <el-button @click="viewDetail(pattern.id)">
+                查看详情
+              </el-button>
+              <el-button
+                v-if="pattern.status !== 1"
+                type="primary"
+                @click="requestModify(pattern.id)"
+              >
+                申请修改
+              </el-button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-if="activeTab === 'history'" class="tab-content">
-      <div v-if="loading" class="loading-state">
-        <el-icon class="loading-icon"><Loading /></el-icon>
+    <div
+      v-if="activeTab === 'history'"
+      class="tab-content"
+    >
+      <div
+        v-if="loading"
+        class="loading-state"
+      >
+        <el-icon class="loading-icon">
+          <Loading />
+        </el-icon>
         <p>加载中...</p>
       </div>
-      <div v-else-if="error" class="error-state">
+      <div
+        v-else-if="error"
+        class="error-state"
+      >
         <p>{{ error }}</p>
-        <el-button @click="loadPatterns">重试</el-button>
+        <el-button @click="loadPatterns">
+          重试
+        </el-button>
       </div>
-      <div v-else class="history-container">
-        <div v-if="historyOrders.length === 0" class="empty-state">
-          <div class="empty-icon">📝</div>
+      <div
+        v-else
+        class="history-container"
+      >
+        <div
+          v-if="historyOrders.length === 0"
+          class="empty-state"
+        >
+          <div class="empty-icon">
+            📝
+          </div>
           <p>暂无历史版型</p>
         </div>
 
-        <div v-else class="history-list">
-          <div v-for="pattern in historyOrders" :key="pattern.id" class="history-card">
+        <div
+          v-else
+          class="history-list"
+        >
+          <div
+            v-for="pattern in historyOrders"
+            :key="pattern.id"
+            class="history-card"
+          >
             <div class="history-header">
               <span class="history-id">{{ pattern.name }}</span>
               <span :class="['history-status', 'completed']">已完成</span>
@@ -223,10 +436,22 @@
               <span>{{ pattern.styleType }}</span>
               <span>{{ pattern.description }}</span>
             </div>
-            <div class="history-date">创建时间：{{ pattern.createdAt }}</div>
+            <div class="history-date">
+              创建时间：{{ pattern.createdAt }}
+            </div>
             <div class="history-actions">
-              <el-button size="small" @click="viewDetail(pattern.id)">查看详情</el-button>
-              <el-button size="small" @click="reorder(pattern.id)">再次定制</el-button>
+              <el-button
+                size="small"
+                @click="viewDetail(pattern.id)"
+              >
+                查看详情
+              </el-button>
+              <el-button
+                size="small"
+                @click="reorder(pattern.id)"
+              >
+                再次定制
+              </el-button>
             </div>
           </div>
         </div>
@@ -236,14 +461,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, Loading, Clock, Upload, Check } from '@element-plus/icons-vue'
-import { getPatternList, getPatternDetail, type Pattern } from '@/api/pattern'
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
+import { Plus, Loading, Clock, Upload, Check } from '@element-plus/icons-vue';
+import { getPatternList, getPatternDetail, type Pattern } from '@/api/pattern';
 
-const activeTab = ref('create')
-const loading = ref(false)
-const error = ref<string | null>(null)
+const activeTab = ref('create');
+const loading = ref(false);
+const error = ref<string | null>(null);
 
 const styleOptions = [
   { label: '休闲', value: 'casual' },
@@ -251,15 +476,15 @@ const styleOptions = [
   { label: '运动', value: 'sport' },
   { label: '优雅', value: 'elegant' },
   { label: '复古', value: 'vintage' },
-  { label: '时尚', value: 'fashion' }
-]
+  { label: '时尚', value: 'fashion' },
+];
 
 const progressSteps = [
   { key: 'confirmed', name: '需求确认' },
   { key: 'draft', name: '初版设计' },
   { key: 'modify', name: '修改优化' },
-  { key: 'delivery', name: '最终交付' }
-]
+  { key: 'delivery', name: '最终交付' },
+];
 
 const customForm = reactive({
   styleType: '',
@@ -271,34 +496,34 @@ const customForm = reactive({
   description: '',
   minBudget: null as number | null,
   maxBudget: null as number | null,
-  deliveryDate: null as Date | null
-})
+  deliveryDate: null as Date | null,
+});
 
-const imageFiles = ref<any[]>([])
+const imageFiles = ref<Record<string, unknown>[]>([]);
 
-const orders = ref<Pattern[]>([])
-const historyOrders = ref<Pattern[]>([])
+const orders = ref<Pattern[]>([]);
+const historyOrders = ref<Pattern[]>([]);
 
 /**
  * 加载版型列表数据
  * 将后端返回的版型数据映射为打版进度/历史订单展示
  */
 async function loadPatterns() {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
   try {
-    const res = await getPatternList({ pageNum: 1, pageSize: 50 })
+    const res = await getPatternList({ pageNum: 1, pageSize: 50 });
     if (res && res.code === 200) {
-      const list = res.data?.records || []
+      const list = res.data?.records || [];
       // 根据状态分流：非完成状态为进行中，已完成状态为历史订单
-      orders.value = list.filter((p: Pattern) => p.status !== 2 && p.status !== 9)
-      historyOrders.value = list.filter((p: Pattern) => p.status === 2 || p.status === 9)
+      orders.value = list.filter((p: Pattern) => p.status !== 2 && p.status !== 9);
+      historyOrders.value = list.filter((p: Pattern) => p.status === 2 || p.status === 9);
     }
-  } catch (err: any) {
-    error.value = err?.message || '加载版型数据失败'
-    console.error('加载版型列表失败:', err)
+  } catch (err: unknown) {
+    error.value = (err as Error)?.message || '加载版型数据失败';
+    console.error('加载版型列表失败:', err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -307,32 +532,32 @@ async function loadPatterns() {
  */
 async function viewDetail(id: number) {
   try {
-    const res = await getPatternDetail(id)
+    const res = await getPatternDetail(id);
     if (res && res.code === 200) {
-      ElMessage.success(`版型详情: ${res.data?.name || '未知'}`)
+      ElMessage.success(`版型详情: ${res.data?.name || '未知'}`);
     }
-  } catch (err: any) {
-    ElMessage.error(err?.message || '获取版型详情失败')
+  } catch (err: unknown) {
+    ElMessage.error((err as Error)?.message || '获取版型详情失败');
   }
 }
 
 function disabledDate(date: Date) {
-  return date < new Date()
+  return date < new Date();
 }
 
-function handleUploadSuccess(response: any, file: any) {
-  imageFiles.value.push(file)
+function handleUploadSuccess(response: Record<string, unknown>, file: Record<string, unknown>) {
+  imageFiles.value.push(file);
 }
 
-function handleUploadError(err: any) {
-  console.error('上传失败:', err)
-  ElMessage.error('文件上传失败，请重试')
+function handleUploadError(err: unknown) {
+  console.error('上传失败:', err);
+  ElMessage.error('文件上传失败，请重试');
 }
 
 function submitForm() {
   // 表单提交后切换到进度tab，并重新加载数据
-  activeTab.value = 'progress'
-  loadPatterns()
+  activeTab.value = 'progress';
+  loadPatterns();
 }
 
 function resetForm() {
@@ -346,39 +571,22 @@ function resetForm() {
     description: '',
     minBudget: null,
     maxBudget: null,
-    deliveryDate: null
-  })
-  imageFiles.value = []
+    deliveryDate: null,
+  });
+  imageFiles.value = [];
 }
 
-function getStatusText(status: string) {
-  const statusMap: Record<string, string> = {
-    'pending-confirm': '待确认',
-    'confirmed': '已确认',
-    'draft': '初版设计中',
-    'pending-modify': '待修改',
-    'modifying': '修改中',
-    'completed': '已完成',
-    'cancelled': '已取消'
-  }
-  return statusMap[status] || status
+function requestModify(_id: number) {
+  ElMessage.info(`申请修改版型 #${_id}`);
 }
 
-function requestModify(id: number) {
-  ElMessage.info(`申请修改版型 #${id}`)
-}
-
-function compareVersions(order: Pattern) {
-  ElMessage.info(`对比版型版本: ${order.name}`)
-}
-
-function reorder(id: number) {
-  activeTab.value = 'create'
+function reorder(_id: number) {
+  activeTab.value = 'create';
 }
 
 onMounted(() => {
-  loadPatterns()
-})
+  loadPatterns();
+});
 </script>
 
 <style scoped>
@@ -558,8 +766,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state p {

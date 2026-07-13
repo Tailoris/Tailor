@@ -1,39 +1,80 @@
 <template>
-  <div class="order-detail" v-loading="loading">
+  <div
+    v-loading="loading"
+    class="order-detail"
+  >
     <PageHeader title="订单详情">
       <template #actions>
-        <el-button @click="$router.back()">返回</el-button>
+        <el-button @click="$router.back()">
+          返回
+        </el-button>
       </template>
     </PageHeader>
 
-    <el-card shadow="never" style="margin-bottom: 16px">
+    <el-card
+      shadow="never"
+      style="margin-bottom: 16px"
+    >
       <template #header>
         <div class="card-header">
           <span>订单信息</span>
-          <el-tag :type="orderStatusType[order?.status ?? 0]" size="large">
+          <el-tag
+            :type="orderStatusType[order?.status ?? 0]"
+            size="large"
+          >
             {{ orderStatusLabel[order?.status ?? 0] }}
           </el-tag>
         </div>
       </template>
-      <el-descriptions :column="3" border>
-        <el-descriptions-item label="订单号">{{ order?.orderNo }}</el-descriptions-item>
-        <el-descriptions-item label="买家姓名">{{ order?.buyerName }}</el-descriptions-item>
-        <el-descriptions-item label="买家电话">{{ order?.buyerPhone }}</el-descriptions-item>
-        <el-descriptions-item label="下单时间">{{ order?.createdAt }}</el-descriptions-item>
-        <el-descriptions-item label="付款时间">{{ order?.paidAt || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="发货时间">{{ order?.shippedAt || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="完成时间">{{ order?.completedAt || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="物流公司">{{ order?.logisticsCompany || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="快递单号">{{ order?.trackingNumber || '-' }}</el-descriptions-item>
+      <el-descriptions
+        :column="3"
+        border
+      >
+        <el-descriptions-item label="订单号">
+          {{ order?.orderNo }}
+        </el-descriptions-item>
+        <el-descriptions-item label="买家姓名">
+          {{ order?.buyerName }}
+        </el-descriptions-item>
+        <el-descriptions-item label="买家电话">
+          {{ order?.buyerPhone }}
+        </el-descriptions-item>
+        <el-descriptions-item label="下单时间">
+          {{ order?.createdAt }}
+        </el-descriptions-item>
+        <el-descriptions-item label="付款时间">
+          {{ order?.paidAt || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="发货时间">
+          {{ order?.shippedAt || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="完成时间">
+          {{ order?.completedAt || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="物流公司">
+          {{ order?.logisticsCompany || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="快递单号">
+          {{ order?.trackingNumber || '-' }}
+        </el-descriptions-item>
       </el-descriptions>
     </el-card>
 
-    <el-card shadow="never" style="margin-bottom: 16px">
+    <el-card
+      shadow="never"
+      style="margin-bottom: 16px"
+    >
       <template #header>
         <span>商品明细</span>
       </template>
-      <el-table :data="order?.items || []" border>
-        <el-table-column label="商品图片" width="80">
+      <el-table
+        :data="order?.items || []"
+        border
+      >
+        <el-table-column
+          label="商品图片"
+          width="80"
+        >
           <template #default="{ row }">
             <el-image
               :src="row.productImage || PLACEHOLDER_60x60"
@@ -42,14 +83,37 @@
             />
           </template>
         </el-table-column>
-        <el-table-column prop="productName" label="商品名称" min-width="180" />
-        <el-table-column prop="skuName" label="规格" width="140" />
-        <el-table-column prop="price" label="单价" width="100">
-          <template #default="{ row }">¥{{ row.price?.toFixed(2) }}</template>
+        <el-table-column
+          prop="productName"
+          label="商品名称"
+          min-width="180"
+        />
+        <el-table-column
+          prop="skuName"
+          label="规格"
+          width="140"
+        />
+        <el-table-column
+          prop="price"
+          label="单价"
+          width="100"
+        >
+          <template #default="{ row }">
+            ¥{{ row.price?.toFixed(2) }}
+          </template>
         </el-table-column>
-        <el-table-column prop="quantity" label="数量" width="80" />
-        <el-table-column label="小计" width="100">
-          <template #default="{ row }">¥{{ row.subtotal?.toFixed(2) }}</template>
+        <el-table-column
+          prop="quantity"
+          label="数量"
+          width="80"
+        />
+        <el-table-column
+          label="小计"
+          width="100"
+        >
+          <template #default="{ row }">
+            ¥{{ row.subtotal?.toFixed(2) }}
+          </template>
         </el-table-column>
       </el-table>
       <div class="order-summary">
@@ -68,12 +132,18 @@
       </div>
     </el-card>
 
-    <el-card shadow="never" style="margin-bottom: 16px">
+    <el-card
+      shadow="never"
+      style="margin-bottom: 16px"
+    >
       <template #header>
         <span>订单状态轨迹</span>
       </template>
       <el-timeline>
-        <el-timeline-item timestamp="创建订单" placement="top">
+        <el-timeline-item
+          timestamp="创建订单"
+          placement="top"
+        >
           {{ order?.createdAt }}
         </el-timeline-item>
         <el-timeline-item
@@ -116,26 +186,36 @@
       />
     </el-card>
 
-    <div class="action-bar" v-if="order?.status === 1">
-      <el-button type="primary" @click="handleShip">发货</el-button>
-      <el-button @click="$router.back()">返回</el-button>
+    <div
+      v-if="order?.status === 1"
+      class="action-bar"
+    >
+      <el-button
+        type="primary"
+        @click="handleShip"
+      >
+        发货
+      </el-button>
+      <el-button @click="$router.back()">
+        返回
+      </el-button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { getOrderDetail, updateOrderRemark } from '@/api/order'
-import type { Order } from '@/types'
-import PageHeader from '@/components/PageHeader.vue'
-import { ElMessage } from 'element-plus'
-import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder'
+import { ref, reactive, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { getOrderDetail, updateOrderRemark } from '@/api/order';
+import type { Order } from '@/types';
+import PageHeader from '@/components/PageHeader.vue';
+import { ElMessage } from 'element-plus';
+import { PLACEHOLDER_60x60 } from '@shared/utils/placeholder';
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const loading = ref(false)
+const loading = ref(false);
 const order = reactive<Order>({
   id: 0,
   orderNo: '',
@@ -155,7 +235,7 @@ const order = reactive<Order>({
   shippedAt: '',
   completedAt: '',
   createdAt: '',
-})
+});
 
 const orderStatusType: Record<number, string> = {
   0: 'info',
@@ -163,7 +243,7 @@ const orderStatusType: Record<number, string> = {
   2: '',
   3: 'success',
   4: 'danger',
-}
+};
 
 const orderStatusLabel: Record<number, string> = {
   0: '待付款',
@@ -171,37 +251,37 @@ const orderStatusLabel: Record<number, string> = {
   2: '已发货',
   3: '已完成',
   4: '已取消',
-}
+};
 
 async function fetchOrderDetail() {
-  loading.value = true
+  loading.value = true;
   try {
-    const res = await getOrderDetail(route.params.orderNo as string)
-    Object.assign(order, res)
+    const res = await getOrderDetail(route.params.orderNo as string);
+    Object.assign(order, res);
   } catch {
     // error handled by interceptor
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function handleShip() {
-  router.push(`/order?ship=${order.orderNo}`)
+  router.push(`/order?ship=${order.orderNo}`);
 }
 
 async function saveRemark() {
   // FE-H-4: 接入真实API，替代假保存
   try {
-    await updateOrderRemark(order.orderNo, order.remark)
-    ElMessage.success('备注已保存')
+    await updateOrderRemark(order.orderNo, order.remark);
+    ElMessage.success('备注已保存');
   } catch {
-    ElMessage.error('备注保存失败')
+    ElMessage.error('备注保存失败');
   }
 }
 
 onMounted(() => {
-  fetchOrderDetail()
-})
+  fetchOrderDetail();
+});
 </script>
 
 <style scoped>

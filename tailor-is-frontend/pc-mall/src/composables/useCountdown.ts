@@ -1,1 +1,1 @@
-export { useCountdown } from '@shared/composables/useCountdown'
+export { useCountdown } from '@shared/composables/useCountdown';

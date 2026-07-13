@@ -1,86 +1,160 @@
 <template>
-  <div class="dashboard-page" v-loading="loading">
+  <div
+    v-loading="loading"
+    class="dashboard-page"
+  >
     <div class="page-header">
-      <h2 class="page-title">系统概览</h2>
-      <p class="page-subtitle">裁智云平台整体运营数据概览</p>
+      <h2 class="page-title">
+        系统概览
+      </h2>
+      <p class="page-subtitle">
+        裁智云平台整体运营数据概览
+      </p>
     </div>
 
-    <el-row :gutter="20" class="stat-row">
+    <el-row
+      :gutter="20"
+      class="stat-row"
+    >
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card">
+        <el-card
+          shadow="never"
+          class="stat-card"
+        >
           <div class="stat-content">
             <div class="stat-icon users">
-              <el-icon :size="24"><UserFilled /></el-icon>
+              <el-icon :size="24">
+                <UserFilled />
+              </el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-label">总用户数</div>
-              <div class="stat-value">{{ formatNumber(stats.userCount) }}</div>
-              <div class="stat-trend up">较昨日 +{{ stats.userGrowth }}%</div>
+              <div class="stat-label">
+                总用户数
+              </div>
+              <div class="stat-value">
+                {{ formatNumber(stats.userCount) }}
+              </div>
+              <div class="stat-trend up">
+                较昨日 +{{ stats.userGrowth }}%
+              </div>
             </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card">
+        <el-card
+          shadow="never"
+          class="stat-card"
+        >
           <div class="stat-content">
             <div class="stat-icon orders">
-              <el-icon :size="24"><Document /></el-icon>
+              <el-icon :size="24">
+                <Document />
+              </el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-label">总订单数</div>
-              <div class="stat-value">{{ formatNumber(stats.orderCount) }}</div>
-              <div class="stat-trend up">较昨日 +{{ stats.orderGrowth }}%</div>
+              <div class="stat-label">
+                总订单数
+              </div>
+              <div class="stat-value">
+                {{ formatNumber(stats.orderCount) }}
+              </div>
+              <div class="stat-trend up">
+                较昨日 +{{ stats.orderGrowth }}%
+              </div>
             </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card">
+        <el-card
+          shadow="never"
+          class="stat-card"
+        >
           <div class="stat-content">
             <div class="stat-icon revenue">
-              <el-icon :size="24"><Money /></el-icon>
+              <el-icon :size="24">
+                <Money />
+              </el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-label">今日收入</div>
-              <div class="stat-value">¥{{ formatMoney(stats.todayRevenue) }}</div>
-              <div class="stat-trend up">较昨日 +{{ stats.revenueGrowth }}%</div>
+              <div class="stat-label">
+                今日收入
+              </div>
+              <div class="stat-value">
+                ¥{{ formatMoney(stats.todayRevenue) }}
+              </div>
+              <div class="stat-trend up">
+                较昨日 +{{ stats.revenueGrowth }}%
+              </div>
             </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card">
+        <el-card
+          shadow="never"
+          class="stat-card"
+        >
           <div class="stat-content">
             <div class="stat-icon modules">
-              <el-icon :size="24"><Monitor /></el-icon>
+              <el-icon :size="24">
+                <Monitor />
+              </el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-label">待审核</div>
-              <div class="stat-value">{{ stats.pendingAuditCount }}</div>
-              <div class="stat-trend normal">审核中</div>
+              <div class="stat-label">
+                待审核
+              </div>
+              <div class="stat-value">
+                {{ stats.pendingAuditCount }}
+              </div>
+              <div class="stat-trend normal">
+                审核中
+              </div>
             </div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row :gutter="20" style="margin-top: 20px">
+    <el-row
+      :gutter="20"
+      style="margin-top: 20px"
+    >
       <el-col :span="16">
-        <el-card shadow="never" class="chart-card">
+        <el-card
+          shadow="never"
+          class="chart-card"
+        >
           <template #header>
             <div class="card-header">
               <span>平台收入趋势</span>
-              <el-radio-group v-model="chartRange" size="small">
-                <el-radio-button label="week">近7天</el-radio-button>
-                <el-radio-button label="month">近30天</el-radio-button>
+              <el-radio-group
+                v-model="chartRange"
+                size="small"
+              >
+                <el-radio-button label="week">
+                  近7天
+                </el-radio-button>
+                <el-radio-button label="month">
+                  近30天
+                </el-radio-button>
               </el-radio-group>
             </div>
           </template>
           <div class="chart-area">
             <div class="chart-bars">
-              <div v-for="(item, index) in chartData" :key="index" class="bar-item">
+              <div
+                v-for="(item, index) in chartData"
+                :key="index"
+                class="bar-item"
+              >
                 <div class="bar-wrapper">
-                  <div class="bar" :style="{ height: getBarHeight(item.amount) + '%' }" />
+                  <div
+                    class="bar"
+                    :style="{ height: getBarHeight(item.amount) + '%' }"
+                  />
                 </div>
                 <span class="bar-label">{{ item.label }}</span>
               </div>
@@ -89,17 +163,31 @@
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card shadow="never" class="module-card">
+        <el-card
+          shadow="never"
+          class="module-card"
+        >
           <template #header>
             <span>模块运行状态</span>
           </template>
           <div class="module-list">
-            <div v-for="mod in stats.moduleStatus" :key="mod.name" class="module-item">
+            <div
+              v-for="mod in stats.moduleStatus"
+              :key="mod.name"
+              class="module-item"
+            >
               <div class="module-info">
-                <div class="module-name">{{ mod.name }}</div>
-                <div class="module-port">端口: {{ mod.port }}</div>
+                <div class="module-name">
+                  {{ mod.name }}
+                </div>
+                <div class="module-port">
+                  端口: {{ mod.port }}
+                </div>
               </div>
-              <el-tag :type="mod.status === 'running' ? 'success' : 'danger'" size="small">
+              <el-tag
+                :type="mod.status === 'running' ? 'success' : 'danger'"
+                size="small"
+              >
                 {{ mod.status === 'running' ? '运行中' : '已停止' }}
               </el-tag>
             </div>
@@ -111,34 +199,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed, watch } from 'vue'
-import { UserFilled, Document, Money, Monitor } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { getDashboardStats } from '@/api/dashboard'
+import { ref, reactive, onMounted, computed, watch } from 'vue';
+import { UserFilled, Document, Money, Monitor } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { getDashboardStats } from '@/api/dashboard';
 
 interface ModuleStatus {
-  name: string
-  port: number
-  status: 'running' | 'stopped'
+  name: string;
+  port: number;
+  status: 'running' | 'stopped';
 }
 
 interface DashboardStats {
-  userCount: number
-  merchantCount: number
-  orderCount: number
-  todayRevenue: number
-  todayOrders: number
-  pendingAuditCount: number
-  userGrowth?: number
-  orderGrowth?: number
-  revenueGrowth?: number
-  moduleStatus?: ModuleStatus[]
-  revenueTrend?: { date: string; amount: number }[]
+  userCount: number;
+  merchantCount: number;
+  orderCount: number;
+  todayRevenue: number;
+  todayOrders: number;
+  pendingAuditCount: number;
+  userGrowth?: number;
+  orderGrowth?: number;
+  revenueGrowth?: number;
+  moduleStatus?: ModuleStatus[];
+  revenueTrend?: { date: string; amount: number }[];
 }
 
-const loading = ref(false)
-const error = ref(false)
-const chartRange = ref<'week' | 'month'>('week')
+const loading = ref(false);
+const error = ref(false);
+const chartRange = ref<'week' | 'month'>('week');
 
 const stats = reactive<DashboardStats>({
   userCount: 0,
@@ -152,62 +240,62 @@ const stats = reactive<DashboardStats>({
   revenueGrowth: 0,
   moduleStatus: [],
   revenueTrend: [],
-})
+});
 
 async function loadDashboard() {
-  loading.value = true
-  error.value = false
+  loading.value = true;
+  error.value = false;
   try {
-    const data = await getDashboardStats({ range: chartRange.value })
+    const data = await getDashboardStats({ range: chartRange.value });
     if (data) {
-      Object.assign(stats, data)
+      Object.assign(stats, data);
     }
   } catch {
-    error.value = true
-    ElMessage.error('加载仪表盘数据失败')
+    error.value = true;
+    ElMessage.error('加载仪表盘数据失败');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 watch(chartRange, () => {
-  loadDashboard()
-})
+  loadDashboard();
+});
 
-const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-const monthLabels = Array.from({ length: 30 }, (_, i) => `${i + 1}日`)
+const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+const monthLabels = Array.from({ length: 30 }, (_, i) => `${i + 1}日`);
 
 const chartData = computed(() => {
-  const data = stats.revenueTrend
-  const labels = chartRange.value === 'week' ? weekLabels.slice(0, data.length) : monthLabels.slice(0, data.length)
+  const data = stats.revenueTrend;
+  const labels = chartRange.value === 'week' ? weekLabels.slice(0, data.length) : monthLabels.slice(0, data.length);
   return data.map((item, index) => ({
     label: labels[index] || item.date.slice(5),
     amount: item.amount,
-  }))
-})
+  }));
+});
 
 function formatNumber(num: number): string {
   if (num >= 10000) {
-    return (num / 10000).toFixed(1) + '万'
+    return (num / 10000).toFixed(1) + '万';
   }
-  return num.toLocaleString()
+  return num.toLocaleString();
 }
 
 function formatMoney(num: number): string {
   if (num >= 10000) {
-    return (num / 10000).toFixed(1) + '万'
+    return (num / 10000).toFixed(1) + '万';
   }
-  return num.toLocaleString()
+  return num.toLocaleString();
 }
 
 function getBarHeight(amount: number): number {
-  const max = Math.max(...chartData.value.map(i => i.amount), 1)
-  return (amount / max) * 100
+  const max = Math.max(...chartData.value.map((i) => i.amount), 1);
+  return (amount / max) * 100;
 }
 
 onMounted(() => {
-  loadDashboard()
-})
+  loadDashboard();
+});
 </script>
 
 <style scoped>
@@ -253,22 +341,22 @@ onMounted(() => {
 
 .stat-icon.users {
   background-color: rgba(99, 102, 241, 0.1);
-  color: #6366F1;
+  color: #6366f1;
 }
 
 .stat-icon.orders {
   background-color: rgba(16, 185, 129, 0.1);
-  color: #10B981;
+  color: #10b981;
 }
 
 .stat-icon.revenue {
   background-color: rgba(245, 158, 11, 0.1);
-  color: #F59E0B;
+  color: #f59e0b;
 }
 
 .stat-icon.modules {
   background-color: rgba(59, 130, 246, 0.1);
-  color: #3B82F6;
+  color: #3b82f6;
 }
 
 .stat-info {
@@ -292,15 +380,15 @@ onMounted(() => {
 }
 
 .stat-trend.up {
-  color: #10B981;
+  color: #10b981;
 }
 
 .stat-trend.down {
-  color: #EF4444;
+  color: #ef4444;
 }
 
 .stat-trend.normal {
-  color: #3B82F6;
+  color: #3b82f6;
 }
 
 .chart-card,
@@ -346,7 +434,7 @@ onMounted(() => {
 
 .bar {
   width: 100%;
-  background: linear-gradient(180deg, #6366F1, #818CF8);
+  background: linear-gradient(180deg, #6366f1, #818cf8);
   border-radius: 4px 4px 0 0;
   min-height: 4px;
   transition: height 0.5s ease;

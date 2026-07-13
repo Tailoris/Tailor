@@ -1,4 +1,4 @@
-import request from './request'
+import request from './request';
 
 /**
  * 角色管理 API
@@ -6,39 +6,39 @@ import request from './request'
  */
 
 export interface Role {
-  id: number
-  name: string
-  code: string
-  description: string
-  userCount: number
-  createTime: string
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  userCount: number;
+  createTime: string;
 }
 
 export interface RoleForm {
-  name: string
-  code: string
-  description: string
+  name: string;
+  code: string;
+  description: string;
 }
 
 export interface RoleQueryParams {
-  keyword?: string
-  current?: number
-  size?: number
+  keyword?: string;
+  current?: number;
+  size?: number;
 }
 
 export interface PageResult<T> {
-  records: T[]
-  total: number
-  current: number
-  size: number
+  records: T[];
+  total: number;
+  current: number;
+  size: number;
 }
 
 export interface Permission {
-  id: number
-  name: string
-  code: string
-  type: 'menu' | 'button'
-  parentId: number | null
+  id: number;
+  name: string;
+  code: string;
+  type: 'menu' | 'button';
+  parentId: number | null;
 }
 
 /** 分页查询角色列表 */
@@ -46,16 +46,16 @@ export function listRoles(params: RoleQueryParams) {
   return request<unknown, PageResult<Role>>({
     url: '/admin/roles',
     method: 'get',
-    params
-  })
+    params,
+  });
 }
 
 /** 获取角色详情 */
 export function getRoleDetail(id: number) {
   return request<unknown, Role>({
     url: `/admin/roles/${id}`,
-    method: 'get'
-  })
+    method: 'get',
+  });
 }
 
 /** 新增角色 */
@@ -63,8 +63,8 @@ export function createRole(data: RoleForm) {
   return request<unknown, Role>({
     url: '/admin/roles',
     method: 'post',
-    data
-  })
+    data,
+  });
 }
 
 /** 更新角色 */
@@ -72,24 +72,24 @@ export function updateRole(id: number, data: RoleForm) {
   return request<unknown, Role>({
     url: `/admin/roles/${id}`,
     method: 'put',
-    data
-  })
+    data,
+  });
 }
 
 /** 删除角色 */
 export function deleteRole(id: number) {
   return request<unknown, void>({
     url: `/admin/roles/${id}`,
-    method: 'delete'
-  })
+    method: 'delete',
+  });
 }
 
 /** 获取角色权限列表 */
 export function getRolePermissions(id: number) {
   return request<unknown, Permission[]>({
     url: `/admin/roles/${id}/permissions`,
-    method: 'get'
-  })
+    method: 'get',
+  });
 }
 
 /** 分配角色权限 */
@@ -97,8 +97,8 @@ export function assignRolePermissions(id: number, permissionIds: number[]) {
   return request<unknown, void>({
     url: `/admin/roles/${id}/permissions`,
     method: 'put',
-    data: { permissionIds }
-  })
+    data: { permissionIds },
+  });
 }
 
 /** 获取角色关联用户列表 */
@@ -106,6 +106,6 @@ export function getRoleUsers(id: number, params?: { current?: number; size?: num
   return request<unknown, PageResult<{ id: number; username: string; nickname: string }>>({
     url: `/admin/roles/${id}/users`,
     method: 'get',
-    params
-  })
+    params,
+  });
 }

@@ -1,71 +1,130 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
-import { decryptSync } from '@/utils/crypto'
+import { createRouter, createWebHistory } from 'vue-router';
+import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router';
+import { decryptSync } from '@/utils/crypto';
 
 // 扩展路由meta类型
 declare module 'vue-router' {
   interface RouteMeta {
     /** 是否需要登录 */
-    requiresAuth?: boolean
+    requiresAuth?: boolean;
     /** 需要的角色列表（任一即可） */
-    roles?: string[]
+    roles?: string[];
     /** 需要的权限列表（全部满足） */
-    permissions?: string[]
+    permissions?: string[];
     /** 页面标题 */
-    title?: string
+    title?: string;
     /** 是否缓存 */
-    keepAlive?: boolean
+    keepAlive?: boolean;
   }
 }
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', name: 'Home', component: () => import('@/views/HomeView.vue'),
-    meta: { title: '首页' } },
-  { path: '/patterns', name: 'Patterns', component: () => import('@/views/PatternsView.vue'),
-    meta: { title: '纸样商城' } },
-  { path: '/pattern-custom', name: 'PatternCustom', component: () => import('@/views/PatternCustomView.vue'),
-    meta: { title: '纸样定制' } },
-  { path: '/design', name: 'Design', component: () => import('@/views/DesignView.vue'),
-    meta: { title: '服装设计' } },
-  { path: '/community', name: 'Community', component: () => import('@/views/CommunityView.vue'),
-    meta: { title: '社区交流' } },
-  { path: '/community/:postId', name: 'PostDetail', component: () => import('@/views/CommunityView.vue'),
-    props: true, meta: { title: '帖子详情' } },
-  { path: '/knowledge', name: 'Knowledge', component: () => import('@/views/KnowledgeView.vue'),
-    meta: { title: '知识库' } },
-  { path: '/academy', name: 'Academy', component: () => import('@/views/AcademyView.vue'),
-    meta: { title: '线上学堂' } },
-  { path: '/products', name: 'Products', component: () => import('@/views/ProductListView.vue'),
-    meta: { title: '商品列表' } },
-  { path: '/product/:id', name: 'ProductDetail', component: () => import('@/views/ProductDetailView.vue'),
-    props: true, meta: { title: '商品详情' } },
-  { path: '/cart', name: 'Cart', component: () => import('@/views/CartView.vue'),
-    meta: { requiresAuth: true, title: '购物车' } },
-  { path: '/checkout', name: 'Checkout', component: () => import('@/views/CheckoutView.vue'),
-    meta: { requiresAuth: true, title: '结算' } },
-  { path: '/orders', name: 'Orders', component: () => import('@/views/OrderListView.vue'),
-    meta: { requiresAuth: true, title: '我的订单' } },
-  { path: '/order/:id', name: 'OrderDetail', component: () => import('@/views/OrderDetailView.vue'),
-    props: true, meta: { requiresAuth: true, title: '订单详情' } },
-  { path: '/profile', name: 'Profile', component: () => import('@/views/ProfileView.vue'),
-    meta: { requiresAuth: true, title: '个人中心' } },
-  { path: '/merchant-apply', name: 'MerchantApply', component: () => import('@/views/MerchantApplyView.vue'),
-    meta: { requiresAuth: true, title: '商家入驻' } },
-  { path: '/login', name: 'Login', component: () => import('@/views/LoginView.vue'),
-    meta: { title: '登录' } },
-  { path: '/register', name: 'Register', component: () => import('@/views/RegisterView.vue'),
-    meta: { title: '注册' } },
-  { path: '/forgot-password', name: 'ForgotPassword', component: () => import('@/views/ForgotPasswordView.vue'),
-    meta: { title: '找回密码' } }
-]
+  { path: '/', name: 'Home', component: () => import('@/views/HomeView.vue'), meta: { title: '首页' } },
+  {
+    path: '/patterns',
+    name: 'Patterns',
+    component: () => import('@/views/PatternsView.vue'),
+    meta: { title: '纸样商城' },
+  },
+  {
+    path: '/pattern-custom',
+    name: 'PatternCustom',
+    component: () => import('@/views/PatternCustomView.vue'),
+    meta: { title: '纸样定制' },
+  },
+  { path: '/design', name: 'Design', component: () => import('@/views/DesignView.vue'), meta: { title: '服装设计' } },
+  {
+    path: '/community',
+    name: 'Community',
+    component: () => import('@/views/CommunityView.vue'),
+    meta: { title: '社区交流' },
+  },
+  {
+    path: '/community/:postId',
+    name: 'PostDetail',
+    component: () => import('@/views/CommunityView.vue'),
+    props: true,
+    meta: { title: '帖子详情' },
+  },
+  {
+    path: '/knowledge',
+    name: 'Knowledge',
+    component: () => import('@/views/KnowledgeView.vue'),
+    meta: { title: '知识库' },
+  },
+  {
+    path: '/academy',
+    name: 'Academy',
+    component: () => import('@/views/AcademyView.vue'),
+    meta: { title: '线上学堂' },
+  },
+  {
+    path: '/products',
+    name: 'Products',
+    component: () => import('@/views/ProductListView.vue'),
+    meta: { title: '商品列表' },
+  },
+  {
+    path: '/product/:id',
+    name: 'ProductDetail',
+    component: () => import('@/views/ProductDetailView.vue'),
+    props: true,
+    meta: { title: '商品详情' },
+  },
+  {
+    path: '/cart',
+    name: 'Cart',
+    component: () => import('@/views/CartView.vue'),
+    meta: { requiresAuth: true, title: '购物车' },
+  },
+  {
+    path: '/checkout',
+    name: 'Checkout',
+    component: () => import('@/views/CheckoutView.vue'),
+    meta: { requiresAuth: true, title: '结算' },
+  },
+  {
+    path: '/orders',
+    name: 'Orders',
+    component: () => import('@/views/OrderListView.vue'),
+    meta: { requiresAuth: true, title: '我的订单' },
+  },
+  {
+    path: '/order/:id',
+    name: 'OrderDetail',
+    component: () => import('@/views/OrderDetailView.vue'),
+    props: true,
+    meta: { requiresAuth: true, title: '订单详情' },
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/ProfileView.vue'),
+    meta: { requiresAuth: true, title: '个人中心' },
+  },
+  {
+    path: '/merchant-apply',
+    name: 'MerchantApply',
+    component: () => import('@/views/MerchantApplyView.vue'),
+    meta: { requiresAuth: true, title: '商家入驻' },
+  },
+  { path: '/login', name: 'Login', component: () => import('@/views/LoginView.vue'), meta: { title: '登录' } },
+  { path: '/register', name: 'Register', component: () => import('@/views/RegisterView.vue'), meta: { title: '注册' } },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/ForgotPasswordView.vue'),
+    meta: { title: '找回密码' },
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior() {
-    return { top: 0 }
-  }
-})
+    return { top: 0 };
+  },
+});
 
 /**
  * 🔒 F-H14: 增强版导航守卫
@@ -83,32 +142,28 @@ const router = createRouter({
  * 仅检查 token 是否存在（即已认证）。角色和权限检查交由后端 API 处理，
  * 前端仅作为体验优化（如隐藏无权限的 UI 元素）。
  */
-router.beforeEach((
-  to: RouteLocationNormalized,
-  _from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) => {
+router.beforeEach((to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
   // 1. 设置页面标题
-  const pageTitle = to.meta.title as string | undefined
+  const pageTitle = to.meta.title as string | undefined;
   if (pageTitle) {
-    document.title = `${pageTitle} - Tailor IS`
+    document.title = `${pageTitle} - Tailor IS`;
   } else {
-    document.title = 'Tailor IS - 服装全产业平台'
+    document.title = 'Tailor IS - 服装全产业平台';
   }
 
-  const token = decryptSync(localStorage.getItem('token') || '')
-  const isAuthenticated = !!token
+  const token = decryptSync(localStorage.getItem('token') || '');
+  const isAuthenticated = !!token;
 
   // 2. 已登录用户访问登录/注册页 - 跳转首页
   if (isAuthenticated && (to.name === 'Login' || to.name === 'Register')) {
-    next({ path: '/' })
-    return
+    next({ path: '/' });
+    return;
   }
 
   // 3. 检查是否需要登录（仅检查 token 存在性，不依赖本地角色数据）
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next({ path: '/login', query: { redirect: to.fullPath } })
-    return
+    next({ path: '/login', query: { redirect: to.fullPath } });
+    return;
   }
 
   // 🔒 C-012: 不再在前端检查 roles/permissions（localStorage 数据不可信）
@@ -118,7 +173,7 @@ router.beforeEach((
   // 但为保持性能和简单性，此处仅做认证检查。
 
   // 6. 通过所有检查
-  next()
-})
+  next();
+});
 
-export default router
+export default router;

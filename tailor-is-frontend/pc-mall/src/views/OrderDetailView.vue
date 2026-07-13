@@ -1,78 +1,157 @@
 <template>
-  <div class="order-detail-view" v-loading="loading" role="main" aria-label="订单详情页面">
-    <el-breadcrumb separator="/" aria-label="面包屑导航">
-      <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-      <el-breadcrumb-item :to="{ path: '/orders' }">我的订单</el-breadcrumb-item>
+  <div
+    v-loading="loading"
+    class="order-detail-view"
+    role="main"
+    aria-label="订单详情页面"
+  >
+    <el-breadcrumb
+      separator="/"
+      aria-label="面包屑导航"
+    >
+      <el-breadcrumb-item :to="{ path: '/' }">
+        首页
+      </el-breadcrumb-item>
+      <el-breadcrumb-item :to="{ path: '/orders' }">
+        我的订单
+      </el-breadcrumb-item>
       <el-breadcrumb-item>订单详情</el-breadcrumb-item>
     </el-breadcrumb>
 
     <template v-if="order">
       <div class="order-header-card">
         <div class="header-left">
-          <el-tag :type="getStatusType(order.status)" size="large">{{ formatOrderStatus(order.status) }}</el-tag>
+          <el-tag
+            :type="getStatusType(order.status)"
+            size="large"
+          >
+            {{ formatOrderStatus(order.status) }}
+          </el-tag>
           <div class="header-info">
             <span class="order-no">订单号: {{ order.orderNo }}</span>
             <span class="order-time">下单时间: {{ formatDate(order.createdAt) }}</span>
           </div>
         </div>
         <div class="header-actions">
-          <el-button v-if="order.status === 0" type="danger" @click="handlePay">立即付款</el-button>
-          <el-button v-if="order.status === 0" @click="handleCancel">取消订单</el-button>
-          <el-button v-if="order.status === 2" type="primary" @click="handleConfirm">确认收货</el-button>
+          <el-button
+            v-if="order.status === 0"
+            type="danger"
+            @click="handlePay"
+          >
+            立即付款
+          </el-button>
+          <el-button
+            v-if="order.status === 0"
+            @click="handleCancel"
+          >
+            取消订单
+          </el-button>
+          <el-button
+            v-if="order.status === 2"
+            type="primary"
+            @click="handleConfirm"
+          >
+            确认收货
+          </el-button>
         </div>
       </div>
 
       <div class="detail-grid">
         <section class="section products-section">
           <h3>商品清单</h3>
-          <el-table :data="order.items || []" border>
+          <el-table
+            :data="order.items || []"
+            border
+          >
             <el-table-column label="商品信息">
               <template #default="{ row }">
                 <div class="product-cell">
-                  <img :src="row.productImage || PLACEHOLDER_50x50" />
+                  <img :src="row.productImage || PLACEHOLDER_50x50">
                   <span>{{ row.productName }}</span>
                 </div>
               </template>
             </el-table-column>
             <el-table-column label="SKU属性">
               <template #default="{ row }">
-                {{ Object.entries(row.skuAttributes).map(([k, v]) => `${k}: ${v}`).join(', ') }}
+                {{
+                  Object.entries(row.skuAttributes)
+                    .map(([k, v]) => `${k}: ${v}`)
+                    .join(', ')
+                }}
               </template>
             </el-table-column>
-            <el-table-column prop="price" label="单价" width="100">
-              <template #default="{ row }">{{ formatPrice(row.price) }}</template>
+            <el-table-column
+              prop="price"
+              label="单价"
+              width="100"
+            >
+              <template #default="{ row }">
+                {{ formatPrice(row.price) }}
+              </template>
             </el-table-column>
-            <el-table-column prop="quantity" label="数量" width="80" />
-            <el-table-column prop="subtotal" label="小计" width="100">
-              <template #default="{ row }">{{ formatPrice(row.subtotal) }}</template>
+            <el-table-column
+              prop="quantity"
+              label="数量"
+              width="80"
+            />
+            <el-table-column
+              prop="subtotal"
+              label="小计"
+              width="100"
+            >
+              <template #default="{ row }">
+                {{ formatPrice(row.subtotal) }}
+              </template>
             </el-table-column>
           </el-table>
         </section>
 
         <section class="section address-section">
           <h3>收货信息</h3>
-          <div class="address-info" v-if="order.addressSnapshot">
+          <div
+            v-if="order.addressSnapshot"
+            class="address-info"
+          >
             <p>{{ order.addressSnapshot }}</p>
           </div>
-          <el-empty v-else description="暂无地址信息" />
+          <el-empty
+            v-else
+            description="暂无地址信息"
+          />
         </section>
 
         <section class="section logistics-section">
           <h3>物流信息</h3>
           <el-timeline>
-            <el-timeline-item timestamp="2024-01-01 12:00" placement="top" color="#1d39c4">
+            <el-timeline-item
+              timestamp="2024-01-01 12:00"
+              placement="top"
+              color="#1d39c4"
+            >
               <h4>订单已提交</h4>
               <p>等待付款</p>
             </el-timeline-item>
-            <el-timeline-item timestamp="2024-01-01 12:05" placement="top" v-if="order.status >= 1">
+            <el-timeline-item
+              v-if="order.status >= 1"
+              timestamp="2024-01-01 12:05"
+              placement="top"
+            >
               <h4>已付款</h4>
               <p>等待发货</p>
             </el-timeline-item>
-            <el-timeline-item timestamp="2024-01-02 09:00" placement="top" v-if="order.status >= 2">
+            <el-timeline-item
+              v-if="order.status >= 2"
+              timestamp="2024-01-02 09:00"
+              placement="top"
+            >
               <h4>已发货</h4>
               <p>快递公司: {{ LOGISTICS_COMPANY }}, 运单号: {{ TRACKING_NUMBER }}</p>
             </el-timeline-item>
-            <el-timeline-item timestamp="2024-01-03 14:00" placement="top" v-if="order.status >= 3">
+            <el-timeline-item
+              v-if="order.status >= 3"
+              timestamp="2024-01-03 14:00"
+              placement="top"
+            >
               <h4>已签收</h4>
               <p>感谢您的购买</p>
             </el-timeline-item>
@@ -90,16 +169,22 @@
               <span>优惠金额</span>
               <span class="discount">-{{ formatPrice(order.discountAmount) }}</span>
             </div>
-            <div class="price-divider"></div>
+            <div class="price-divider" />
             <div class="price-item total">
               <span>实付金额</span>
               <span>{{ formatPrice(order.payAmount) }}</span>
             </div>
-            <div class="price-item" v-if="order.paidAt">
+            <div
+              v-if="order.paidAt"
+              class="price-item"
+            >
               <span>付款时间</span>
               <span>{{ formatDate(order.paidAt) }}</span>
             </div>
-            <div class="price-item" v-if="order.payType">
+            <div
+              v-if="order.payType"
+              class="price-item"
+            >
               <span>支付方式</span>
               <span>{{ order.payType === 1 ? '微信支付' : order.payType === 2 ? '支付宝' : '其他' }}</span>
             </div>
@@ -107,7 +192,10 @@
         </section>
       </div>
 
-      <div v-if="order.remark" class="section remark-section">
+      <div
+        v-if="order.remark"
+        class="section remark-section"
+      >
         <h3>订单备注</h3>
         <p>{{ order.remark }}</p>
       </div>
@@ -116,50 +204,50 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getOrderDetail, payOrder, cancelOrder, confirmOrder } from '@/api/order'
-import { formatDate, formatOrderStatus, formatPrice } from '@/utils/format'
-import type { Order } from '@/types'
-import { PLACEHOLDER_50x50 } from '@shared/utils/placeholder'
+import { ref, onMounted } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { getOrderDetail, payOrder, cancelOrder, confirmOrder } from '@/api/order';
+import { formatDate, formatOrderStatus, formatPrice } from '@/utils/format';
+import type { Order } from '@/types';
+import { PLACEHOLDER_50x50 } from '@shared/utils/placeholder';
 
 const props = defineProps<{
-  id: string
-}>()
+  id: string;
+}>();
 
-const order = ref<Order | null>(null)
-const loading = ref(true)
+const order = ref<Order | null>(null);
+const loading = ref(true);
 
 // FE-M-3修复: 物流信息提取为常量配置
-const LOGISTICS_COMPANY = '顺丰快递'
-const TRACKING_NUMBER = 'SF1234567890'
+const LOGISTICS_COMPANY = '顺丰快递';
+const TRACKING_NUMBER = 'SF1234567890';
 
 async function loadOrder() {
   try {
-    order.value = await getOrderDetail(props.id)
+    order.value = await getOrderDetail(props.id);
   } catch {
-    order.value = null
+    order.value = null;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function handlePay() {
   try {
-    await payOrder(props.id)
-    ElMessage.success('支付成功')
-    loadOrder()
+    await payOrder(props.id);
+    ElMessage.success('支付成功');
+    loadOrder();
   } catch {
-    ElMessage.error('支付失败')
+    ElMessage.error('支付失败');
   }
 }
 
 async function handleCancel() {
   try {
-    await ElMessageBox.confirm('确定要取消该订单吗？', '提示', { type: 'warning' })
-    await cancelOrder(props.id)
-    ElMessage.success('订单已取消')
-    loadOrder()
+    await ElMessageBox.confirm('确定要取消该订单吗？', '提示', { type: 'warning' });
+    await cancelOrder(props.id);
+    ElMessage.success('订单已取消');
+    loadOrder();
   } catch {
     // cancelled or error
   }
@@ -167,10 +255,10 @@ async function handleCancel() {
 
 async function handleConfirm() {
   try {
-    await ElMessageBox.confirm('确认已收到货物？', '确认收货', { type: 'info' })
-    await confirmOrder(props.id)
-    ElMessage.success('已确认收货')
-    loadOrder()
+    await ElMessageBox.confirm('确认已收到货物？', '确认收货', { type: 'info' });
+    await confirmOrder(props.id);
+    ElMessage.success('已确认收货');
+    loadOrder();
   } catch {
     // cancelled or error
   }
@@ -182,14 +270,14 @@ function getStatusType(status: number) {
     1: '',
     2: 'primary',
     3: 'success',
-    4: 'info'
-  }
-  return map[status] || 'info'
+    4: 'info',
+  };
+  return map[status] || 'info';
 }
 
 onMounted(() => {
-  loadOrder()
-})
+  loadOrder();
+});
 </script>
 
 <style scoped>

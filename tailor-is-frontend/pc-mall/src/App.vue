@@ -1,5 +1,8 @@
 <template>
-  <div id="app" lang="zh-CN">
+  <div
+    id="app"
+    lang="zh-CN"
+  >
     <SkipNav />
     <template v-if="isAuthPage">
       <ErrorBoundary>
@@ -8,7 +11,13 @@
     </template>
     <template v-else>
       <AppHeader />
-      <main id="main-content" class="main-content" role="main" aria-label="主内容区域" tabindex="-1">
+      <main
+        id="main-content"
+        class="main-content"
+        role="main"
+        aria-label="主内容区域"
+        tabindex="-1"
+      >
         <ErrorBoundary>
           <router-view />
         </ErrorBoundary>
@@ -19,17 +28,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import AppHeader from '@/components/AppHeader.vue'
-import AppFooter from '@/components/AppFooter.vue'
-import SkipNav from '@shared/components/SkipNav.vue'
-import ErrorBoundary from '@shared/components/ErrorBoundary.vue'
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import AppHeader from '@/components/AppHeader.vue';
+import AppFooter from '@/components/AppFooter.vue';
+import SkipNav from '@shared/components/SkipNav.vue';
+import ErrorBoundary from '@shared/components/ErrorBoundary.vue';
 
-const route = useRoute()
+const route = useRoute();
 
-const authPages = ['/login', '/register']
-const isAuthPage = computed(() => authPages.includes(route.path))
+const authPages = ['/login', '/register'];
+const isAuthPage = computed(() => authPages.includes(route.path));
 </script>
 
 <style scoped>

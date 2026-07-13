@@ -5,40 +5,36 @@
  * AES-GCM 提供认证加密，防止密文被篡改。
  */
 
-const CRYPTO_KEY_STORAGE_KEY = '__crypto_key__'
-const ALGORITHM = 'AES-GCM'
-const KEY_LENGTH = 256
-const IV_LENGTH = 12 // bytes for GCM
-const TAG_LENGTH = 128 // bits
+const CRYPTO_KEY_STORAGE_KEY = '__crypto_key__';
+const ALGORITHM = 'AES-GCM';
+const KEY_LENGTH = 256;
+const IV_LENGTH = 12; // bytes for GCM
+const _TAG_LENGTH = 128; // bits
 
 /**
  * 从存储中获取或生成加密密钥
  */
 async function getCryptoKey(): Promise<CryptoKey> {
-  let keyData = localStorage.getItem(CRYPTO_KEY_STORAGE_KEY)
+  let keyData = localStorage.getItem(CRYPTO_KEY_STORAGE_KEY);
 
   if (!keyData) {
-    const key = await crypto.subtle.generateKey(
-      { name: ALGORITHM, length: KEY_LENGTH },
-      true,
-      ['encrypt', 'decrypt']
-    )
-    const rawKey = await crypto.subtle.exportKey('raw', key)
-    keyData = btoa(String.fromCharCode(...new Uint8Array(rawKey)))
-    localStorage.setItem(CRYPTO_KEY_STORAGE_KEY, keyData)
+    const key = await crypto.subtle.generateKey({ name: ALGORITHM, length: KEY_LENGTH }, true, ['encrypt', 'decrypt']);
+    const rawKey = await crypto.subtle.exportKey('raw', key);
+    keyData = btoa(String.fromCharCode(...new Uint8Array(rawKey)));
+    localStorage.setItem(CRYPTO_KEY_STORAGE_KEY, keyData);
   }
 
-  const rawKey = Uint8Array.from(atob(keyData), c => c.charCodeAt(0))
-  return crypto.subtle.importKey('raw', rawKey, ALGORITHM, true, ['encrypt', 'decrypt'])
+  const rawKey = Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0));
+  return crypto.subtle.importKey('raw', rawKey, ALGORITHM, true, ['encrypt', 'decrypt']);
 }
 
 /**
  * 生成随机 IV
  */
 function generateIV(): Uint8Array {
-  const iv = new Uint8Array(IV_LENGTH)
-  crypto.getRandomValues(iv)
-  return iv
+  const iv = new Uint8Array(IV_LENGTH);
+  crypto.getRandomValues(iv);
+  return iv;
 }
 
 /**
@@ -47,21 +43,17 @@ function generateIV(): Uint8Array {
  * @returns base64 编码的密文 (IV + ciphertext)
  */
 export async function encrypt(plaintext: string): Promise<string> {
-  const key = await getCryptoKey()
-  const iv = generateIV()
-  const encoded = new TextEncoder().encode(plaintext)
+  const key = await getCryptoKey();
+  const iv = generateIV();
+  const encoded = new TextEncoder().encode(plaintext);
 
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: ALGORITHM, iv: iv as BufferSource },
-    key,
-    encoded
-  )
+  const ciphertext = await crypto.subtle.encrypt({ name: ALGORITHM, iv: iv as BufferSource }, key, encoded);
 
   // 拼接 IV + ciphertext，然后 base64 编码
-  const combined = new Uint8Array(iv.length + ciphertext.byteLength)
-  combined.set(iv)
-  combined.set(new Uint8Array(ciphertext), iv.length)
-  return btoa(String.fromCharCode(...combined))
+  const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+  combined.set(iv);
+  combined.set(new Uint8Array(ciphertext), iv.length);
+  return btoa(String.fromCharCode(...combined));
 }
 
 /**
@@ -71,22 +63,18 @@ export async function encrypt(plaintext: string): Promise<string> {
  */
 export async function decrypt(base64Ciphertext: string): Promise<string> {
   try {
-    const key = await getCryptoKey()
-    const combined = Uint8Array.from(atob(base64Ciphertext), c => c.charCodeAt(0))
+    const key = await getCryptoKey();
+    const combined = Uint8Array.from(atob(base64Ciphertext), (c) => c.charCodeAt(0));
 
-    const iv = combined.slice(0, IV_LENGTH)
-    const ciphertext = combined.slice(IV_LENGTH)
+    const iv = combined.slice(0, IV_LENGTH);
+    const ciphertext = combined.slice(IV_LENGTH);
 
-    const decrypted = await crypto.subtle.decrypt(
-      { name: ALGORITHM, iv },
-      key,
-      ciphertext
-    )
+    const decrypted = await crypto.subtle.decrypt({ name: ALGORITHM, iv }, key, ciphertext);
 
-    return new TextDecoder().decode(decrypted)
+    return new TextDecoder().decode(decrypted);
   } catch {
     // 解密失败返回空字符串
-    return ''
+    return '';
   }
 }
 
@@ -94,14 +82,14 @@ export async function decrypt(base64Ciphertext: string): Promise<string> {
  * 获取同步加密密钥（从存储或生成）
  */
 function getSyncKey(): Uint8Array {
-  let keyData = localStorage.getItem(CRYPTO_KEY_STORAGE_KEY)
+  let keyData = localStorage.getItem(CRYPTO_KEY_STORAGE_KEY);
   if (!keyData) {
-    const key = new Uint8Array(32)
-    crypto.getRandomValues(key)
-    keyData = btoa(String.fromCharCode(...key))
-    localStorage.setItem(CRYPTO_KEY_STORAGE_KEY, keyData)
+    const key = new Uint8Array(32);
+    crypto.getRandomValues(key);
+    keyData = btoa(String.fromCharCode(...key));
+    localStorage.setItem(CRYPTO_KEY_STORAGE_KEY, keyData);
   }
-  return Uint8Array.from(atob(keyData), c => c.charCodeAt(0))
+  return Uint8Array.from(atob(keyData), (c) => c.charCodeAt(0));
 }
 
 /**
@@ -114,32 +102,32 @@ function getSyncKey(): Uint8Array {
  */
 export function encryptSync(plaintext: string): string {
   try {
-    const key = getSyncKey()
-    const encoded = new TextEncoder().encode(plaintext)
-    const encrypted = new Uint8Array(encoded.length)
-    
+    const key = getSyncKey();
+    const encoded = new TextEncoder().encode(plaintext);
+    const encrypted = new Uint8Array(encoded.length);
+
     for (let i = 0; i < encoded.length; i++) {
-      encrypted[i] = encoded[i] ^ key[i % key.length]
+      encrypted[i] = encoded[i] ^ key[i % key.length];
     }
-    
-    return btoa(String.fromCharCode(...encrypted))
+
+    return btoa(String.fromCharCode(...encrypted));
   } catch {
-    return plaintext
+    return plaintext;
   }
 }
 
 export function decryptSync(encoded: string): string {
   try {
-    const key = getSyncKey()
-    const encrypted = Uint8Array.from(atob(encoded), c => c.charCodeAt(0))
-    const decoded = new Uint8Array(encrypted.length)
-    
+    const key = getSyncKey();
+    const encrypted = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
+    const decoded = new Uint8Array(encrypted.length);
+
     for (let i = 0; i < encrypted.length; i++) {
-      decoded[i] = encrypted[i] ^ key[i % key.length]
+      decoded[i] = encrypted[i] ^ key[i % key.length];
     }
-    
-    return new TextDecoder().decode(decoded)
+
+    return new TextDecoder().decode(decoded);
   } catch {
-    return ''
+    return '';
   }
 }

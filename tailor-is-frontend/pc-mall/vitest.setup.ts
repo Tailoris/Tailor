@@ -1,5 +1,4 @@
 import { vi } from 'vitest'
-import ElementPlus from 'element-plus'
 
 vi.mock('@/router', () => ({
   default: {

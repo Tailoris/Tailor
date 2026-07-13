@@ -1,16 +1,28 @@
 <template>
-  <div class="shop-settings" v-loading="loading">
+  <div
+    v-loading="loading"
+    class="shop-settings"
+  >
     <PageHeader title="店铺设置" />
 
     <el-row :gutter="20">
       <el-col :span="16">
-        <el-card shadow="never" style="margin-bottom: 20px">
+        <el-card
+          shadow="never"
+          style="margin-bottom: 20px"
+        >
           <template #header>
             <span>基本信息</span>
           </template>
-          <el-form :model="form" label-width="100px">
+          <el-form
+            :model="form"
+            label-width="100px"
+          >
             <el-form-item label="店铺名称">
-              <el-input v-model="form.name" placeholder="请输入店铺名称" />
+              <el-input
+                v-model="form.name"
+                placeholder="请输入店铺名称"
+              />
             </el-form-item>
             <el-form-item label="店铺Logo">
               <el-upload
@@ -20,8 +32,18 @@
                 :show-file-list="false"
                 :on-change="handleLogoChange"
               >
-                <img v-if="form.logo" :src="form.logo" class="logo-preview" />
-                <el-icon v-else :size="40" color="#C0C4CC"><Plus /></el-icon>
+                <img
+                  v-if="form.logo"
+                  :src="form.logo"
+                  class="logo-preview"
+                >
+                <el-icon
+                  v-else
+                  :size="40"
+                  color="#C0C4CC"
+                >
+                  <Plus />
+                </el-icon>
               </el-upload>
             </el-form-item>
             <el-form-item label="店铺描述">
@@ -33,7 +55,13 @@
               />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleSaveBasic" :loading="submitting">保存修改</el-button>
+              <el-button
+                type="primary"
+                :loading="submitting"
+                @click="handleSaveBasic"
+              >
+                保存修改
+              </el-button>
             </el-form-item>
           </el-form>
         </el-card>
@@ -42,7 +70,10 @@
           <template #header>
             <span>营业设置</span>
           </template>
-          <el-form :model="businessForm" label-width="100px">
+          <el-form
+            :model="businessForm"
+            label-width="100px"
+          >
             <el-form-item label="营业时间">
               <el-time-picker
                 v-model="businessTimeRange"
@@ -64,7 +95,13 @@
               />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleSaveBusiness" :loading="submitting">保存设置</el-button>
+              <el-button
+                type="primary"
+                :loading="submitting"
+                @click="handleSaveBusiness"
+              >
+                保存设置
+              </el-button>
             </el-form-item>
           </el-form>
         </el-card>
@@ -82,7 +119,10 @@
             </div>
             <div class="status-item">
               <span class="label">店铺状态</span>
-              <el-tag :type="shopInfo.status === 1 ? 'success' : 'info'" size="small">
+              <el-tag
+                :type="shopInfo.status === 1 ? 'success' : 'info'"
+                size="small"
+              >
                 {{ shopInfo.status === 1 ? '营业中' : '已关闭' }}
               </el-tag>
             </div>
@@ -102,20 +142,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useUserStore } from '@/store/user'
-import { getShopInfo, updateShopInfo } from '@/api/shop'
-import { uploadImage } from '@/api/product'
-import type { Shop } from '@/types'
-import PageHeader from '@/components/PageHeader.vue'
-import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
-import type { UploadFile } from 'element-plus'
+import { ref, reactive, onMounted } from 'vue';
+import { useUserStore } from '@/store/user';
+import { getShopInfo, updateShopInfo } from '@/api/shop';
+import { uploadImage } from '@/api/product';
+import type { Shop } from '@/types';
+import PageHeader from '@/components/PageHeader.vue';
+import { ElMessage } from 'element-plus';
+import { Plus } from '@element-plus/icons-vue';
+import type { UploadFile } from 'element-plus';
 
-const userStore = useUserStore()
+const userStore = useUserStore();
 
-const loading = ref(false)
-const submitting = ref(false)
+const loading = ref(false);
+const submitting = ref(false);
 
 const shopInfo = reactive<Shop>({
   id: 0,
@@ -127,93 +167,93 @@ const shopInfo = reactive<Shop>({
   status: 1,
   merchantId: 0,
   createdAt: '',
-})
+});
 
 const form = reactive({
   name: '',
   logo: '',
   description: '',
-})
+});
 
 const businessForm = reactive({
   businessHours: '',
   announcement: '',
-})
+});
 
-const businessTimeRange = ref<[string, string] | null>(null)
+const businessTimeRange = ref<[string, string] | null>(null);
 
 async function fetchShopInfo() {
-  loading.value = true
+  loading.value = true;
   try {
-    const shopId = userStore.currentShopId || 1
-    const res = await getShopInfo(shopId)
-    Object.assign(shopInfo, res)
-    form.name = res.name
-    form.logo = res.logo
-    form.description = res.description
-    businessForm.businessHours = res.businessHours
-    businessForm.announcement = res.announcement
+    const shopId = userStore.currentShopId || 1;
+    const res = await getShopInfo(shopId);
+    Object.assign(shopInfo, res);
+    form.name = res.name;
+    form.logo = res.logo;
+    form.description = res.description;
+    businessForm.businessHours = res.businessHours;
+    businessForm.announcement = res.announcement;
     if (res.businessHours) {
-      const [start, end] = res.businessHours.split('-')
-      businessTimeRange.value = [start, end]
+      const [start, end] = res.businessHours.split('-');
+      businessTimeRange.value = [start, end];
     }
   } catch {
     // error handled by interceptor
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function handleLogoChange(file: UploadFile) {
   if (file.raw) {
     try {
-      const res = await uploadImage(file.raw)
-      form.logo = res.url
+      const res = await uploadImage(file.raw);
+      form.logo = res.url;
     } catch {
-      ElMessage.error('图片上传失败')
+      ElMessage.error('图片上传失败');
     }
   }
 }
 
 async function handleSaveBasic() {
-  submitting.value = true
+  submitting.value = true;
   try {
-    const shopId = userStore.currentShopId || 1
+    const shopId = userStore.currentShopId || 1;
     await updateShopInfo(shopId, {
       name: form.name,
       logo: form.logo,
       description: form.description,
-    })
-    ElMessage.success('基本信息保存成功')
-    fetchShopInfo()
+    });
+    ElMessage.success('基本信息保存成功');
+    fetchShopInfo();
   } catch {
     // error handled by interceptor
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
 }
 
 async function handleSaveBusiness() {
-  submitting.value = true
+  submitting.value = true;
   try {
-    const shopId = userStore.currentShopId || 1
-    const businessHours = businessTimeRange.value?.join('-') || ''
+    const shopId = userStore.currentShopId || 1;
+    const businessHours = businessTimeRange.value?.join('-') || '';
     await updateShopInfo(shopId, {
       businessHours,
       announcement: businessForm.announcement,
-    })
-    ElMessage.success('营业设置保存成功')
-    fetchShopInfo()
+    });
+    ElMessage.success('营业设置保存成功');
+    fetchShopInfo();
   } catch {
     // error handled by interceptor
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
 }
 
 onMounted(() => {
-  fetchShopInfo()
-})
+  fetchShopInfo();
+});
 </script>
 
 <style scoped>

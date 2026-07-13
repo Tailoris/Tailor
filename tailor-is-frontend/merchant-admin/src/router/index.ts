@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw } from 'vue-router'
-import { useUserStore } from '@/store/user'
+import { createRouter, createWebHistory } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router';
+import { useUserStore } from '@/store/user';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -113,24 +113,24 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-]
+];
 
 const router = createRouter({
   history: createWebHistory('/merchant'),
   routes,
-})
+});
 
 router.beforeEach((to, _from, next) => {
-  const userStore = useUserStore()
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false)
+  const userStore = useUserStore();
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth !== false);
 
   if (requiresAuth && !userStore.isLoggedIn) {
-    next('/login')
+    next('/login');
   } else if (to.path === '/login' && userStore.isLoggedIn) {
-    next('/dashboard')
+    next('/dashboard');
   } else {
-    next()
+    next();
   }
-})
+});
 
-export default router
+export default router;

@@ -5,19 +5,22 @@
  * 为键盘和屏幕阅读器用户提供快速跳转到主内容区的链接。
  * 该组件是对 shared/SkipNav 的增强包装，额外支持焦点管理。
  */
-import { skipToContent } from '@/utils/a11y'
+import { skipToContent } from '@/utils/a11y';
 
-withDefaults(defineProps<{
-  target?: string
-  label?: string
-}>(), {
-  target: 'main-content',
-  label: '跳到主要内容'
-})
+withDefaults(
+  defineProps<{
+    target?: string;
+    label?: string;
+  }>(),
+  {
+    target: 'main-content',
+    label: '跳到主要内容',
+  }
+);
 
 function handleClick(e: MouseEvent) {
-  e.preventDefault()
-  skipToContent()
+  e.preventDefault();
+  skipToContent();
 }
 </script>
 

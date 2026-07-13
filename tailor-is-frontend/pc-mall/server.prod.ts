@@ -87,7 +87,7 @@ async function startWorker() {
         return
       }
 
-      let html = fs.readFileSync(template, 'utf-8')
+      const html = fs.readFileSync(template, 'utf-8')
 
       // 生产环境：使用预编译的 SSR 入口
       const { render } = await import(

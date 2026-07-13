@@ -1,28 +1,28 @@
-import request from './request'
-import type { Merchant } from '@/types'
+import request from './request';
+import type { Merchant } from '@/types';
 
 interface MerchantApplyData {
-  merchantType: number
-  companyName: string
-  licenseNo: string
-  licenseImage: string
-  certImages: string[]
-  contactName: string
-  contactPhone: string
-  contactEmail: string
+  merchantType: number;
+  companyName: string;
+  licenseNo: string;
+  licenseImage: string;
+  certImages: string[];
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
 }
 
 export function applyMerchant(data: MerchantApplyData) {
   return request<Record<string, unknown>, boolean>({
     url: '/api/v1/merchant/apply',
     method: 'post',
-    data
-  })
+    data,
+  });
 }
 
 export function getMerchantInfo() {
   return request<Record<string, unknown>, Merchant>({
     url: '/api/v1/merchant/info',
-    method: 'get'
-  })
+    method: 'get',
+  });
 }

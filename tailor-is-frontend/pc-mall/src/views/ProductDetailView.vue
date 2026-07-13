@@ -1,41 +1,75 @@
 <template>
-  <div class="product-detail-view" v-loading="loading" role="main" aria-label="商品详情">
+  <div
+    v-loading="loading"
+    class="product-detail-view"
+    role="main"
+    aria-label="商品详情"
+  >
     <template v-if="product">
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-        <el-breadcrumb-item :to="{ path: '/products' }">商品列表</el-breadcrumb-item>
+        <el-breadcrumb-item :to="{ path: '/' }">
+          首页
+        </el-breadcrumb-item>
+        <el-breadcrumb-item :to="{ path: '/products' }">
+          商品列表
+        </el-breadcrumb-item>
         <el-breadcrumb-item>{{ product.name }}</el-breadcrumb-item>
       </el-breadcrumb>
 
       <div class="product-main">
-        <div class="gallery-section" aria-label="商品图片画廊">
-          <el-carousel :autoplay="false" height="480px">
-            <el-carousel-item v-for="(img, index) in (product.images.length > 0 ? product.images : [product.mainImage])" :key="index">
-              <img :src="img || PLACEHOLDER_480x480" :alt="`${product.name} 图片${index + 1}`" />
+        <div
+          class="gallery-section"
+          aria-label="商品图片画廊"
+        >
+          <el-carousel
+            :autoplay="false"
+            height="480px"
+          >
+            <el-carousel-item
+              v-for="(img, index) in product.images.length > 0 ? product.images : [product.mainImage]"
+              :key="index"
+            >
+              <img
+                :src="img || PLACEHOLDER_480x480"
+                :alt="`${product.name} 图片${index + 1}`"
+              >
             </el-carousel-item>
           </el-carousel>
-          <div class="thumbnail-list" role="tablist" aria-label="商品图片缩略图">
+          <div
+            class="thumbnail-list"
+            role="tablist"
+            aria-label="商品图片缩略图"
+          >
             <img
-              v-for="(img, index) in (product.images.length > 0 ? product.images : [product.mainImage])"
+              v-for="(img, index) in product.images.length > 0 ? product.images : [product.mainImage]"
               :key="index"
               :src="img"
               :class="{ active: currentImage === index }"
-              @click="currentImage = index"
               :alt="`${product.name} 缩略图${index + 1}`"
               role="tab"
               :aria-selected="currentImage === index"
               :aria-label="`查看第${index + 1}张图片`"
               tabindex="0"
-            />
+              @click="currentImage = index"
+            >
           </div>
         </div>
 
         <div class="info-section">
-          <h1 class="product-name">{{ product.name }}</h1>
-          <p class="product-subtitle">{{ product.subTitle }}</p>
+          <h1 class="product-name">
+            {{ product.name }}
+          </h1>
+          <p class="product-subtitle">
+            {{ product.subTitle }}
+          </p>
           <div class="price-section">
             <span class="current-price">{{ formatPrice(product.price) }}</span>
-            <span v-if="product.price > 0" class="original-price">{{ formatPrice(product.price * ORIGINAL_PRICE_MULTIPLIER) }}</span>
+            <span
+              v-if="product.price > 0"
+              class="original-price"
+            >{{
+              formatPrice(product.price * ORIGINAL_PRICE_MULTIPLIER)
+            }}</span>
           </div>
           <div class="meta-info">
             <div class="meta-item">
@@ -52,19 +86,30 @@
             </div>
           </div>
 
-          <div v-if="product.skus && product.skus.length > 0" class="sku-section" aria-label="选择商品规格">
-            <template v-for="(attrValues, attrName) in skuAttributes" :key="attrName">
+          <div
+            v-if="product.skus && product.skus.length > 0"
+            class="sku-section"
+            aria-label="选择商品规格"
+          >
+            <template
+              v-for="(attrValues, attrName) in skuAttributes"
+              :key="attrName"
+            >
               <div class="sku-group">
                 <span class="group-label">{{ attrName }}</span>
-                <div class="sku-options" role="radiogroup" :aria-label="`选择${attrName}`">
+                <div
+                  class="sku-options"
+                  role="radiogroup"
+                  :aria-label="`选择${attrName}`"
+                >
                   <button
                     v-for="value in attrValues"
                     :key="value"
                     :class="{ active: selectedAttrs[attrName] === value }"
-                    @click="selectAttr(attrName, value)"
                     role="radio"
                     :aria-checked="selectedAttrs[attrName] === value"
                     :aria-label="`${attrName}: ${value}`"
+                    @click="selectAttr(attrName, value)"
                   >
                     {{ value }}
                   </button>
@@ -73,70 +118,164 @@
             </template>
           </div>
 
-          <div class="quantity-section" aria-label="选择购买数量">
+          <div
+            class="quantity-section"
+            aria-label="选择购买数量"
+          >
             <span class="label">数量</span>
-            <el-input-number v-model="quantity" :min="1" :max="MAX_PURCHASE_QUANTITY" aria-label="购买数量" />
+            <el-input-number
+              v-model="quantity"
+              :min="1"
+              :max="MAX_PURCHASE_QUANTITY"
+              aria-label="购买数量"
+            />
           </div>
 
-          <div class="action-section" role="toolbar" aria-label="商品操作">
-            <el-button type="primary" size="large" class="add-cart-btn" @click="handleAddToCart" aria-label="加入购物车">
+          <div
+            class="action-section"
+            role="toolbar"
+            aria-label="商品操作"
+          >
+            <el-button
+              type="primary"
+              size="large"
+              class="add-cart-btn"
+              aria-label="加入购物车"
+              @click="handleAddToCart"
+            >
               加入购物车
             </el-button>
-            <el-button type="danger" size="large" class="buy-now-btn" @click="handleBuyNow" aria-label="立即购买">
+            <el-button
+              type="danger"
+              size="large"
+              class="buy-now-btn"
+              aria-label="立即购买"
+              @click="handleBuyNow"
+            >
               立即购买
             </el-button>
           </div>
         </div>
       </div>
 
-      <div class="tabs-section" aria-label="商品详情标签页">
+      <div
+        class="tabs-section"
+        aria-label="商品详情标签页"
+      >
         <el-tabs v-model="activeTab">
-          <el-tab-pane label="商品详情" name="detail">
-            <div class="detail-content" v-html="DOMPurify.sanitize(product.description)" role="article" aria-label="商品详细描述"></div>
+          <el-tab-pane
+            label="商品详情"
+            name="detail"
+          >
+            <!-- eslint-disable vue/no-v-html -->
+            <div
+              class="detail-content"
+              role="article"
+              aria-label="商品详细描述"
+              v-html="DOMPurify.sanitize(product.description)"
+            />
           </el-tab-pane>
-          <el-tab-pane label="规格参数" name="specs">
-            <el-table :data="product.skus || []" border>
-              <el-table-column prop="skuCode" label="SKU编码" />
+          <el-tab-pane
+            label="规格参数"
+            name="specs"
+          >
+            <el-table
+              :data="product.skus || []"
+              border
+            >
+              <el-table-column
+                prop="skuCode"
+                label="SKU编码"
+              />
               <el-table-column label="属性">
                 <template #default="{ row }">
-                  {{ Object.entries(row.attributes).map(([k, v]) => `${k}: ${v}`).join(', ') }}
+                  {{
+                    Object.entries(row.attributes)
+                      .map(([k, v]) => `${k}: ${v}`)
+                      .join(', ')
+                  }}
                 </template>
               </el-table-column>
-              <el-table-column prop="price" label="价格">
-                <template #default="{ row }">{{ formatPrice(row.price) }}</template>
+              <el-table-column
+                prop="price"
+                label="价格"
+              >
+                <template #default="{ row }">
+                  {{ formatPrice(row.price) }}
+                </template>
               </el-table-column>
-              <el-table-column prop="stock" label="库存" />
+              <el-table-column
+                prop="stock"
+                label="库存"
+              />
             </el-table>
           </el-tab-pane>
-          <el-tab-pane label="用户评价" name="reviews">
-            <div v-loading="reviewsLoading" class="reviews-section">
+          <el-tab-pane
+            label="用户评价"
+            name="reviews"
+          >
+            <div
+              v-loading="reviewsLoading"
+              class="reviews-section"
+            >
               <template v-if="reviews.length > 0">
                 <div class="reviews-summary">
                   <div class="rating-overview">
                     <span class="rating-number">{{ averageRating.toFixed(1) }}</span>
                     <div class="rating-stars">
-                      <span v-for="i in 5" :key="i" :class="['star', { active: i <= averageRating }]">★</span>
+                      <span
+                        v-for="i in 5"
+                        :key="i"
+                        :class="['star', { active: i <= averageRating }]"
+                      >★</span>
                     </div>
                     <span class="review-count">共 {{ totalReviews }} 条评价</span>
                   </div>
                 </div>
                 <div class="review-list">
-                  <div v-for="review in reviews" :key="review.id" class="review-item">
+                  <div
+                    v-for="review in reviews"
+                    :key="review.id"
+                    class="review-item"
+                  >
                     <div class="review-header">
-                      <span class="reviewer-name">{{ review.isAnonymous === 1 ? '匿名用户' : ('user' + review.userId) }}</span>
-                      <span class="review-sku" v-if="review.skuSpec">{{ review.skuSpec }}</span>
+                      <span class="reviewer-name">{{
+                        review.isAnonymous === 1 ? '匿名用户' : 'user' + review.userId
+                      }}</span>
+                      <span
+                        v-if="review.skuSpec"
+                        class="review-sku"
+                      >{{ review.skuSpec }}</span>
                       <div class="review-rating">
-                        <span v-for="i in 5" :key="i" :class="['star', { active: i <= review.rating }]">★</span>
+                        <span
+                          v-for="i in 5"
+                          :key="i"
+                          :class="['star', { active: i <= review.rating }]"
+                        >★</span>
                       </div>
                     </div>
-                    <p class="review-content">{{ review.content }}</p>
-                    <div v-if="review.images && review.images.length > 0" class="review-images">
-                      <img v-for="(img, idx) in review.images" :key="idx" :src="img" class="review-img" :alt="`评价图片${idx + 1}`" />
+                    <p class="review-content">
+                      {{ review.content }}
+                    </p>
+                    <div
+                      v-if="review.images && review.images.length > 0"
+                      class="review-images"
+                    >
+                      <img
+                        v-for="(img, idx) in review.images"
+                        :key="idx"
+                        :src="img"
+                        class="review-img"
+                        :alt="`评价图片${idx + 1}`"
+                      >
                     </div>
                     <div class="review-footer">
                       <span class="review-date">{{ review.createdAt }}</span>
                     </div>
-                    <div v-if="review.merchantReply" class="merchant-reply">
+                    <div
+                      v-if="review.merchantReply"
+                      class="merchant-reply"
+                    >
                       <strong>商家回复：</strong>{{ review.merchantReply }}
                     </div>
                   </div>
@@ -151,7 +290,10 @@
                   />
                 </div>
               </template>
-              <el-empty v-else-if="!reviewsLoading" description="暂无评价" />
+              <el-empty
+                v-else-if="!reviewsLoading"
+                description="暂无评价"
+              />
             </div>
           </el-tab-pane>
         </el-tabs>
@@ -161,181 +303,185 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import DOMPurify from 'dompurify'
-import { getProductDetail } from '@/api/product'
-import { getProductReviews } from '@/api/review'
-import { useProductGraphQL, PRODUCT_DETAIL_QUERY, graphqlQuery } from '@/api/graphql'
-import { useCartStore } from '@/store/cart'
-import { formatPrice, formatProductType } from '@/utils/format'
-import type { Product, Sku, ProductReview } from '@/types'
-import { PLACEHOLDER_480x480 } from '@shared/utils/placeholder'
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import DOMPurify from 'dompurify';
+import { getProductDetail } from '@/api/product';
+import { getProductReviews } from '@/api/review';
+import { useProductGraphQL } from '@/api/graphql';
+import { useCartStore } from '@/store/cart';
+import { formatPrice, formatProductType } from '@/utils/format';
+import type { Product, Sku, ProductReview } from '@/types';
+import { PLACEHOLDER_480x480 } from '@shared/utils/placeholder';
 
 // Constants
-const ORIGINAL_PRICE_MULTIPLIER = 1.2
-const MAX_PURCHASE_QUANTITY = 99
+const ORIGINAL_PRICE_MULTIPLIER = 1.2;
+const MAX_PURCHASE_QUANTITY = 99;
 
 const props = defineProps<{
-  id: string
-}>()
+  id: string;
+}>();
 
-const router = useRouter()
-const cartStore = useCartStore()
+const router = useRouter();
+const cartStore = useCartStore();
 
 // GraphQL composable
-const { product: graphqlProduct, loading: graphqlLoading, fetch: fetchGraphQL } = useProductGraphQL(Number(props.id))
+const { product: graphqlProduct, fetch: fetchGraphQL } = useProductGraphQL(Number(props.id));
 
 // Fallback to REST if GraphQL fails
-const product = ref<Product | null>(null)
-const loading = ref(true)
-const currentImage = ref(0)
-const quantity = ref(1)
-const selectedAttrs = ref<Record<string, string>>({})
-const activeTab = ref('detail')
+const product = ref<Product | null>(null);
+const loading = ref(true);
+const currentImage = ref(0);
+const quantity = ref(1);
+const selectedAttrs = ref<Record<string, string>>({});
+const activeTab = ref('detail');
 
 // Review state
-const reviews = ref<ProductReview[]>([])
-const reviewsLoading = ref(false)
-const reviewPage = ref(1)
-const reviewPageSize = 10
-const totalReviews = ref(0)
-const reviewsLoaded = ref(false)
+const reviews = ref<ProductReview[]>([]);
+const reviewsLoading = ref(false);
+const reviewPage = ref(1);
+const reviewPageSize = 10;
+const totalReviews = ref(0);
+const reviewsLoaded = ref(false);
 
 /**
  * Normalize SKU attributes from both REST and GraphQL formats.
  * Extracted to avoid duplicate parsing logic (M-015).
  */
 function normalizeSkuAttributes(sku: Sku): Record<string, string> {
-  const attrs = sku.attributes || {}
+  const attrs = sku.attributes || {};
   return 'key' in attrs
     ? (attrs as Array<{ key: string; value: string }>).reduce(
         (acc, a) => ({ ...acc, [a.key]: a.value }),
         {} as Record<string, string>
       )
-    : (attrs as Record<string, string>)
+    : (attrs as Record<string, string>);
 }
 
 const skuAttributes = computed(() => {
-  const prod = graphqlProduct.value || product.value
-  if (!prod?.skus) return {}
-  const attrs: Record<string, Set<string>> = {}
+  const prod = graphqlProduct.value || product.value;
+  if (!prod?.skus) return {};
+  const attrs: Record<string, Set<string>> = {};
   prod.skus.forEach((sku) => {
-    const rawAttrs = normalizeSkuAttributes(sku)
+    const rawAttrs = normalizeSkuAttributes(sku);
     Object.entries(rawAttrs).forEach(([key, value]) => {
-      if (!attrs[key]) attrs[key] = new Set()
-      attrs[key].add(value)
-    })
-  })
-  const result: Record<string, string[]> = {}
+      if (!attrs[key]) attrs[key] = new Set();
+      attrs[key].add(value);
+    });
+  });
+  const result: Record<string, string[]> = {};
   Object.entries(attrs).forEach(([key, values]) => {
-    result[key] = Array.from(values)
-  })
-  return result
-})
+    result[key] = Array.from(values);
+  });
+  return result;
+});
 
 function selectAttr(attrName: string, value: string) {
-  selectedAttrs.value[attrName] = value
+  selectedAttrs.value[attrName] = value;
 }
 
 function getSelectedSku() {
-  const prod = graphqlProduct.value || product.value
+  const prod = graphqlProduct.value || product.value;
   return prod?.skus?.find((sku) => {
-    const rawAttrs = normalizeSkuAttributes(sku)
-    return Object.entries(selectedAttrs.value).every(([key, value]) => rawAttrs[key] === value)
-  })
+    const rawAttrs = normalizeSkuAttributes(sku);
+    return Object.entries(selectedAttrs.value).every(([key, value]) => rawAttrs[key] === value);
+  });
 }
 
 const averageRating = computed(() => {
-  if (reviews.value.length === 0) return 0
-  const sum = reviews.value.reduce((acc, r) => acc + r.rating, 0)
-  return sum / reviews.value.length
-})
+  if (reviews.value.length === 0) return 0;
+  const sum = reviews.value.reduce((acc, r) => acc + r.rating, 0);
+  return sum / reviews.value.length;
+});
 
 async function loadReviews() {
-  if (!props.id) return
-  reviewsLoading.value = true
+  if (!props.id) return;
+  reviewsLoading.value = true;
   try {
     const res = await getProductReviews(Number(props.id), {
       pageNum: reviewPage.value,
-      pageSize: reviewPageSize
-    })
-    reviews.value = res.records || []
-    totalReviews.value = res.total || 0
+      pageSize: reviewPageSize,
+    });
+    reviews.value = res.records || [];
+    totalReviews.value = res.total || 0;
   } catch {
-    reviews.value = []
+    reviews.value = [];
   } finally {
-    reviewsLoading.value = false
-    reviewsLoaded.value = true
+    reviewsLoading.value = false;
+    reviewsLoaded.value = true;
   }
 }
 
 watch(activeTab, (tab) => {
   if (tab === 'reviews' && !reviewsLoaded.value) {
-    loadReviews()
+    loadReviews();
   }
-})
+});
 
 async function loadProduct() {
   try {
-    product.value = await getProductDetail(Number(props.id))
+    product.value = await getProductDetail(Number(props.id));
     if (product.value?.skus && product.value.skus.length > 0) {
-      const firstSku = product.value.skus[0]
-      const rawAttrs = 'key' in (firstSku.attributes || {})
-        ? (firstSku.attributes as Array<{ key: string; value: string }>).reduce((acc, a) => ({ ...acc, [a.key]: a.value }), {} as Record<string, string>)
-        : firstSku.attributes as Record<string, string>
+      const firstSku = product.value.skus[0];
+      const rawAttrs =
+        'key' in (firstSku.attributes || {})
+          ? (firstSku.attributes as Array<{ key: string; value: string }>).reduce(
+              (acc, a) => ({ ...acc, [a.key]: a.value }),
+              {} as Record<string, string>
+            )
+          : (firstSku.attributes as Record<string, string>);
       Object.entries(rawAttrs).forEach(([key, value]) => {
-        selectedAttrs.value[key] = value
-      })
+        selectedAttrs.value[key] = value;
+      });
     }
   } catch {
-    product.value = null
+    product.value = null;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function handleAddToCart() {
-  const sku = getSelectedSku()
-  const prod = graphqlProduct.value || product.value
+  const sku = getSelectedSku();
+  const prod = graphqlProduct.value || product.value;
   if (!sku || !prod) {
-    ElMessage.warning('请选择规格')
-    return
+    ElMessage.warning('请选择规格');
+    return;
   }
   try {
     await cartStore.addItem({
       productId: prod.id,
       skuId: sku.id,
-      quantity: quantity.value
-    })
-    ElMessage.success('已加入购物车')
+      quantity: quantity.value,
+    });
+    ElMessage.success('已加入购物车');
   } catch {
-    ElMessage.error('加入购物车失败')
+    ElMessage.error('加入购物车失败');
   }
 }
 
 function handleBuyNow() {
-  const sku = getSelectedSku()
-  const prod = graphqlProduct.value || product.value
+  const sku = getSelectedSku();
+  const prod = graphqlProduct.value || product.value;
   if (!sku || !prod) {
-    ElMessage.warning('请选择规格')
-    return
+    ElMessage.warning('请选择规格');
+    return;
   }
   router.push({
     path: '/checkout',
-    query: { productId: String(prod.id), skuId: sku.id, quantity: quantity.value }
-  })
+    query: { productId: String(prod.id), skuId: sku.id, quantity: quantity.value },
+  });
 }
 
 onMounted(async () => {
   // Try GraphQL first for better performance (single request for all data)
-  await fetchGraphQL()
+  await fetchGraphQL();
   if (!graphqlProduct.value) {
     // Fallback to REST API
-    await loadProduct()
+    await loadProduct();
   }
-})
+});
 </script>
 
 <style scoped>

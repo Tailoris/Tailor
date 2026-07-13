@@ -1,5 +1,8 @@
 <template>
-  <div class="dashboard" v-loading="loading">
+  <div
+    v-loading="loading"
+    class="dashboard"
+  >
     <PageHeader title="仪表盘">
       <template #subtitle>
         <span class="subtitle-text">欢迎回来，{{ userStore.userInfo?.name || '商家' }}</span>
@@ -15,13 +18,23 @@
 
     <el-row :gutter="20">
       <el-col :span="16">
-        <el-card class="chart-card" shadow="never">
+        <el-card
+          class="chart-card"
+          shadow="never"
+        >
           <template #header>
             <div class="card-header">
               <span>营收趋势</span>
-              <el-radio-group v-model="chartRange" size="small">
-                <el-radio-button label="week">近7天</el-radio-button>
-                <el-radio-button label="month">近30天</el-radio-button>
+              <el-radio-group
+                v-model="chartRange"
+                size="small"
+              >
+                <el-radio-button label="week">
+                  近7天
+                </el-radio-button>
+                <el-radio-button label="month">
+                  近30天
+                </el-radio-button>
               </el-radio-group>
             </div>
           </template>
@@ -44,59 +57,122 @@
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card class="recent-card" shadow="never">
+        <el-card
+          class="recent-card"
+          shadow="never"
+        >
           <template #header>
             <span>最近订单</span>
           </template>
           <div class="recent-list">
-            <div v-for="order in stats.recentOrders" :key="order.orderNo" class="recent-item">
+            <div
+              v-for="order in stats.recentOrders"
+              :key="order.orderNo"
+              class="recent-item"
+            >
               <div class="recent-info">
                 <span class="recent-order-no">{{ order.orderNo }}</span>
                 <span class="recent-amount">¥{{ order.payAmount?.toFixed(2) }}</span>
               </div>
-              <el-tag :type="orderStatusType[order.status]" size="small">
+              <el-tag
+                :type="orderStatusType[order.status]"
+                size="small"
+              >
                 {{ orderStatusLabel[order.status] }}
               </el-tag>
             </div>
-            <el-empty v-if="!stats.recentOrders?.length" description="暂无订单" :image-size="60" />
+            <el-empty
+              v-if="!stats.recentOrders?.length"
+              description="暂无订单"
+              :image-size="60"
+            />
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row :gutter="20" style="margin-top: 20px">
+    <el-row
+      :gutter="20"
+      style="margin-top: 20px"
+    >
       <el-col :span="24">
-        <el-card class="aftersale-card" shadow="never">
+        <el-card
+          class="aftersale-card"
+          shadow="never"
+        >
           <template #header>
             <div class="card-header">
               <span>待处理售后工单</span>
-              <el-button text type="primary" @click="$router.push('/aftersale')">查看全部</el-button>
+              <el-button
+                text
+                type="primary"
+                @click="$router.push('/aftersale')"
+              >
+                查看全部
+              </el-button>
             </div>
           </template>
-          <el-table :data="stats.recentAftersales" stripe style="width: 100%">
-            <el-table-column prop="ticketNo" label="工单号" width="180" />
-            <el-table-column prop="buyerName" label="买家" width="120" />
-            <el-table-column label="类型" width="120">
+          <el-table
+            :data="stats.recentAftersales"
+            stripe
+            style="width: 100%"
+          >
+            <el-table-column
+              prop="ticketNo"
+              label="工单号"
+              width="180"
+            />
+            <el-table-column
+              prop="buyerName"
+              label="买家"
+              width="120"
+            />
+            <el-table-column
+              label="类型"
+              width="120"
+            >
               <template #default="{ row }">
                 {{ aftersaleTypeLabel[row.type] }}
               </template>
             </el-table-column>
-            <el-table-column prop="reason" label="原因" min-width="200" show-overflow-tooltip />
-            <el-table-column label="退款金额" width="120">
+            <el-table-column
+              prop="reason"
+              label="原因"
+              min-width="200"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              label="退款金额"
+              width="120"
+            >
               <template #default="{ row }">
                 <span class="amount">¥{{ row.refundAmount?.toFixed(2) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="状态" width="100">
+            <el-table-column
+              label="状态"
+              width="100"
+            >
               <template #default="{ row }">
-                <el-tag :type="aftersaleStatusType[row.status]" size="small">
+                <el-tag
+                  :type="aftersaleStatusType[row.status]"
+                  size="small"
+                >
                   {{ aftersaleStatusLabel[row.status] }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="100">
+            <el-table-column
+              label="操作"
+              width="100"
+            >
               <template #default="{ row }">
-                <el-button link type="primary" size="small" @click="$router.push(`/aftersale/${row.ticketNo}`)">
+                <el-button
+                  link
+                  type="primary"
+                  size="small"
+                  @click="$router.push(`/aftersale/${row.ticketNo}`)"
+                >
                   处理
                 </el-button>
               </template>
@@ -105,7 +181,11 @@
               <el-empty description="暂无数据" />
             </template>
           </el-table>
-          <el-empty v-if="!stats.recentAftersales?.length" description="暂无售后工单" :image-size="60" />
+          <el-empty
+            v-if="!stats.recentAftersales?.length"
+            description="暂无售后工单"
+            :image-size="60"
+          />
         </el-card>
       </el-col>
     </el-row>
@@ -113,16 +193,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { getDashboardStats } from '@/api/dashboard'
-import type { DashboardStats } from '@/types'
-import PageHeader from '@/components/PageHeader.vue'
-import StatCards from '@/components/StatCards.vue'
-import { useUserStore } from '@/store/user'
+import { ref, reactive, onMounted } from 'vue';
+import { getDashboardStats } from '@/api/dashboard';
+import type { DashboardStats } from '@/types';
+import PageHeader from '@/components/PageHeader.vue';
+import StatCards from '@/components/StatCards.vue';
+import { useUserStore } from '@/store/user';
 
-const userStore = useUserStore()
-const loading = ref(false)
-const chartRange = ref<'week' | 'month'>('week')
+const userStore = useUserStore();
+const loading = ref(false);
+const chartRange = ref<'week' | 'month'>('week');
 
 const stats = reactive<DashboardStats>({
   todayOrders: 0,
@@ -134,7 +214,7 @@ const stats = reactive<DashboardStats>({
   revenueTrend: [],
   recentOrders: [],
   recentAftersales: [],
-})
+});
 
 const orderStatusType: Record<number, string> = {
   0: 'info',
@@ -142,7 +222,7 @@ const orderStatusType: Record<number, string> = {
   2: '',
   3: 'success',
   4: 'danger',
-}
+};
 
 const orderStatusLabel: Record<number, string> = {
   0: '待付款',
@@ -150,13 +230,13 @@ const orderStatusLabel: Record<number, string> = {
   2: '已发货',
   3: '已完成',
   4: '已取消',
-}
+};
 
 const aftersaleTypeLabel: Record<string, string> = {
   refund_only: '仅退款',
   return_and_refund: '退货退款',
   exchange: '换货',
-}
+};
 
 const aftersaleStatusType: Record<number, string> = {
   0: 'warning',
@@ -164,7 +244,7 @@ const aftersaleStatusType: Record<number, string> = {
   2: 'success',
   3: 'danger',
   4: 'info',
-}
+};
 
 const aftersaleStatusLabel: Record<number, string> = {
   0: '待处理',
@@ -172,32 +252,32 @@ const aftersaleStatusLabel: Record<number, string> = {
   2: '已同意',
   3: '已拒绝',
   4: '已完成',
-}
+};
 
 function formatDate(dateStr: string) {
-  return dateStr.slice(5)
+  return dateStr.slice(5);
 }
 
 function getBarHeight(amount: number) {
-  const max = Math.max(...stats.revenueTrend.map(i => i.amount), 1)
-  return (amount / max) * 100
+  const max = Math.max(...stats.revenueTrend.map((i) => i.amount), 1);
+  return (amount / max) * 100;
 }
 
 async function fetchStats() {
-  loading.value = true
+  loading.value = true;
   try {
-    const res = await getDashboardStats()
-    Object.assign(stats, res)
+    const res = await getDashboardStats();
+    Object.assign(stats, res);
   } catch {
     // 使用默认空数据
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 onMounted(() => {
-  fetchStats()
-})
+  fetchStats();
+});
 </script>
 
 <style scoped>
@@ -243,7 +323,7 @@ onMounted(() => {
 
 .chart-bar {
   width: 32px;
-  background: linear-gradient(180deg, #6366F1, #818CF8);
+  background: linear-gradient(180deg, #6366f1, #818cf8);
   border-radius: 4px 4px 0 0;
   min-height: 4px;
   transition: height 0.5s ease;

@@ -1,52 +1,103 @@
 <template>
-  <div class="knowledge-view" role="main" aria-label="知识库">
+  <div
+    class="knowledge-view"
+    role="main"
+    aria-label="知识库"
+  >
     <div class="view-header">
-      <h1 class="page-title">知识库</h1>
-      <p class="page-subtitle">专业知识与问答悬赏，助力成长提升</p>
+      <h1 class="page-title">
+        知识库
+      </h1>
+      <p class="page-subtitle">
+        专业知识与问答悬赏，助力成长提升
+      </p>
     </div>
 
     <div class="tabs-container">
       <div class="tabs">
-        <button :class="{ active: activeTab === 'library' }" @click="activeTab = 'library'">
+        <button
+          :class="{ active: activeTab === 'library' }"
+          @click="activeTab = 'library'"
+        >
           <el-icon><Reading /></el-icon>
           <span>知识文库</span>
         </button>
-        <button :class="{ active: activeTab === 'qa' }" @click="activeTab = 'qa'">
+        <button
+          :class="{ active: activeTab === 'qa' }"
+          @click="activeTab = 'qa'"
+        >
           <el-icon><ChatLineSquare /></el-icon>
           <span>问答社区</span>
         </button>
-        <button :class="{ active: activeTab === 'rewards' }" @click="activeTab = 'rewards'">
+        <button
+          :class="{ active: activeTab === 'rewards' }"
+          @click="activeTab = 'rewards'"
+        >
           <el-icon><Coin /></el-icon>
           <span>悬赏问答</span>
         </button>
       </div>
     </div>
 
-    <div v-if="activeTab === 'library'" class="tab-content">
+    <div
+      v-if="activeTab === 'library'"
+      class="tab-content"
+    >
       <div class="search-section">
         <div class="search-box">
-          <el-icon class="search-icon"><Search /></el-icon>
-          <input v-model="searchKeyword" type="text" placeholder="搜索知识、技巧、教程..." @keyup.enter="handleSearch" />
-          <button class="search-btn" @click="handleSearch">搜索</button>
+          <el-icon class="search-icon">
+            <Search />
+          </el-icon>
+          <input
+            v-model="searchKeyword"
+            type="text"
+            placeholder="搜索知识、技巧、教程..."
+            @keyup.enter="handleSearch"
+          >
+          <button
+            class="search-btn"
+            @click="handleSearch"
+          >
+            搜索
+          </button>
         </div>
       </div>
 
       <div class="content-layout">
         <aside class="sidebar">
           <div class="sidebar-section">
-            <h3 class="sidebar-title">知识分类</h3>
+            <h3 class="sidebar-title">
+              知识分类
+            </h3>
             <ul class="category-tree">
-              <li v-for="category in categories" :key="category.id" class="category-item">
-                <div :class="['category-header', { active: selectedCategory === category.id }]"
-                  @click="selectCategory(category.id)">
-                  <el-icon class="expand-icon" v-if="category.children?.length"><ArrowRight /></el-icon>
+              <li
+                v-for="category in categories"
+                :key="category.id"
+                class="category-item"
+              >
+                <div
+                  :class="['category-header', { active: selectedCategory === category.id }]"
+                  @click="selectCategory(category.id)"
+                >
+                  <el-icon
+                    v-if="category.children?.length"
+                    class="expand-icon"
+                  >
+                    <ArrowRight />
+                  </el-icon>
                   <span>{{ category.name }}</span>
                   <span class="count">{{ category.count }}</span>
                 </div>
-                <ul v-if="category.children?.length" class="sub-categories">
-                  <li v-for="sub in category.children" :key="sub.id"
+                <ul
+                  v-if="category.children?.length"
+                  class="sub-categories"
+                >
+                  <li
+                    v-for="sub in category.children"
+                    :key="sub.id"
                     :class="['sub-category', { active: selectedSubCategory === sub.id }]"
-                    @click.stop="selectSubCategory(sub.id)">
+                    @click.stop="selectSubCategory(sub.id)"
+                  >
                     <span>{{ sub.name }}</span>
                     <span class="count">{{ sub.count }}</span>
                   </li>
@@ -56,10 +107,16 @@
           </div>
 
           <div class="sidebar-section">
-            <h3 class="sidebar-title">热门标签</h3>
+            <h3 class="sidebar-title">
+              热门标签
+            </h3>
             <div class="tag-cloud">
-              <button v-for="tag in hotTags" :key="tag.name" :style="{ fontSize: tag.size + 'px' }"
-                @click="handleTagClick(tag.name)">
+              <button
+                v-for="tag in hotTags"
+                :key="tag.name"
+                :style="{ fontSize: tag.size + 'px' }"
+                @click="handleTagClick(tag.name)"
+              >
                 {{ tag.name }}
               </button>
             </div>
@@ -68,15 +125,42 @@
 
         <main class="main-content">
           <div class="content-tabs">
-            <button :class="{ active: contentTab === 'all' }" @click="contentTab = 'all'">全部</button>
-            <button :class="{ active: contentTab === 'article' }" @click="contentTab = 'article'">文章</button>
-            <button :class="{ active: contentTab === 'video' }" @click="contentTab = 'video'">视频</button>
+            <button
+              :class="{ active: contentTab === 'all' }"
+              @click="contentTab = 'all'"
+            >
+              全部
+            </button>
+            <button
+              :class="{ active: contentTab === 'article' }"
+              @click="contentTab = 'article'"
+            >
+              文章
+            </button>
+            <button
+              :class="{ active: contentTab === 'video' }"
+              @click="contentTab = 'video'"
+            >
+              视频
+            </button>
           </div>
 
           <div class="articles-list">
-            <div v-for="article in articles" :key="article.id" class="article-card" @click="viewArticle(article.id)">
-              <div v-if="article.type === 'video'" class="article-video">
-                <img :src="article.cover" :alt="article.title" class="video-cover" />
+            <div
+              v-for="article in articles"
+              :key="article.id"
+              class="article-card"
+              @click="viewArticle(article.id)"
+            >
+              <div
+                v-if="article.type === 'video'"
+                class="article-video"
+              >
+                <img
+                  :src="article.cover"
+                  :alt="article.title"
+                  class="video-cover"
+                >
                 <div class="video-overlay">
                   <div class="play-btn">
                     <el-icon><VideoPlay /></el-icon>
@@ -84,15 +168,30 @@
                   <span class="video-duration">{{ article.duration }}</span>
                 </div>
               </div>
-              <div v-else class="article-image" :style="{ backgroundImage: `url(${article.cover})` }"></div>
+              <div
+                v-else
+                class="article-image"
+                :style="{ backgroundImage: `url(${article.cover})` }"
+              />
 
               <div class="article-content">
                 <div class="article-tags">
-                  <span v-for="tag in article.tags" :key="tag" class="tag">{{ tag }}</span>
-                  <span v-if="article.type === 'video'" class="video-tag">视频</span>
+                  <span
+                    v-for="tag in article.tags"
+                    :key="tag"
+                    class="tag"
+                  >{{ tag }}</span>
+                  <span
+                    v-if="article.type === 'video'"
+                    class="video-tag"
+                  >视频</span>
                 </div>
-                <h3 class="article-title">{{ article.title }}</h3>
-                <p class="article-desc">{{ article.description }}</p>
+                <h3 class="article-title">
+                  {{ article.title }}
+                </h3>
+                <p class="article-desc">
+                  {{ article.description }}
+                </p>
                 <div class="article-meta">
                   <span class="author">
                     <el-icon><User /></el-icon>
@@ -127,15 +226,33 @@
       </div>
     </div>
 
-    <div v-if="activeTab === 'qa'" class="tab-content">
+    <div
+      v-if="activeTab === 'qa'"
+      class="tab-content"
+    >
       <div class="qa-container">
         <div class="qa-header">
           <div class="search-box">
-            <el-icon class="search-icon"><Search /></el-icon>
-            <input v-model="qaSearch" type="text" placeholder="搜索问题..." @keyup.enter="searchQA" />
-            <button class="search-btn" @click="searchQA">搜索</button>
+            <el-icon class="search-icon">
+              <Search />
+            </el-icon>
+            <input
+              v-model="qaSearch"
+              type="text"
+              placeholder="搜索问题..."
+              @keyup.enter="searchQA"
+            >
+            <button
+              class="search-btn"
+              @click="searchQA"
+            >
+              搜索
+            </button>
           </div>
-          <el-button type="primary" @click="askQuestion">
+          <el-button
+            type="primary"
+            @click="askQuestion"
+          >
             <el-icon><Plus /></el-icon>
             提问
           </el-button>
@@ -157,14 +274,39 @@
         </div>
 
         <div class="qa-filter">
-          <button :class="{ active: qaFilter === 'latest' }" @click="qaFilter = 'latest'">最新</button>
-          <button :class="{ active: qaFilter === 'hot' }" @click="qaFilter = 'hot'">热门</button>
-          <button :class="{ active: qaFilter === 'unsolved' }" @click="qaFilter = 'unsolved'">未解决</button>
-          <button :class="{ active: qaFilter === 'solved' }" @click="qaFilter = 'solved'">已解决</button>
+          <button
+            :class="{ active: qaFilter === 'latest' }"
+            @click="qaFilter = 'latest'"
+          >
+            最新
+          </button>
+          <button
+            :class="{ active: qaFilter === 'hot' }"
+            @click="qaFilter = 'hot'"
+          >
+            热门
+          </button>
+          <button
+            :class="{ active: qaFilter === 'unsolved' }"
+            @click="qaFilter = 'unsolved'"
+          >
+            未解决
+          </button>
+          <button
+            :class="{ active: qaFilter === 'solved' }"
+            @click="qaFilter = 'solved'"
+          >
+            已解决
+          </button>
         </div>
 
         <div class="questions-list">
-          <div v-for="question in questions" :key="question.id" class="question-card" @click="viewQuestion(question.id)">
+          <div
+            v-for="question in questions"
+            :key="question.id"
+            class="question-card"
+            @click="viewQuestion(question.id)"
+          >
             <div class="question-votes">
               <div class="vote-item">
                 <span class="vote-count">{{ question.votes }}</span>
@@ -177,10 +319,18 @@
             </div>
 
             <div class="question-content">
-              <h3 class="question-title">{{ question.title }}</h3>
-              <p class="question-desc">{{ question.description }}</p>
+              <h3 class="question-title">
+                {{ question.title }}
+              </h3>
+              <p class="question-desc">
+                {{ question.description }}
+              </p>
               <div class="question-tags">
-                <span v-for="tag in question.tags" :key="tag" class="tag">{{ tag }}</span>
+                <span
+                  v-for="tag in question.tags"
+                  :key="tag"
+                  class="tag"
+                >{{ tag }}</span>
               </div>
               <div class="question-meta">
                 <span class="author">
@@ -188,7 +338,10 @@
                   {{ question.author }}
                 </span>
                 <span class="time">{{ question.time }}</span>
-                <span v-if="question.accepted" class="accepted">
+                <span
+                  v-if="question.accepted"
+                  class="accepted"
+                >
                   <el-icon><CircleCheckFilled /></el-icon>
                   已采纳
                 </span>
@@ -211,7 +364,10 @@
       </div>
     </div>
 
-    <div v-if="activeTab === 'rewards'" class="tab-content">
+    <div
+      v-if="activeTab === 'rewards'"
+      class="tab-content"
+    >
       <div class="rewards-container">
         <div class="rewards-header">
           <h3>悬赏问答</h3>
@@ -219,23 +375,51 @@
         </div>
 
         <div class="rewards-filter">
-          <button :class="{ active: rewardFilter === 'all' }" @click="rewardFilter = 'all'">全部</button>
-          <button :class="{ active: rewardFilter === 'highest' }" @click="rewardFilter = 'highest'">赏金最高</button>
-          <button :class="{ active: rewardFilter === 'ending' }" @click="rewardFilter = 'ending'">即将结束</button>
+          <button
+            :class="{ active: rewardFilter === 'all' }"
+            @click="rewardFilter = 'all'"
+          >
+            全部
+          </button>
+          <button
+            :class="{ active: rewardFilter === 'highest' }"
+            @click="rewardFilter = 'highest'"
+          >
+            赏金最高
+          </button>
+          <button
+            :class="{ active: rewardFilter === 'ending' }"
+            @click="rewardFilter = 'ending'"
+          >
+            即将结束
+          </button>
         </div>
 
         <div class="rewards-list">
-          <div v-for="reward in rewards" :key="reward.id" class="reward-card" @click="viewReward(reward.id)">
+          <div
+            v-for="reward in rewards"
+            :key="reward.id"
+            class="reward-card"
+            @click="viewReward(reward.id)"
+          >
             <div class="reward-bounty">
               <span class="bounty-label">悬赏</span>
               <span class="bounty-amount">¥{{ reward.bounty }}</span>
             </div>
 
             <div class="reward-content">
-              <h3 class="reward-title">{{ reward.title }}</h3>
-              <p class="reward-desc">{{ reward.description }}</p>
+              <h3 class="reward-title">
+                {{ reward.title }}
+              </h3>
+              <p class="reward-desc">
+                {{ reward.description }}
+              </p>
               <div class="reward-tags">
-                <span v-for="tag in reward.tags" :key="tag" class="tag">{{ tag }}</span>
+                <span
+                  v-for="tag in reward.tags"
+                  :key="tag"
+                  class="tag"
+                >{{ tag }}</span>
               </div>
               <div class="reward-meta">
                 <span class="author">
@@ -255,42 +439,108 @@
 
         <div class="create-reward">
           <h3>发布悬赏问题</h3>
-          <el-form ref="rewardFormRef" :model="rewardForm" label-width="100px" class="reward-form">
-            <el-form-item label="问题标题" required>
-              <el-input v-model="rewardForm.title" placeholder="请输入问题标题" />
+          <el-form
+            ref="rewardFormRef"
+            :model="rewardForm"
+            label-width="100px"
+            class="reward-form"
+          >
+            <el-form-item
+              label="问题标题"
+              required
+            >
+              <el-input
+                v-model="rewardForm.title"
+                placeholder="请输入问题标题"
+              />
             </el-form-item>
-            <el-form-item label="问题描述" required>
-              <el-textarea v-model="rewardForm.description" :rows="4" placeholder="请详细描述您的问题..." />
+            <el-form-item
+              label="问题描述"
+              required
+            >
+              <el-textarea
+                v-model="rewardForm.description"
+                :rows="4"
+                placeholder="请详细描述您的问题..."
+              />
             </el-form-item>
             <el-form-item label="悬赏金额">
               <div class="bounty-options">
-                <button v-for="amount in bountyOptions" :key="amount"
+                <button
+                  v-for="amount in bountyOptions"
+                  :key="amount"
                   :class="{ active: rewardForm.bounty === amount }"
-                  @click="rewardForm.bounty = amount">
+                  @click="rewardForm.bounty = amount"
+                >
                   ¥{{ amount }}
                 </button>
               </div>
-              <el-input v-model.number="rewardForm.bounty" type="number" placeholder="自定义金额" class="custom-bounty" />
+              <el-input
+                v-model.number="rewardForm.bounty"
+                type="number"
+                placeholder="自定义金额"
+                class="custom-bounty"
+              />
             </el-form-item>
             <el-form-item label="截止时间">
-              <el-select v-model="rewardForm.days" placeholder="请选择截止时间">
-                <el-option label="3天" :value="3" />
-                <el-option label="7天" :value="7" />
-                <el-option label="14天" :value="14" />
-                <el-option label="30天" :value="30" />
+              <el-select
+                v-model="rewardForm.days"
+                placeholder="请选择截止时间"
+              >
+                <el-option
+                  label="3天"
+                  :value="3"
+                />
+                <el-option
+                  label="7天"
+                  :value="7"
+                />
+                <el-option
+                  label="14天"
+                  :value="14"
+                />
+                <el-option
+                  label="30天"
+                  :value="30"
+                />
               </el-select>
             </el-form-item>
             <el-form-item label="标签">
-              <el-select v-model="rewardForm.tags" multiple placeholder="请选择标签">
-                <el-option label="设计基础" value="设计基础" />
-                <el-option label="打版技巧" value="打版技巧" />
-                <el-option label="工艺详解" value="工艺详解" />
-                <el-option label="设备操作" value="设备操作" />
-                <el-option label="面料知识" value="面料知识" />
+              <el-select
+                v-model="rewardForm.tags"
+                multiple
+                placeholder="请选择标签"
+              >
+                <el-option
+                  label="设计基础"
+                  value="设计基础"
+                />
+                <el-option
+                  label="打版技巧"
+                  value="打版技巧"
+                />
+                <el-option
+                  label="工艺详解"
+                  value="工艺详解"
+                />
+                <el-option
+                  label="设备操作"
+                  value="设备操作"
+                />
+                <el-option
+                  label="面料知识"
+                  value="面料知识"
+                />
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" size="large" @click="submitReward">发布悬赏</el-button>
+              <el-button
+                type="primary"
+                size="large"
+                @click="submitReward"
+              >
+                发布悬赏
+              </el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -300,25 +550,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { Reading, ChatLineSquare, Coin, Search, ArrowRight, VideoPlay, User, View, Star, Plus, CircleCheckFilled } from '@element-plus/icons-vue'
+import { ref, reactive } from 'vue';
+import {
+  Reading,
+  ChatLineSquare,
+  Coin,
+  Search,
+  ArrowRight,
+  VideoPlay,
+  User,
+  View,
+  Star,
+  Plus,
+  CircleCheckFilled,
+} from '@element-plus/icons-vue';
 
-const activeTab = ref('library')
-const searchKeyword = ref('')
-const contentTab = ref('all')
-const selectedCategory = ref<number | null>(null)
-const selectedSubCategory = ref<number | null>(null)
-const currentPage = ref(1)
-const pageSize = ref(10)
-const totalCount = ref(86)
+const activeTab = ref('library');
+const searchKeyword = ref('');
+const contentTab = ref('all');
+const selectedCategory = ref<number | null>(null);
+const selectedSubCategory = ref<number | null>(null);
+const currentPage = ref(1);
+const pageSize = ref(10);
+const totalCount = ref(86);
 
-const qaSearch = ref('')
-const qaFilter = ref('latest')
-const qaPage = ref(1)
-const qaPageSize = ref(10)
-const qaTotal = ref(156)
+const qaSearch = ref('');
+const qaFilter = ref('latest');
+const qaPage = ref(1);
+const qaPageSize = ref(10);
+const qaTotal = ref(156);
 
-const rewardFilter = ref('all')
+const rewardFilter = ref('all');
 
 const categories = ref([
   {
@@ -329,8 +591,8 @@ const categories = ref([
       { id: 11, name: '色彩理论', count: 45 },
       { id: 12, name: '款式设计', count: 67 },
       { id: 13, name: '设计原理', count: 89 },
-      { id: 14, name: '设计软件', count: 33 }
-    ]
+      { id: 14, name: '设计软件', count: 33 },
+    ],
   },
   {
     id: 2,
@@ -340,8 +602,8 @@ const categories = ref([
       { id: 21, name: '原型裁剪', count: 56 },
       { id: 22, name: '立体裁剪', count: 43 },
       { id: 23, name: '版型调整', count: 67 },
-      { id: 24, name: '放码技术', count: 23 }
-    ]
+      { id: 24, name: '放码技术', count: 23 },
+    ],
   },
   {
     id: 3,
@@ -351,8 +613,8 @@ const categories = ref([
       { id: 31, name: '缝纫工艺', count: 78 },
       { id: 32, name: '熨烫工艺', count: 34 },
       { id: 33, name: '整烫工艺', count: 23 },
-      { id: 34, name: '特殊工艺', count: 21 }
-    ]
+      { id: 34, name: '特殊工艺', count: 21 },
+    ],
   },
   {
     id: 4,
@@ -362,10 +624,10 @@ const categories = ref([
       { id: 41, name: '缝纫机操作', count: 34 },
       { id: 42, name: '裁剪机操作', count: 23 },
       { id: 43, name: '熨烫设备', count: 18 },
-      { id: 44, name: 'CAD系统', count: 14 }
-    ]
-  }
-])
+      { id: 44, name: 'CAD系统', count: 14 },
+    ],
+  },
+]);
 
 const hotTags = ref([
   { name: '原型裁剪', size: 16 },
@@ -375,8 +637,8 @@ const hotTags = ref([
   { name: '设计灵感', size: 17 },
   { name: '面料选择', size: 13 },
   { name: '工艺详解', size: 16 },
-  { name: 'CAD打版', size: 14 }
-])
+  { name: 'CAD打版', size: 14 },
+]);
 
 const articles = ref([
   {
@@ -389,7 +651,7 @@ const articles = ref([
     author: '设计师小美',
     views: 2340,
     likes: 156,
-    date: '2024-01-15'
+    date: '2024-01-15',
   },
   {
     id: 2,
@@ -402,7 +664,7 @@ const articles = ref([
     author: '资深版师老王',
     views: 5678,
     likes: 423,
-    date: '2024-01-14'
+    date: '2024-01-14',
   },
   {
     id: 3,
@@ -414,7 +676,7 @@ const articles = ref([
     author: '工艺大师李师傅',
     views: 1890,
     likes: 123,
-    date: '2024-01-13'
+    date: '2024-01-13',
   },
   {
     id: 4,
@@ -427,15 +689,15 @@ const articles = ref([
     author: '技术达人小张',
     views: 3456,
     likes: 289,
-    date: '2024-01-12'
-  }
-])
+    date: '2024-01-12',
+  },
+]);
 
 const stats = ref({
   total: 1256,
   solved: 987,
-  experts: 156
-})
+  experts: 156,
+});
 
 const questions = ref([
   {
@@ -447,7 +709,7 @@ const questions = ref([
     votes: 45,
     answers: 8,
     time: '2小时前',
-    accepted: true
+    accepted: true,
   },
   {
     id: 2,
@@ -458,7 +720,7 @@ const questions = ref([
     votes: 23,
     answers: 12,
     time: '5小时前',
-    accepted: false
+    accepted: false,
   },
   {
     id: 3,
@@ -469,7 +731,7 @@ const questions = ref([
     votes: 67,
     answers: 15,
     time: '1天前',
-    accepted: true
+    accepted: true,
   },
   {
     id: 4,
@@ -480,9 +742,9 @@ const questions = ref([
     votes: 34,
     answers: 5,
     time: '2天前',
-    accepted: false
-  }
-])
+    accepted: false,
+  },
+]);
 
 const rewards = ref([
   {
@@ -495,7 +757,7 @@ const rewards = ref([
     daysLeft: 3,
     answers: 3,
     status: 'active',
-    statusText: '进行中'
+    statusText: '进行中',
   },
   {
     id: 2,
@@ -507,7 +769,7 @@ const rewards = ref([
     daysLeft: 1,
     answers: 5,
     status: 'ending',
-    statusText: '即将结束'
+    statusText: '即将结束',
   },
   {
     id: 3,
@@ -519,76 +781,76 @@ const rewards = ref([
     daysLeft: 7,
     answers: 2,
     status: 'active',
-    statusText: '进行中'
-  }
-])
+    statusText: '进行中',
+  },
+]);
 
-const bountyOptions = [50, 100, 200, 500, 1000]
+const bountyOptions = [50, 100, 200, 500, 1000];
 
 const rewardForm = reactive({
   title: '',
   description: '',
   bounty: 100,
   days: 7,
-  tags: [] as string[]
-})
+  tags: [] as string[],
+});
 
 function selectCategory(id: number) {
-  selectedCategory.value = selectedCategory.value === id ? null : id
+  selectedCategory.value = selectedCategory.value === id ? null : id;
 }
 
 function selectSubCategory(id: number) {
-  selectedSubCategory.value = selectedSubCategory.value === id ? null : id
+  selectedSubCategory.value = selectedSubCategory.value === id ? null : id;
 }
 
 function handleTagClick(tag: string) {
-  searchKeyword.value = tag
+  searchKeyword.value = tag;
 }
 
 function handleSearch() {
-  currentPage.value = 1
+  currentPage.value = 1;
 }
 
 function handlePageSizeChange(val: number) {
-  pageSize.value = val
-  currentPage.value = 1
+  pageSize.value = val;
+  currentPage.value = 1;
 }
 
 function handlePageChange(val: number) {
-  currentPage.value = val
+  currentPage.value = val;
 }
 
 function viewArticle(id: number) {
-  console.log('查看文章:', id)
+  console.log('查看文章:', id);
 }
 
 function searchQA() {
-  qaPage.value = 1
+  qaPage.value = 1;
 }
 
 function askQuestion() {
-  console.log('提问')
+  console.log('提问');
 }
 
 function viewQuestion(id: number) {
-  console.log('查看问题:', id)
+  console.log('查看问题:', id);
 }
 
 function handleQaPageSizeChange(val: number) {
-  qaPageSize.value = val
-  qaPage.value = 1
+  qaPageSize.value = val;
+  qaPage.value = 1;
 }
 
 function handleQaPageChange(val: number) {
-  qaPage.value = val
+  qaPage.value = val;
 }
 
 function viewReward(id: number) {
-  console.log('查看悬赏:', id)
+  console.log('查看悬赏:', id);
 }
 
 function submitReward() {
-  console.log('发布悬赏:', rewardForm)
+  console.log('发布悬赏:', rewardForm);
 }
 </script>
 

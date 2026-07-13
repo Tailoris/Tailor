@@ -1,28 +1,58 @@
 <template>
-  <div class="patterns-view" role="main" aria-label="纸样商城">
+  <div
+    class="patterns-view"
+    role="main"
+    aria-label="纸样商城"
+  >
     <div class="view-header">
-      <h1 class="page-title">纸样商城</h1>
-      <p class="page-subtitle">海量专业纸样，支持3D试穿预览</p>
+      <h1 class="page-title">
+        纸样商城
+      </h1>
+      <p class="page-subtitle">
+        海量专业纸样，支持3D试穿预览
+      </p>
     </div>
 
     <div class="search-bar">
       <div class="search-box">
-        <el-icon class="search-icon"><Search /></el-icon>
-        <input v-model="searchKeyword" type="text" placeholder="搜索纸样、款式、版型" @keyup.enter="handleSearch" />
-        <button class="search-btn" @click="handleSearch">搜索</button>
+        <el-icon class="search-icon">
+          <Search />
+        </el-icon>
+        <input
+          v-model="searchKeyword"
+          type="text"
+          placeholder="搜索纸样、款式、版型"
+          @keyup.enter="handleSearch"
+        >
+        <button
+          class="search-btn"
+          @click="handleSearch"
+        >
+          搜索
+        </button>
       </div>
     </div>
 
     <div class="content-container">
       <aside class="sidebar">
         <div class="sidebar-section">
-          <h3 class="sidebar-title">分类浏览</h3>
+          <h3 class="sidebar-title">
+            分类浏览
+          </h3>
           <ul class="category-list">
-            <li :class="{ active: selectedCategory === null }" @click="selectedCategory = null">
+            <li
+              :class="{ active: selectedCategory === null }"
+              @click="selectedCategory = null"
+            >
               <span>全部纸样</span>
               <span class="count">{{ totalCount }}</span>
             </li>
-            <li v-for="cat in categories" :key="cat.id" :class="{ active: selectedCategory === cat.id }" @click="selectedCategory = cat.id">
+            <li
+              v-for="cat in categories"
+              :key="cat.id"
+              :class="{ active: selectedCategory === cat.id }"
+              @click="selectedCategory = cat.id"
+            >
               <span>{{ cat.name }}</span>
               <span class="count">{{ cat.productCount || 0 }}</span>
             </li>
@@ -30,21 +60,43 @@
         </div>
 
         <div class="sidebar-section">
-          <h3 class="sidebar-title">版型风格</h3>
+          <h3 class="sidebar-title">
+            版型风格
+          </h3>
           <div class="style-tags">
-            <button v-for="style in styles" :key="style" :class="{ active: selectedStyles.includes(style) }" @click="toggleStyle(style)">
+            <button
+              v-for="style in styles"
+              :key="style"
+              :class="{ active: selectedStyles.includes(style) }"
+              @click="toggleStyle(style)"
+            >
               {{ style }}
             </button>
           </div>
         </div>
 
         <div class="sidebar-section">
-          <h3 class="sidebar-title">价格区间</h3>
+          <h3 class="sidebar-title">
+            价格区间
+          </h3>
           <div class="price-range">
-            <input v-model.number="minPrice" type="number" placeholder="最低价" />
+            <input
+              v-model.number="minPrice"
+              type="number"
+              placeholder="最低价"
+            >
             <span class="price-separator">-</span>
-            <input v-model.number="maxPrice" type="number" placeholder="最高价" />
-            <button class="filter-btn" @click="applyPriceFilter">筛选</button>
+            <input
+              v-model.number="maxPrice"
+              type="number"
+              placeholder="最高价"
+            >
+            <button
+              class="filter-btn"
+              @click="applyPriceFilter"
+            >
+              筛选
+            </button>
           </div>
         </div>
       </aside>
@@ -53,38 +105,84 @@
         <div class="toolbar">
           <div class="sort-options">
             <span class="sort-label">排序：</span>
-            <select v-model="sortBy" @change="handleSort">
-              <option value="hot">热门推荐</option>
-              <option value="new">最新上架</option>
-              <option value="price_asc">价格从低到高</option>
-              <option value="price_desc">价格从高到低</option>
+            <select
+              v-model="sortBy"
+              @change="handleSort"
+            >
+              <option value="hot">
+                热门推荐
+              </option>
+              <option value="new">
+                最新上架
+              </option>
+              <option value="price_asc">
+                价格从低到高
+              </option>
+              <option value="price_desc">
+                价格从高到低
+              </option>
             </select>
           </div>
           <div class="view-mode">
-            <button :class="{ active: viewMode === 'grid' }" @click="viewMode = 'grid'" title="网格视图">
+            <button
+              :class="{ active: viewMode === 'grid' }"
+              title="网格视图"
+              @click="viewMode = 'grid'"
+            >
               <el-icon><Grid /></el-icon>
             </button>
-            <button :class="{ active: viewMode === 'list' }" @click="viewMode = 'list'" title="列表视图">
+            <button
+              :class="{ active: viewMode === 'list' }"
+              title="列表视图"
+              @click="viewMode = 'list'"
+            >
               <el-icon><List /></el-icon>
             </button>
           </div>
         </div>
 
-        <div :class="['patterns-grid', viewMode]" v-if="!loading">
-          <div v-for="product in products" :key="product.id" class="pattern-card" @click="goToDetail(product.id)">
+        <div
+          v-if="!loading"
+          :class="['patterns-grid', viewMode]"
+        >
+          <div
+            v-for="product in products"
+            :key="product.id"
+            class="pattern-card"
+            @click="goToDetail(product.id)"
+          >
             <div class="pattern-image-wrapper">
-              <img :src="product.mainImage" :alt="product.name" class="pattern-image" />
+              <img
+                :src="product.mainImage"
+                :alt="product.name"
+                class="pattern-image"
+              >
               <div class="pattern-tags">
-                <span v-if="product.specifications" class="tag preview-tag">3D预览</span>
-                <span v-if="product.status === 1" class="tag hot-tag">热销</span>
+                <span
+                  v-if="product.specifications"
+                  class="tag preview-tag"
+                >3D预览</span>
+                <span
+                  v-if="product.status === 1"
+                  class="tag hot-tag"
+                >热销</span>
               </div>
             </div>
             <div class="pattern-info">
-              <h3 class="pattern-name">{{ product.name }}</h3>
-              <p class="pattern-subtitle">{{ product.subTitle }}</p>
+              <h3 class="pattern-name">
+                {{ product.name }}
+              </h3>
+              <p class="pattern-subtitle">
+                {{ product.subTitle }}
+              </p>
               <div class="pattern-rating">
                 <div class="star-rating">
-                  <el-icon v-for="n in 5" :key="n" class="star" :class="{ filled: n <= Math.round(product.favorableRate / 20) }">
+                  <el-icon
+                    v-for="n in 5"
+                    :key="n"
+                    class="star"
+                    :class="{ filled: n <= Math.round(product.favorableRate / 20) }"
+                  >
                     <Star />
                   </el-icon>
                 </div>
@@ -103,16 +201,30 @@
           </div>
         </div>
 
-        <div v-else class="loading-state">
-          <el-skeleton :rows="6" animated />
+        <div
+          v-else
+          class="loading-state"
+        >
+          <el-skeleton
+            :rows="6"
+            animated
+          />
         </div>
 
-        <div v-if="products.length === 0 && !loading" class="empty-state">
-          <div class="empty-icon">📦</div>
+        <div
+          v-if="products.length === 0 && !loading"
+          class="empty-state"
+        >
+          <div class="empty-icon">
+            📦
+          </div>
           <p>暂无匹配的纸样商品</p>
         </div>
 
-        <div class="pagination-wrapper" v-if="products.length > 0 && !loading">
+        <div
+          v-if="products.length > 0 && !loading"
+          class="pagination-wrapper"
+        >
           <el-pagination
             v-model:current-page="currentPage"
             v-model:page-size="pageSize"
@@ -129,98 +241,98 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { Search, Grid, List, Star } from '@element-plus/icons-vue'
-import { getHotProducts, getCategories } from '@/api/product'
-import type { Product, ProductCategory } from '@/types'
+import { ref, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { Search, Grid, List, Star } from '@element-plus/icons-vue';
+import { getHotProducts, getCategories } from '@/api/product';
+import type { Product, ProductCategory } from '@/types';
 
-const router = useRouter()
+const router = useRouter();
 
-const searchKeyword = ref('')
-const selectedCategory = ref<number | null>(null)
-const selectedStyles = ref<string[]>([])
-const minPrice = ref<number | null>(null)
-const maxPrice = ref<number | null>(null)
-const sortBy = ref('hot')
-const viewMode = ref('grid')
-const currentPage = ref(1)
-const pageSize = ref(12)
+const searchKeyword = ref('');
+const selectedCategory = ref<number | null>(null);
+const selectedStyles = ref<string[]>([]);
+const minPrice = ref<number | null>(null);
+const maxPrice = ref<number | null>(null);
+const sortBy = ref('hot');
+const viewMode = ref('grid');
+const currentPage = ref(1);
+const pageSize = ref(12);
 
-const products = ref<Product[]>([])
-const categories = ref<ProductCategory[]>([])
-const loading = ref(true)
-const totalCount = ref(0)
+const products = ref<Product[]>([]);
+const categories = ref<ProductCategory[]>([]);
+const loading = ref(true);
+const totalCount = ref(0);
 
-const styles = ['休闲', '商务', '运动', '优雅', '复古', '时尚']
+const styles = ['休闲', '商务', '运动', '优雅', '复古', '时尚'];
 
 async function loadProducts() {
-  loading.value = true
+  loading.value = true;
   try {
-    const data = await getHotProducts()
-    products.value = data.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value)
-    totalCount.value = data.length
+    const data = await getHotProducts();
+    products.value = data.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value);
+    totalCount.value = data.length;
   } catch {
-    products.value = []
+    products.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function loadCategories() {
   try {
-    categories.value = await getCategories()
+    categories.value = await getCategories();
   } catch {
-    categories.value = []
+    categories.value = [];
   }
 }
 
 function handleSearch() {
-  currentPage.value = 1
-  loadProducts()
+  currentPage.value = 1;
+  loadProducts();
 }
 
 function toggleStyle(style: string) {
-  const index = selectedStyles.value.indexOf(style)
+  const index = selectedStyles.value.indexOf(style);
   if (index > -1) {
-    selectedStyles.value.splice(index, 1)
+    selectedStyles.value.splice(index, 1);
   } else {
-    selectedStyles.value.push(style)
+    selectedStyles.value.push(style);
   }
 }
 
 function applyPriceFilter() {
-  currentPage.value = 1
-  loadProducts()
+  currentPage.value = 1;
+  loadProducts();
 }
 
 function handleSort() {
-  loadProducts()
+  loadProducts();
 }
 
 function handlePageSizeChange(val: number) {
-  pageSize.value = val
-  currentPage.value = 1
-  loadProducts()
+  pageSize.value = val;
+  currentPage.value = 1;
+  loadProducts();
 }
 
 function handlePageChange(val: number) {
-  currentPage.value = val
-  loadProducts()
+  currentPage.value = val;
+  loadProducts();
 }
 
 function goToDetail(id: number) {
-  router.push(`/product/${id}`)
+  router.push(`/product/${id}`);
 }
 
 onMounted(async () => {
-  await Promise.all([loadProducts(), loadCategories()])
-})
+  await Promise.all([loadProducts(), loadCategories()]);
+});
 
 watch([selectedCategory, selectedStyles], () => {
-  currentPage.value = 1
-  loadProducts()
-})
+  currentPage.value = 1;
+  loadProducts();
+});
 </script>
 
 <style scoped>

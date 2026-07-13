@@ -1,29 +1,71 @@
 <template>
   <div class="order-table">
-    <el-table :data="orders" v-loading="loading" stripe style="width: 100%">
-      <el-table-column prop="orderNo" label="订单号" width="180" show-overflow-tooltip />
-      <el-table-column prop="buyerName" label="买家" width="120" />
-      <el-table-column label="商品数量" width="100">
+    <el-table
+      v-loading="loading"
+      :data="orders"
+      stripe
+      style="width: 100%"
+    >
+      <el-table-column
+        prop="orderNo"
+        label="订单号"
+        width="180"
+        show-overflow-tooltip
+      />
+      <el-table-column
+        prop="buyerName"
+        label="买家"
+        width="120"
+      />
+      <el-table-column
+        label="商品数量"
+        width="100"
+      >
         <template #default="{ row }">
           {{ row.items?.length || 0 }}
         </template>
       </el-table-column>
-      <el-table-column prop="payAmount" label="订单金额" width="120" sortable>
+      <el-table-column
+        prop="payAmount"
+        label="订单金额"
+        width="120"
+        sortable
+      >
         <template #default="{ row }">
           <span class="amount">¥{{ row.payAmount?.toFixed(2) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" width="100">
+      <el-table-column
+        label="状态"
+        width="100"
+      >
         <template #default="{ row }">
-          <el-tag :type="statusType[row.status]" size="small">
+          <el-tag
+            :type="statusType[row.status]"
+            size="small"
+          >
             {{ statusLabel[row.status] }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="下单时间" width="160" sortable />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column
+        prop="createdAt"
+        label="下单时间"
+        width="160"
+        sortable
+      />
+      <el-table-column
+        label="操作"
+        width="200"
+        fixed="right"
+      >
         <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="$emit('view', row.orderNo)">
+          <el-button
+            link
+            type="primary"
+            size="small"
+            @click="$emit('view', row.orderNo)"
+          >
             查看
           </el-button>
           <el-button
@@ -35,7 +77,12 @@
           >
             发货
           </el-button>
-          <el-button link type="warning" size="small" @click="$emit('remark', row)">
+          <el-button
+            link
+            type="warning"
+            size="small"
+            @click="$emit('remark', row)"
+          >
             备注
           </el-button>
         </template>
@@ -59,26 +106,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { Order } from '@/types'
+import { ref } from 'vue';
+import type { Order } from '@/types';
 
 defineProps<{
-  orders: Order[]
-  loading: boolean
-  total: number
-  currentPage: number
-  pageSize: number
-}>()
+  orders: Order[];
+  loading: boolean;
+  total: number;
+}>();
 
 defineEmits<{
-  view: [orderNo: string]
-  ship: [orderNo: string]
-  remark: [order: Order]
-  pageChange: [params: { page: number; pageSize: number }]
-}>()
+  view: [orderNo: string];
+  ship: [orderNo: string];
+  remark: [order: Order];
+  pageChange: [params: { page: number; pageSize: number }];
+}>();
 
-const currentPage = ref(1)
-const pageSize = ref(10)
+const currentPage = ref(1);
+const pageSize = ref(10);
 
 const statusType: Record<number, string> = {
   0: 'info',
@@ -86,7 +131,7 @@ const statusType: Record<number, string> = {
   2: '',
   3: 'success',
   4: 'danger',
-}
+};
 
 const statusLabel: Record<number, string> = {
   0: '待付款',
@@ -94,7 +139,7 @@ const statusLabel: Record<number, string> = {
   2: '已发货',
   3: '已完成',
   4: '已取消',
-}
+};
 </script>
 
 <style scoped>

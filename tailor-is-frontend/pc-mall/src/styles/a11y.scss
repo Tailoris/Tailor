@@ -115,12 +115,12 @@
 }
 
 // 错误状态关联
-[aria-invalid="true"] {
+[aria-invalid='true'] {
   border-color: #f5222d !important;
 }
 
 // 对话框/模态框无障碍增强
-[role="dialog"] {
+[role='dialog'] {
   &:focus {
     outline: none;
   }
@@ -130,10 +130,10 @@
 @media (max-width: 768px) {
   a,
   button,
-  [role="button"],
-  [role="link"],
-  [role="tab"],
-  [role="radio"] {
+  [role='button'],
+  [role='link'],
+  [role='tab'],
+  [role='radio'] {
     min-height: 44px;
     min-width: 44px;
   }

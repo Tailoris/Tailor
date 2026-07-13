@@ -1,7 +1,9 @@
 <template>
   <div class="page-header">
     <div class="page-header-left">
-      <h2 class="page-title">{{ title }}</h2>
+      <h2 class="page-title">
+        {{ title }}
+      </h2>
       <slot name="subtitle" />
     </div>
     <div class="page-header-right">
@@ -12,8 +14,8 @@
 
 <script setup lang="ts">
 defineProps<{
-  title: string
-}>()
+  title: string;
+}>();
 </script>
 
 <style scoped>

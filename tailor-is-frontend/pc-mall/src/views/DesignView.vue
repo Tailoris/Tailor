@@ -1,33 +1,65 @@
 <template>
-  <div class="design-view" role="main" aria-label="服装设计">
+  <div
+    class="design-view"
+    role="main"
+    aria-label="服装设计"
+  >
     <div class="view-header">
-      <h1 class="page-title">服装设计</h1>
-      <p class="page-subtitle">灵感库与协作工具，激发创意无限</p>
+      <h1 class="page-title">
+        服装设计
+      </h1>
+      <p class="page-subtitle">
+        灵感库与协作工具，激发创意无限
+      </p>
     </div>
 
     <div class="tabs-container">
       <div class="tabs">
-        <button :class="{ active: activeTab === 'inspiration' }" @click="activeTab = 'inspiration'">
+        <button
+          :class="{ active: activeTab === 'inspiration' }"
+          @click="activeTab = 'inspiration'"
+        >
           <el-icon><ReadingLamp /></el-icon>
           <span>灵感库</span>
         </button>
-        <button :class="{ active: activeTab === 'collaboration' }" @click="activeTab = 'collaboration'">
+        <button
+          :class="{ active: activeTab === 'collaboration' }"
+          @click="activeTab = 'collaboration'"
+        >
           <el-icon><User /></el-icon>
           <span>协作工具</span>
         </button>
-        <button :class="{ active: activeTab === 'copyright' }" @click="activeTab = 'copyright'">
+        <button
+          :class="{ active: activeTab === 'copyright' }"
+          @click="activeTab = 'copyright'"
+        >
           <el-icon><Stamp /></el-icon>
           <span>版权登记</span>
         </button>
       </div>
     </div>
 
-    <div v-if="activeTab === 'inspiration'" class="tab-content">
+    <div
+      v-if="activeTab === 'inspiration'"
+      class="tab-content"
+    >
       <div class="search-section">
         <div class="search-box">
-          <el-icon class="search-icon"><Search /></el-icon>
-          <input v-model="searchKeyword" type="text" placeholder="搜索灵感、款式、风格..." @keyup.enter="handleSearch" />
-          <button class="search-btn" @click="handleSearch">搜索</button>
+          <el-icon class="search-icon">
+            <Search />
+          </el-icon>
+          <input
+            v-model="searchKeyword"
+            type="text"
+            placeholder="搜索灵感、款式、风格..."
+            @keyup.enter="handleSearch"
+          >
+          <button
+            class="search-btn"
+            @click="handleSearch"
+          >
+            搜索
+          </button>
         </div>
       </div>
 
@@ -35,9 +67,12 @@
         <div class="filter-group">
           <span class="filter-label">风格分类</span>
           <div class="filter-tags">
-            <button v-for="style in styleFilters" :key="style.value"
+            <button
+              v-for="style in styleFilters"
+              :key="style.value"
               :class="{ active: selectedStyles.includes(style.value) }"
-              @click="toggleStyle(style.value)">
+              @click="toggleStyle(style.value)"
+            >
               {{ style.label }}
             </button>
           </div>
@@ -45,9 +80,12 @@
         <div class="filter-group">
           <span class="filter-label">灵感来源</span>
           <div class="filter-tags">
-            <button v-for="source in sourceFilters" :key="source.value"
+            <button
+              v-for="source in sourceFilters"
+              :key="source.value"
               :class="{ active: selectedSource === source.value }"
-              @click="selectedSource = source.value">
+              @click="selectedSource = source.value"
+            >
               {{ source.label }}
             </button>
           </div>
@@ -55,31 +93,53 @@
         <div class="filter-group">
           <span class="filter-label">色彩趋势</span>
           <div class="color-picker">
-            <button v-for="color in colorFilters" :key="color.value"
+            <button
+              v-for="color in colorFilters"
+              :key="color.value"
               :class="{ active: selectedColor === color.value }"
-              @click="selectedColor = color.value"
               :style="{ '--color': color.value }"
-              :title="color.label">
-            </button>
+              :title="color.label"
+              @click="selectedColor = color.value"
+            />
           </div>
         </div>
       </div>
 
       <div class="inspiration-grid">
-        <div v-for="item in inspirationItems" :key="item.id" class="inspiration-card" @click="viewDetail(item)">
+        <div
+          v-for="item in inspirationItems"
+          :key="item.id"
+          class="inspiration-card"
+          @click="viewDetail(item)"
+        >
           <div class="card-image-wrapper">
-            <img :src="item.image" :alt="item.title" class="card-image" />
+            <img
+              :src="item.image"
+              :alt="item.title"
+              class="card-image"
+            >
             <div class="card-overlay">
-              <button class="overlay-btn" @click.stop="saveInspiration(item.id)">
+              <button
+                class="overlay-btn"
+                @click.stop="saveInspiration(item.id)"
+              >
                 <el-icon><Star /></el-icon>
               </button>
             </div>
           </div>
           <div class="card-content">
-            <h3 class="card-title">{{ item.title }}</h3>
-            <p class="card-desc">{{ item.description }}</p>
+            <h3 class="card-title">
+              {{ item.title }}
+            </h3>
+            <p class="card-desc">
+              {{ item.description }}
+            </p>
             <div class="card-tags">
-              <span v-for="tag in item.tags" :key="tag" class="tag">{{ tag }}</span>
+              <span
+                v-for="tag in item.tags"
+                :key="tag"
+                class="tag"
+              >{{ tag }}</span>
             </div>
             <div class="card-meta">
               <span class="author">{{ item.author }}</span>
@@ -102,21 +162,33 @@
       </div>
     </div>
 
-    <div v-if="activeTab === 'collaboration'" class="tab-content">
+    <div
+      v-if="activeTab === 'collaboration'"
+      class="tab-content"
+    >
       <div class="collab-container">
         <div class="projects-sidebar">
           <div class="sidebar-header">
             <h3>我的项目</h3>
-            <el-button type="primary" size="small" @click="createProject">
+            <el-button
+              type="primary"
+              size="small"
+              @click="createProject"
+            >
               <el-icon><Plus /></el-icon>
               新建项目
             </el-button>
           </div>
           <div class="project-list">
-            <div v-for="project in projects" :key="project.id"
+            <div
+              v-for="project in projects"
+              :key="project.id"
               :class="['project-item', { active: selectedProject?.id === project.id }]"
-              @click="selectProject(project)">
-              <div class="project-icon">{{ project.icon }}</div>
+              @click="selectProject(project)"
+            >
+              <div class="project-icon">
+                {{ project.icon }}
+              </div>
               <div class="project-info">
                 <span class="project-name">{{ project.name }}</span>
                 <span class="project-members">{{ project.members.length }} 位成员</span>
@@ -125,7 +197,10 @@
           </div>
         </div>
 
-        <div class="workspace" v-if="selectedProject">
+        <div
+          v-if="selectedProject"
+          class="workspace"
+        >
           <div class="workspace-header">
             <div class="workspace-title">
               <h2>{{ selectedProject.name }}</h2>
@@ -144,10 +219,18 @@
           </div>
 
           <div class="members-bar">
-            <div class="members-label">团队成员</div>
+            <div class="members-label">
+              团队成员
+            </div>
             <div class="members-list">
-              <div v-for="member in selectedProject.members" :key="member.id" class="member-item">
-                <div class="member-avatar">{{ member.avatar }}</div>
+              <div
+                v-for="member in selectedProject.members"
+                :key="member.id"
+                class="member-item"
+              >
+                <div class="member-avatar">
+                  {{ member.avatar }}
+                </div>
                 <span class="member-name">{{ member.name }}</span>
                 <span :class="['member-role', member.role]">{{ member.role }}</span>
               </div>
@@ -156,19 +239,35 @@
 
           <div class="editor-area">
             <div class="editor-toolbar">
-              <button class="toolbar-btn"><el-icon><PenLine /></el-icon></button>
-              <button class="toolbar-btn"><el-icon><Brush /></el-icon></button>
-              <button class="toolbar-btn"><el-icon><RefreshLeft /></el-icon></button>
-              <button class="toolbar-btn"><el-icon><RefreshRight /></el-icon></button>
-              <div class="toolbar-divider"></div>
-              <button class="toolbar-btn"><el-icon><ZoomIn /></el-icon></button>
-              <button class="toolbar-btn"><el-icon><ZoomOut /></el-icon></button>
-              <button class="toolbar-btn"><el-icon><FullScreen /></el-icon></button>
+              <button class="toolbar-btn">
+                <el-icon><PenLine /></el-icon>
+              </button>
+              <button class="toolbar-btn">
+                <el-icon><Brush /></el-icon>
+              </button>
+              <button class="toolbar-btn">
+                <el-icon><RefreshLeft /></el-icon>
+              </button>
+              <button class="toolbar-btn">
+                <el-icon><RefreshRight /></el-icon>
+              </button>
+              <div class="toolbar-divider" />
+              <button class="toolbar-btn">
+                <el-icon><ZoomIn /></el-icon>
+              </button>
+              <button class="toolbar-btn">
+                <el-icon><ZoomOut /></el-icon>
+              </button>
+              <button class="toolbar-btn">
+                <el-icon><FullScreen /></el-icon>
+              </button>
             </div>
 
             <div class="editor-canvas">
               <div class="canvas-placeholder">
-                <el-icon class="placeholder-icon"><Picture /></el-icon>
+                <el-icon class="placeholder-icon">
+                  <Picture />
+                </el-icon>
                 <p>点击上传设计稿或开始创作</p>
               </div>
             </div>
@@ -179,34 +278,58 @@
               <h4>实时批注</h4>
             </div>
             <div class="comments-list">
-              <div v-for="comment in selectedProject.comments" :key="comment.id" class="comment-item">
-                <div class="comment-avatar">{{ comment.authorAvatar }}</div>
+              <div
+                v-for="comment in selectedProject.comments"
+                :key="comment.id"
+                class="comment-item"
+              >
+                <div class="comment-avatar">
+                  {{ comment.authorAvatar }}
+                </div>
                 <div class="comment-content">
                   <div class="comment-header">
                     <span class="comment-author">{{ comment.author }}</span>
                     <span class="comment-time">{{ comment.time }}</span>
                   </div>
-                  <p class="comment-text">{{ comment.text }}</p>
+                  <p class="comment-text">
+                    {{ comment.text }}
+                  </p>
                 </div>
               </div>
             </div>
             <div class="comment-input">
-              <input v-model="newComment" type="text" placeholder="添加批注..." @keyup.enter="addComment" />
-              <button class="send-btn" @click="addComment">
+              <input
+                v-model="newComment"
+                type="text"
+                placeholder="添加批注..."
+                @keyup.enter="addComment"
+              >
+              <button
+                class="send-btn"
+                @click="addComment"
+              >
                 <el-icon><Share /></el-icon>
               </button>
             </div>
           </div>
         </div>
 
-        <div v-else class="empty-workspace">
-          <el-icon class="empty-icon"><FileText /></el-icon>
+        <div
+          v-else
+          class="empty-workspace"
+        >
+          <el-icon class="empty-icon">
+            <FileText />
+          </el-icon>
           <p>选择或创建一个项目开始协作</p>
         </div>
       </div>
     </div>
 
-    <div v-if="activeTab === 'copyright'" class="tab-content">
+    <div
+      v-if="activeTab === 'copyright'"
+      class="tab-content"
+    >
       <div class="copyright-container">
         <div class="copyright-intro">
           <h3>版权快速登记</h3>
@@ -214,21 +337,53 @@
         </div>
 
         <div class="form-container">
-          <el-form ref="copyrightFormRef" :model="copyrightForm" label-width="120px" class="copyright-form">
-            <el-form-item label="作品名称" required>
-              <el-input v-model="copyrightForm.title" placeholder="请输入作品名称" />
+          <el-form
+            ref="copyrightFormRef"
+            :model="copyrightForm"
+            label-width="120px"
+            class="copyright-form"
+          >
+            <el-form-item
+              label="作品名称"
+              required
+            >
+              <el-input
+                v-model="copyrightForm.title"
+                placeholder="请输入作品名称"
+              />
             </el-form-item>
 
-            <el-form-item label="作品类型" required>
-              <el-select v-model="copyrightForm.type" placeholder="请选择作品类型">
-                <el-option label="服装设计图" value="fashion-design" />
-                <el-option label="纸样设计" value="pattern-design" />
-                <el-option label="插画作品" value="illustration" />
-                <el-option label="其他" value="other" />
+            <el-form-item
+              label="作品类型"
+              required
+            >
+              <el-select
+                v-model="copyrightForm.type"
+                placeholder="请选择作品类型"
+              >
+                <el-option
+                  label="服装设计图"
+                  value="fashion-design"
+                />
+                <el-option
+                  label="纸样设计"
+                  value="pattern-design"
+                />
+                <el-option
+                  label="插画作品"
+                  value="illustration"
+                />
+                <el-option
+                  label="其他"
+                  value="other"
+                />
               </el-select>
             </el-form-item>
 
-            <el-form-item label="创作时间" required>
+            <el-form-item
+              label="创作时间"
+              required
+            >
               <el-date-picker
                 v-model="copyrightForm.createDate"
                 type="date"
@@ -237,8 +392,11 @@
             </el-form-item>
 
             <el-form-item label="作品描述">
-              <el-textarea v-model="copyrightForm.description" :rows="3"
-                placeholder="请简要描述作品内容..." />
+              <el-textarea
+                v-model="copyrightForm.description"
+                :rows="3"
+                placeholder="请简要描述作品内容..."
+              />
             </el-form-item>
 
             <el-form-item label="作品文件">
@@ -252,9 +410,15 @@
                   :file-list="copyrightFiles"
                   accept=".jpg,.png,.pdf"
                 >
-                  <el-icon class="upload-icon"><Upload /></el-icon>
-                  <div class="upload-text">拖拽文件到此处，或<em>点击上传</em></div>
-                  <div class="upload-hint">支持 JPG、PNG、PDF 格式，单个文件不超过 20MB</div>
+                  <el-icon class="upload-icon">
+                    <Upload />
+                  </el-icon>
+                  <div class="upload-text">
+                    拖拽文件到此处，或<em>点击上传</em>
+                  </div>
+                  <div class="upload-hint">
+                    支持 JPG、PNG、PDF 格式，单个文件不超过 20MB
+                  </div>
                 </el-upload>
               </div>
             </el-form-item>
@@ -267,7 +431,11 @@
 
             <el-form-item>
               <div class="form-actions">
-                <el-button type="primary" size="large" @click="submitCopyright">
+                <el-button
+                  type="primary"
+                  size="large"
+                  @click="submitCopyright"
+                >
                   <el-icon><Stamp /></el-icon>
                   提交版权登记
                 </el-button>
@@ -278,12 +446,24 @@
 
         <div class="history-section">
           <h3>已登记作品</h3>
-          <div v-if="copyrightHistory.length === 0" class="empty-state">
-            <div class="empty-icon">📄</div>
+          <div
+            v-if="copyrightHistory.length === 0"
+            class="empty-state"
+          >
+            <div class="empty-icon">
+              📄
+            </div>
             <p>暂无已登记作品</p>
           </div>
-          <div v-else class="history-list">
-            <div v-for="item in copyrightHistory" :key="item.id" class="history-card">
+          <div
+            v-else
+            class="history-list"
+          >
+            <div
+              v-for="item in copyrightHistory"
+              :key="item.id"
+              class="history-card"
+            >
               <div class="history-header">
                 <span class="history-title">{{ item.title }}</span>
                 <span :class="['history-status', item.status]">{{ item.statusText }}</span>
@@ -293,7 +473,12 @@
                 <span>存证编号：{{ item.certificateNo }}</span>
               </div>
               <div class="history-actions">
-                <el-button size="small" @click="viewCertificate(item.id)">查看证书</el-button>
+                <el-button
+                  size="small"
+                  @click="viewCertificate(item.id)"
+                >
+                  查看证书
+                </el-button>
               </div>
             </div>
           </div>
@@ -304,20 +489,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { ReadingLamp, User, Stamp, Search, Star, Plus, CirclePlus, Clock, EditPen, Brush, RefreshLeft, RefreshRight, ZoomIn, ZoomOut, FullScreen, Picture, Share, Upload } from '@element-plus/icons-vue'
+import { ref, reactive } from 'vue';
+import {
+  ReadingLamp,
+  User,
+  Stamp,
+  Search,
+  Star,
+  Plus,
+  CirclePlus,
+  Clock,
+  Brush,
+  RefreshLeft,
+  RefreshRight,
+  ZoomIn,
+  ZoomOut,
+  FullScreen,
+  Picture,
+  Share,
+  Upload,
+} from '@element-plus/icons-vue';
 
-const activeTab = ref('inspiration')
-const searchKeyword = ref('')
-const selectedStyles = ref<string[]>([])
-const selectedSource = ref('')
-const selectedColor = ref('')
-const currentPage = ref(1)
-const pageSize = ref(12)
-const totalCount = ref(48)
+const activeTab = ref('inspiration');
+const searchKeyword = ref('');
+const selectedStyles = ref<string[]>([]);
+const selectedSource = ref('');
+const selectedColor = ref('');
+const currentPage = ref(1);
+const pageSize = ref(12);
+const totalCount = ref(48);
 
-const newComment = ref('')
-const copyrightFiles = ref<any[]>([])
+const newComment = ref('');
+const copyrightFiles = ref<Record<string, unknown>[]>([]);
 
 const styleFilters = [
   { label: '休闲', value: 'casual' },
@@ -326,8 +529,8 @@ const styleFilters = [
   { label: '优雅', value: 'elegant' },
   { label: '复古', value: 'vintage' },
   { label: '时尚', value: 'fashion' },
-  { label: '极简', value: 'minimal' }
-]
+  { label: '极简', value: 'minimal' },
+];
 
 const sourceFilters = [
   { label: '全部', value: '' },
@@ -335,8 +538,8 @@ const sourceFilters = [
   { label: '街拍灵感', value: 'street-style' },
   { label: '艺术作品', value: 'art' },
   { label: '自然风景', value: 'nature' },
-  { label: '历史文化', value: 'history' }
-]
+  { label: '历史文化', value: 'history' },
+];
 
 const colorFilters = [
   { label: '全部', value: '' },
@@ -347,8 +550,8 @@ const colorFilters = [
   { label: '蓝色系', value: '#3b82f6' },
   { label: '紫色系', value: '#a855f7' },
   { label: '粉色系', value: '#ec4899' },
-  { label: '黑白灰', value: '#6b7280' }
-]
+  { label: '黑白灰', value: '#6b7280' },
+];
 
 const inspirationItems = ref([
   {
@@ -358,7 +561,7 @@ const inspirationItems = ref([
     image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop',
     tags: ['春季', '花卉', '优雅'],
     author: '设计师小美',
-    date: '2024-01-15'
+    date: '2024-01-15',
   },
   {
     id: 2,
@@ -367,7 +570,7 @@ const inspirationItems = ref([
     image: 'https://images.unsplash.com/photo-1525450824786-227cbef70703?w=400&h=300&fit=crop',
     tags: ['极简', '都市', '时尚'],
     author: '设计师阿杰',
-    date: '2024-01-14'
+    date: '2024-01-14',
   },
   {
     id: 3,
@@ -376,7 +579,7 @@ const inspirationItems = ref([
     image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=300&fit=crop',
     tags: ['复古', '波西米亚', '民族'],
     author: '设计师莉莉',
-    date: '2024-01-13'
+    date: '2024-01-13',
   },
   {
     id: 4,
@@ -385,7 +588,7 @@ const inspirationItems = ref([
     image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop',
     tags: ['运动', '休闲', '舒适'],
     author: '设计师大卫',
-    date: '2024-01-12'
+    date: '2024-01-12',
   },
   {
     id: 5,
@@ -394,7 +597,7 @@ const inspirationItems = ref([
     image: 'https://images.unsplash.com/photo-1525450824786-227cbef70703?w=400&h=300&fit=crop',
     tags: ['海洋', '蓝色', '清新'],
     author: '设计师艾米',
-    date: '2024-01-11'
+    date: '2024-01-11',
   },
   {
     id: 6,
@@ -403,9 +606,9 @@ const inspirationItems = ref([
     image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=300&fit=crop',
     tags: ['科技', '未来', '前卫'],
     author: '设计师卡尔',
-    date: '2024-01-10'
-  }
-])
+    date: '2024-01-10',
+  },
+]);
 
 const projects = ref([
   {
@@ -416,13 +619,13 @@ const projects = ref([
     members: [
       { id: 1, name: '小美', avatar: '美', role: '负责人' },
       { id: 2, name: '阿杰', avatar: '杰', role: '设计师' },
-      { id: 3, name: '莉莉', avatar: '莉', role: '打版师' }
+      { id: 3, name: '莉莉', avatar: '莉', role: '打版师' },
     ],
     comments: [
       { id: 1, author: '小美', authorAvatar: '美', time: '10分钟前', text: '整体配色方案很好，领口设计可以再优化一下' },
       { id: 2, author: '阿杰', authorAvatar: '杰', time: '25分钟前', text: '好的，我调整一下领口的弧度' },
-      { id: 3, author: '莉莉', authorAvatar: '莉', time: '1小时前', text: '版型图已经更新，请查看' }
-    ]
+      { id: 3, author: '莉莉', authorAvatar: '莉', time: '1小时前', text: '版型图已经更新，请查看' },
+    ],
   },
   {
     id: 2,
@@ -431,31 +634,29 @@ const projects = ref([
     status: '待审核',
     members: [
       { id: 1, name: '大卫', avatar: '卫', role: '负责人' },
-      { id: 2, name: '艾米', avatar: '米', role: '设计师' }
+      { id: 2, name: '艾米', avatar: '米', role: '设计师' },
     ],
-    comments: []
+    comments: [],
   },
   {
     id: 3,
     name: '经典款改良',
     icon: '✨',
     status: '已完成',
-    members: [
-      { id: 1, name: '卡尔', avatar: '卡', role: '负责人' }
-    ],
-    comments: []
-  }
-])
+    members: [{ id: 1, name: '卡尔', avatar: '卡', role: '负责人' }],
+    comments: [],
+  },
+]);
 
-const selectedProject = ref<typeof projects.value[0] | null>(null)
+const selectedProject = ref<(typeof projects.value)[0] | null>(null);
 
 const copyrightForm = reactive({
   title: '',
   type: '',
   createDate: null,
   description: '',
-  declaration: false
-})
+  declaration: false,
+});
 
 const copyrightHistory = ref([
   {
@@ -464,7 +665,7 @@ const copyrightHistory = ref([
     status: 'completed',
     statusText: '已完成',
     registerTime: '2024-01-10 14:30',
-    certificateNo: 'BC202401100001'
+    certificateNo: 'BC202401100001',
   },
   {
     id: 2,
@@ -472,76 +673,76 @@ const copyrightHistory = ref([
     status: 'pending',
     statusText: '审核中',
     registerTime: '2024-01-15 09:00',
-    certificateNo: 'BC202401150002'
-  }
-])
+    certificateNo: 'BC202401150002',
+  },
+]);
 
 function toggleStyle(style: string) {
-  const index = selectedStyles.value.indexOf(style)
+  const index = selectedStyles.value.indexOf(style);
   if (index > -1) {
-    selectedStyles.value.splice(index, 1)
+    selectedStyles.value.splice(index, 1);
   } else {
-    selectedStyles.value.push(style)
+    selectedStyles.value.push(style);
   }
 }
 
 function handleSearch() {
-  currentPage.value = 1
+  currentPage.value = 1;
 }
 
 function handlePageSizeChange(val: number) {
-  pageSize.value = val
-  currentPage.value = 1
+  pageSize.value = val;
+  currentPage.value = 1;
 }
 
 function handlePageChange(val: number) {
-  currentPage.value = val
+  currentPage.value = val;
 }
 
-function viewDetail(item: typeof inspirationItems.value[0]) {
-  console.log('查看详情:', item)
+function viewDetail(item: (typeof inspirationItems.value)[0]) {
+  console.log('查看详情:', item);
 }
 
 function saveInspiration(id: number) {
-  console.log('收藏灵感:', id)
+  console.log('收藏灵感:', id);
 }
 
 function createProject() {
-  console.log('创建项目')
+  console.log('创建项目');
 }
 
-function selectProject(project: typeof projects.value[0]) {
-  selectedProject.value = project
+function selectProject(project: (typeof projects.value)[0]) {
+  selectedProject.value = project;
 }
 
 function inviteMember() {
-  console.log('邀请成员')
+  console.log('邀请成员');
 }
 
 function openHistory() {
-  console.log('打开历史版本')
+  console.log('打开历史版本');
 }
 
 function addComment() {
-  if (!newComment.value.trim()) return
-  console.log('添加批注:', newComment.value)
-  newComment.value = ''
+  if (!newComment.value.trim()) return;
+  console.log('添加批注:', newComment.value);
+  newComment.value = '';
 }
 
-function handleUploadSuccess(response: any, file: any) {
-  copyrightFiles.value.push(file)
+function handleUploadSuccess(response: Record<string, unknown>, file: Record<string, unknown>) {
+  copyrightFiles.value.push(file);
 }
 
-function handleUploadError(err: any) {
-  console.error('上传失败:', err)
+function handleUploadError(err: unknown) {
+  console.error('上传失败:', err);
 }
 
 function submitCopyright() {
-  console.log('提交版权登记')
+  console.log('提交版权登记');
 }
 
 function viewCertificate(id: number) {
-  console.log('查看证书:', id)
+  console.log('查看证书:', id);
 }
 </script>
 

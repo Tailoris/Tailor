@@ -1,23 +1,56 @@
 <template>
-  <section class="section" aria-label="商品列表区域">
+  <section
+    class="section"
+    aria-label="商品列表区域"
+  >
     <div class="section-header">
-      <h2 class="section-title">{{ title }}</h2>
-      <router-link :to="moreLink" class="view-more" v-if="moreLink" aria-label="查看更多商品">查看更多 →</router-link>
+      <h2 class="section-title">
+        {{ title }}
+      </h2>
+      <router-link
+        v-if="moreLink"
+        :to="moreLink"
+        class="view-more"
+        aria-label="查看更多商品"
+      >
+        查看更多 →
+      </router-link>
     </div>
-    <el-skeleton :loading="loading" animated :rows="2">
-      <div v-if="error" class="empty-state">
-        <el-icon class="empty-icon"><Warning /></el-icon>
-        <p class="empty-text">数据加载失败，请稍后重试</p>
+    <el-skeleton
+      :loading="loading"
+      animated
+      :rows="2"
+    >
+      <div
+        v-if="error"
+        class="empty-state"
+      >
+        <el-icon class="empty-icon">
+          <Warning />
+        </el-icon>
+        <p class="empty-text">
+          数据加载失败，请稍后重试
+        </p>
       </div>
-      <div v-else class="product-grid">
+      <div
+        v-else
+        class="product-grid"
+      >
         <ProductCard
           v-for="product in products"
           :key="product.id"
           :product="product"
         />
-        <div v-if="products.length === 0 && !loading" class="empty-state">
-          <el-icon class="empty-icon"><ShoppingCart /></el-icon>
-          <p class="empty-text">暂无商品</p>
+        <div
+          v-if="products.length === 0 && !loading"
+          class="empty-state"
+        >
+          <el-icon class="empty-icon">
+            <ShoppingCart />
+          </el-icon>
+          <p class="empty-text">
+            暂无商品
+          </p>
         </div>
       </div>
     </el-skeleton>
@@ -25,17 +58,17 @@
 </template>
 
 <script setup lang="ts">
-import { Warning, ShoppingCart } from '@element-plus/icons-vue'
-import ProductCard from '@/components/ProductCard.vue'
-import type { Product } from '@/types'
+import { Warning, ShoppingCart } from '@element-plus/icons-vue';
+import ProductCard from '@/components/ProductCard.vue';
+import type { Product } from '@/types';
 
 defineProps<{
-  title: string
-  products: Product[]
-  loading: boolean
-  error?: boolean
-  moreLink?: string
-}>()
+  title: string;
+  products: Product[];
+  loading: boolean;
+  error?: boolean;
+  moreLink?: string;
+}>();
 </script>
 
 <style scoped>

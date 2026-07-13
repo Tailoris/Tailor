@@ -12,25 +12,25 @@
  *   const { stats, orders, finance } = await getDashboardData()
  */
 
-import { getDashboardStats } from './dashboard'
-import { listOrders } from './order'
-import { getBalance } from './finance'
-import { getSettlementInfo } from './finance'
-import { listProducts } from './product'
-import { getCommissionDetail } from './finance'
-import type { DashboardStats, Order, PageResponse, Product, SettlementRecord } from '@/types'
+import { getDashboardStats } from './dashboard';
+import { listOrders } from './order';
+import { getBalance } from './finance';
+import { getSettlementInfo } from './finance';
+import { listProducts } from './product';
+import { getCommissionDetail } from './finance';
+import type { DashboardStats, Order, PageResponse, SettlementRecord } from '@/types';
 
 // ================================================================
 // 聚合结果类型定义
 // ================================================================
 
 export interface AggregatedDashboardData {
-  stats: DashboardStats
-  recentOrders: PageResponse<Order>
-  balance: { withdrawableAmount: number; totalEarnings: number; totalWithdrawn: number }
-  commission: { totalCommission: number; commissionRate: number; monthlyCommission: number }
-  recentSettlements: PageResponse<SettlementRecord>
-  productCount: number
+  stats: DashboardStats;
+  recentOrders: PageResponse<Order>;
+  balance: { withdrawableAmount: number; totalEarnings: number; totalWithdrawn: number };
+  commission: { totalCommission: number; commissionRate: number; monthlyCommission: number };
+  recentSettlements: PageResponse<SettlementRecord>;
+  productCount: number;
 }
 
 // ================================================================
@@ -45,15 +45,14 @@ export interface AggregatedDashboardData {
  * 并行调用：统计概览、最近订单、余额、佣金、结算、商品数量
  */
 export async function getDashboardData(): Promise<AggregatedDashboardData> {
-  const [stats, recentOrders, balance, commission, recentSettlements, productResult] =
-    await Promise.all([
-      getDashboardStats(),
-      listOrders({ current: 1, size: 5 }),
-      getBalance(),
-      getCommissionDetail(),
-      getSettlementInfo({ current: 1, size: 5 }),
-      listProducts({ current: 1, size: 1 }),
-    ])
+  const [stats, recentOrders, balance, commission, recentSettlements, productResult] = await Promise.all([
+    getDashboardStats(),
+    listOrders({ current: 1, size: 5 }),
+    getBalance(),
+    getCommissionDetail(),
+    getSettlementInfo({ current: 1, size: 5 }),
+    listProducts({ current: 1, size: 1 }),
+  ]);
 
   return {
     stats,
@@ -62,7 +61,7 @@ export async function getDashboardData(): Promise<AggregatedDashboardData> {
     commission,
     recentSettlements,
     productCount: productResult.total,
-  }
+  };
 }
 
 // ================================================================
@@ -82,16 +81,16 @@ export async function getDashboardDataSafe(): Promise<Partial<AggregatedDashboar
     getCommissionDetail(),
     getSettlementInfo({ current: 1, size: 5 }),
     listProducts({ current: 1, size: 1 }),
-  ])
+  ]);
 
-  const data: Partial<AggregatedDashboardData> = {}
+  const data: Partial<AggregatedDashboardData> = {};
 
-  if (results[0].status === 'fulfilled') data.stats = results[0].value
-  if (results[1].status === 'fulfilled') data.recentOrders = results[1].value
-  if (results[2].status === 'fulfilled') data.balance = results[2].value
-  if (results[3].status === 'fulfilled') data.commission = results[3].value
-  if (results[4].status === 'fulfilled') data.recentSettlements = results[4].value
-  if (results[5].status === 'fulfilled') data.productCount = results[5].value.total
+  if (results[0].status === 'fulfilled') data.stats = results[0].value;
+  if (results[1].status === 'fulfilled') data.recentOrders = results[1].value;
+  if (results[2].status === 'fulfilled') data.balance = results[2].value;
+  if (results[3].status === 'fulfilled') data.commission = results[3].value;
+  if (results[4].status === 'fulfilled') data.recentSettlements = results[4].value;
+  if (results[5].status === 'fulfilled') data.productCount = results[5].value.total;
 
-  return data
+  return data;
 }

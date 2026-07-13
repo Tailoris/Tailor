@@ -1,16 +1,36 @@
 <template>
-  <div class="cart-view" role="main" aria-label="购物车页面">
-    <el-breadcrumb separator="/" aria-label="面包屑导航">
-      <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+  <div
+    class="cart-view"
+    role="main"
+    aria-label="购物车页面"
+  >
+    <el-breadcrumb
+      separator="/"
+      aria-label="面包屑导航"
+    >
+      <el-breadcrumb-item :to="{ path: '/' }">
+        首页
+      </el-breadcrumb-item>
       <el-breadcrumb-item>购物车</el-breadcrumb-item>
     </el-breadcrumb>
 
-    <h2 class="page-title">购物车 ({{ cartStore.totalCount }})</h2>
+    <h2 class="page-title">
+      购物车 ({{ cartStore.totalCount }})
+    </h2>
 
-    <el-skeleton :loading="loading" animated :rows="4">
+    <el-skeleton
+      :loading="loading"
+      animated
+      :rows="4"
+    >
       <template v-if="cartStore.items.length > 0">
         <div class="cart-header">
-          <el-checkbox :model-value="cartStore.isAllChecked" @change="cartStore.toggleAll">全选</el-checkbox>
+          <el-checkbox
+            :model-value="cartStore.isAllChecked"
+            @change="cartStore.toggleAll"
+          >
+            全选
+          </el-checkbox>
           <span class="col-product">商品信息</span>
           <span class="col-price">单价</span>
           <span class="col-quantity">数量</span>
@@ -23,12 +43,22 @@
           :key="item.id"
           class="cart-item"
         >
-          <el-checkbox :model-value="item.checked" @change="cartStore.toggleCheck(item.id)" />
+          <el-checkbox
+            :model-value="item.checked"
+            @change="cartStore.toggleCheck(item.id)"
+          />
           <div class="product-info">
-            <img :src="item.productImage || PLACEHOLDER_80x80" :alt="item.productName" />
+            <img
+              :src="item.productImage || PLACEHOLDER_80x80"
+              :alt="item.productName"
+            >
             <div class="product-text">
               <span class="product-name">{{ item.productName }}</span>
-              <span class="sku-attrs">{{ Object.entries(item.skuAttributes).map(([k, v]) => `${k}: ${v}`).join('; ') }}</span>
+              <span class="sku-attrs">{{
+                Object.entries(item.skuAttributes)
+                  .map(([k, v]) => `${k}: ${v}`)
+                  .join('; ')
+              }}</span>
             </div>
           </div>
           <span class="price">{{ formatPrice(item.price) }}</span>
@@ -40,13 +70,30 @@
             @change="(val: number) => cartStore.updateQuantity(item.id, val)"
           />
           <span class="subtotal">{{ formatPrice(item.price * item.quantity) }}</span>
-          <el-button type="danger" link @click="cartStore.removeFromCart(item.id)">删除</el-button>
+          <el-button
+            type="danger"
+            link
+            @click="cartStore.removeFromCart(item.id)"
+          >
+            删除
+          </el-button>
         </div>
 
         <div class="cart-footer">
           <div class="footer-left">
-            <el-checkbox :model-value="cartStore.isAllChecked" @change="cartStore.toggleAll">全选</el-checkbox>
-            <el-button type="danger" link @click="handleClear">清空购物车</el-button>
+            <el-checkbox
+              :model-value="cartStore.isAllChecked"
+              @change="cartStore.toggleAll"
+            >
+              全选
+            </el-checkbox>
+            <el-button
+              type="danger"
+              link
+              @click="handleClear"
+            >
+              清空购物车
+            </el-button>
           </div>
           <div class="footer-right">
             <span class="total-info">
@@ -64,33 +111,41 @@
           </div>
         </div>
       </template>
-      <el-empty v-else-if="!loading" description="购物车是空的">
-        <el-button type="primary" @click="$router.push('/products')">去逛逛</el-button>
+      <el-empty
+        v-else-if="!loading"
+        description="购物车是空的"
+      >
+        <el-button
+          type="primary"
+          @click="$router.push('/products')"
+        >
+          去逛逛
+        </el-button>
       </el-empty>
     </el-skeleton>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useCartStore } from '@/store/cart'
-import { formatPrice } from '@/utils/format'
-import { PLACEHOLDER_80x80 } from '@shared/utils/placeholder'
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { useCartStore } from '@/store/cart';
+import { formatPrice } from '@/utils/format';
+import { PLACEHOLDER_80x80 } from '@shared/utils/placeholder';
 
-const router = useRouter()
-const cartStore = useCartStore()
-const loading = ref(true)
+const router = useRouter();
+const cartStore = useCartStore();
+const loading = ref(true);
 
 async function loadCart() {
-  loading.value = true
+  loading.value = true;
   try {
-    await cartStore.fetchCart()
+    await cartStore.fetchCart();
   } catch {
-    ElMessage.error('加载购物车失败')
+    ElMessage.error('加载购物车失败');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -99,28 +154,28 @@ async function handleClear() {
     await ElMessageBox.confirm('确定要清空购物车吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
-    })
-    cartStore.clearCart()
-    ElMessage.success('已清空购物车')
+      type: 'warning',
+    });
+    cartStore.clearCart();
+    ElMessage.success('已清空购物车');
   } catch {
     // cancelled
   }
 }
 
 function handleCheckout() {
-  const checkedItems = cartStore.checkout()
+  const checkedItems = cartStore.checkout();
   if (checkedItems.length === 0) {
-    ElMessage.warning('请选择要结算的商品')
-    return
+    ElMessage.warning('请选择要结算的商品');
+    return;
   }
-  const ids = checkedItems.map((item) => item.id)
-  router.push({ path: '/checkout', query: { cartIds: ids.join(',') } })
+  const ids = checkedItems.map((item) => item.id);
+  router.push({ path: '/checkout', query: { cartIds: ids.join(',') } });
 }
 
 onMounted(() => {
-  loadCart()
-})
+  loadCart();
+});
 </script>
 
 <style scoped>
@@ -157,11 +212,25 @@ onMounted(() => {
 .cart-item:last-of-type {
   border-radius: 0 0 8px 8px;
 }
-.col-product { flex: 1; }
-.col-price { width: 100px; text-align: center; }
-.col-quantity { width: 120px; text-align: center; }
-.col-subtotal { width: 100px; text-align: center; }
-.col-action { width: 60px; text-align: center; }
+.col-product {
+  flex: 1;
+}
+.col-price {
+  width: 100px;
+  text-align: center;
+}
+.col-quantity {
+  width: 120px;
+  text-align: center;
+}
+.col-subtotal {
+  width: 100px;
+  text-align: center;
+}
+.col-action {
+  width: 60px;
+  text-align: center;
+}
 .product-info {
   flex: 1;
   display: flex;
