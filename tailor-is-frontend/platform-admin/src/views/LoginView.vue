@@ -131,32 +131,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
-import type { FormInstance, FormRules } from 'element-plus';
-import { User, Lock, Phone, Key } from '@element-plus/icons-vue';
-import { apiLogin, sendVerificationCode, loginByCode } from '@/api/auth';
-import { validate } from '@/utils/validate';
-import { storage } from '@/utils/storage';
-import { useCountdown } from '@/composables/useCountdown';
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
+import { User, Lock, Phone, Key } from '@element-plus/icons-vue'
+import { apiLogin, sendVerificationCode, loginByCode } from '@/api/auth'
+import { validate } from '@/utils/validate'
+import { storage } from '@/utils/storage'
+import { useCountdown } from '@/composables/useCountdown'
+import request from '@/api/request'
 
-const router = useRouter();
+const router = useRouter()
 
-const activeTab = ref('password');
-const loading = ref(false);
-const rememberMe = ref(false);
+const activeTab = ref('password')
+const loading = ref(false)
+const rememberMe = ref(false)
 
 // 密码登录表单
 const passwordForm = ref({
   account: '',
-  password: '',
-});
-const passwordFormRef = ref<FormInstance>();
-const accountType = ref<'phone' | 'email' | 'username' | 'unknown'>('unknown');
+  password: ''
+})
+const passwordFormRef = ref<FormInstance>()
+const accountType = ref<'phone' | 'email' | 'username' | 'unknown'>('unknown')
 
 function onAccountInput(val: string) {
-  accountType.value = validate.identifyAccount(val);
+  accountType.value = validate.identifyAccount(val)
 }
 
 const accountTypeHint = computed(() => {
@@ -164,10 +165,10 @@ const accountTypeHint = computed(() => {
     phone: '📱 手机号',
     email: '📧 邮箱',
     username: ' 用户名',
-    unknown: '',
-  };
-  return map[accountType.value] || '';
-});
+    unknown: ''
+  }
+  return map[accountType.value] || ''
+})
 
 const passwordRules: FormRules = {
   account: [
@@ -175,53 +176,53 @@ const passwordRules: FormRules = {
     {
       validator: (_rule, value: string, callback) => {
         if (!value) {
-          callback(new Error('请输入用户名/手机号/邮箱'));
-          return;
+          callback(new Error('请输入用户名/手机号/邮箱'))
+          return
         }
-        const type = validate.identifyAccount(value);
+        const type = validate.identifyAccount(value)
         if (type === 'phone' && !validate.isPhone(value)) {
-          callback(new Error('手机号格式不正确'));
-          return;
+          callback(new Error('手机号格式不正确'))
+          return
         }
         if (type === 'email' && !validate.isEmail(value)) {
-          callback(new Error('邮箱格式不正确'));
-          return;
+          callback(new Error('邮箱格式不正确'))
+          return
         }
-        callback();
+        callback()
       },
-      trigger: 'blur',
-    },
+      trigger: 'blur'
+    }
   ],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-};
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+}
 
 const canPasswordLogin = computed(() => {
-  return passwordForm.value.account.trim() !== '' && passwordForm.value.password.trim() !== '';
-});
+  return passwordForm.value.account.trim() !== '' && passwordForm.value.password.trim() !== ''
+})
 
 // 短信登录表单
 const codeForm = ref({
   account: '',
-  code: '',
-});
-const codeFormRef = ref<FormInstance>();
-const codeAccountType = ref<'phone' | 'email' | 'unknown'>('unknown');
-const sending = ref(false);
+  code: ''
+})
+const codeFormRef = ref<FormInstance>()
+const codeAccountType = ref<'phone' | 'email' | 'unknown'>('unknown')
+const sending = ref(false)
 
 function onCodeAccountInput(val: string) {
-  const type = validate.identifyAccount(val);
-  codeAccountType.value = type === 'phone' ? 'phone' : type === 'email' ? 'email' : 'unknown';
+  const type = validate.identifyAccount(val)
+  codeAccountType.value = type === 'phone' ? 'phone' : type === 'email' ? 'email' : 'unknown'
 }
 
 const codeAccountTypeHint = computed(() => {
-  if (codeAccountType.value === 'phone') return '📱 将发送短信验证码';
-  if (codeAccountType.value === 'email') return '📧 将发送邮箱验证码';
-  return '';
-});
+  if (codeAccountType.value === 'phone') return '📱 将发送短信验证码'
+  if (codeAccountType.value === 'email') return '📧 将发送邮箱验证码'
+  return ''
+})
 
 const canSendCode = computed(() => {
-  return codeAccountType.value === 'phone' || codeAccountType.value === 'email';
-});
+  return codeAccountType.value === 'phone' || codeAccountType.value === 'email'
+})
 
 const codeRules: FormRules = {
   account: [
@@ -229,141 +230,155 @@ const codeRules: FormRules = {
     {
       validator: (_rule, value: string, callback) => {
         if (!value) {
-          callback(new Error('请输入手机号/邮箱'));
-          return;
+          callback(new Error('请输入手机号/邮箱'))
+          return
         }
-        const type = validate.identifyAccount(value);
+        const type = validate.identifyAccount(value)
         if (type === 'phone' && !validate.isPhone(value)) {
-          callback(new Error('手机号格式不正确'));
-          return;
+          callback(new Error('手机号格式不正确'))
+          return
         }
         if (type === 'email' && !validate.isEmail(value)) {
-          callback(new Error('邮箱格式不正确'));
-          return;
+          callback(new Error('邮箱格式不正确'))
+          return
         }
         if (type === 'username') {
-          callback(new Error('请输入手机号或邮箱'));
-          return;
+          callback(new Error('请输入手机号或邮箱'))
+          return
         }
-        callback();
+        callback()
       },
-      trigger: 'blur',
-    },
+      trigger: 'blur'
+    }
   ],
   code: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
-    { pattern: /^\d{6}$/, message: '请输入6位验证码', trigger: 'blur' },
-  ],
-};
+    { pattern: /^\d{6}$/, message: '请输入6位验证码', trigger: 'blur' }
+  ]
+}
 
 const canCodeLogin = computed(() => {
-  const accountOk = codeAccountType.value === 'phone' || codeAccountType.value === 'email';
-  return accountOk && validate.isSixCode(codeForm.value.code);
-});
+  const accountOk = codeAccountType.value === 'phone' || codeAccountType.value === 'email'
+  return accountOk && validate.isSixCode(codeForm.value.code)
+})
 
 // 倒计时
-const countdown = useCountdown(60);
+const countdown = useCountdown(60)
 
 // 页面加载时回填记住的账号
 onMounted(() => {
-  const savedAccount = storage.get();
+  const savedAccount = storage.get()
   if (savedAccount) {
-    passwordForm.value.account = savedAccount;
-    rememberMe.value = true;
+    passwordForm.value.account = savedAccount
+    rememberMe.value = true
   }
-});
+})
 
 watch(activeTab, () => {
-  passwordFormRef.value?.clearValidate();
-  codeFormRef.value?.clearValidate();
-});
+  passwordFormRef.value?.clearValidate()
+  codeFormRef.value?.clearValidate()
+})
 
 async function handlePasswordLogin() {
-  if (!passwordFormRef.value) return;
+  if (!passwordFormRef.value) return
   await passwordFormRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true;
+      loading.value = true
       try {
         const response = await apiLogin({
           username: passwordForm.value.account,
-          password: passwordForm.value.password,
-        });
+          password: passwordForm.value.password
+        })
         if (response && response.token) {
-          localStorage.setItem('token', response.token);
+          localStorage.setItem('token', response.token)
         }
         if (rememberMe.value) {
-          storage.set(passwordForm.value.account);
+          storage.set(passwordForm.value.account)
         } else {
-          storage.clear();
+          storage.clear()
         }
-        ElMessage.success('登录成功');
-        router.push('/dashboard');
+
+        // 登录成功后先验证 Token 有效性，再跳转仪表盘
+        // 避免 Token 存储与网关校验不一致导致跳转后立即被踢回登录页
+        try {
+          await request({
+            url: '/auth/userinfo',
+            method: 'get',
+            showError: false,
+          } as any)
+          ElMessage.success('登录成功')
+          router.push('/dashboard')
+        } catch {
+          // Token 验证失败，清理并提示用户
+          localStorage.removeItem('token')
+          ElMessage.error('登录验证失败，请重新登录')
+        }
       } catch (error) {
-        const err = error as Error;
+        const err = error as Error
         if (err.message && err.message.includes('502')) {
-          ElMessage.error('服务暂时不可用，请稍后重试');
+          ElMessage.error('服务暂时不可用，请稍后重试')
         } else if (err.message && err.message.includes('ECONNABORTED')) {
-          ElMessage.error('请求超时，请检查网络连接');
+          ElMessage.error('请求超时，请检查网络连接')
         } else if (err.message && err.message.includes('网络')) {
-          ElMessage.error('网络连接异常，请检查网络');
+          ElMessage.error('网络连接异常，请检查网络')
         } else {
-          ElMessage.error('账号或密码错误，请重新输入');
+          ElMessage.error('账号或密码错误，请重新输入')
         }
       } finally {
-        loading.value = false;
+        loading.value = false
       }
     }
-  });
+  })
 }
 
 async function handleSendCode() {
   if (!codeForm.value.account) {
-    ElMessage.warning('请先输入手机号/邮箱');
-    return;
+    ElMessage.warning('请先输入手机号/邮箱')
+    return
   }
-  const type = validate.identifyAccount(codeForm.value.account);
+  const type = validate.identifyAccount(codeForm.value.account)
   if (type !== 'phone' && type !== 'email') {
-    ElMessage.warning('请输入正确的手机号或邮箱');
-    return;
+    ElMessage.warning('请输入正确的手机号或邮箱')
+    return
   }
-  if (sending.value || countdown.counting.value) return;
-  sending.value = true;
+  if (sending.value || countdown.counting.value) return
+  sending.value = true
   try {
-    await sendVerificationCode(codeForm.value.account, type);
-    ElMessage.success('验证码已发送');
-    countdown.start();
+    await sendVerificationCode(codeForm.value.account, type)
+    ElMessage.success('验证码已发送')
+    countdown.start()
   } catch {
-    ElMessage.error('发送失败');
+    ElMessage.error('发送失败')
   } finally {
-    sending.value = false;
+    sending.value = false
   }
 }
 
 async function handleCodeLogin() {
-  if (!codeFormRef.value) return;
+  if (!codeFormRef.value) return
   await codeFormRef.value.validate(async (valid) => {
     if (valid) {
-      const type = codeAccountType.value;
+      const type = codeAccountType.value
       if (type !== 'phone' && type !== 'email') {
-        ElMessage.warning('请输入正确的手机号或邮箱');
-        return;
+        ElMessage.warning('请输入正确的手机号或邮箱')
+        return
       }
-      loading.value = true;
+      loading.value = true
       try {
         await loginByCode({
           target: codeForm.value.account,
           code: codeForm.value.code,
-          type,
-        });
-        ElMessage.success('登录成功');
-        router.push('/dashboard');
+          type
+        })
+        ElMessage.success('登录成功')
+        router.push('/dashboard')
       } catch {
-        ElMessage.error('验证码错误或已过期');
+        ElMessage.error('验证码错误或已过期')
       } finally {
-        loading.value = false;
+        loading.value = false
       }
     }
-  });
+  })
 }
 </script>
 

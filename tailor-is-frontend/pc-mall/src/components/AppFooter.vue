@@ -13,36 +13,96 @@
         <div class="footer-column">
           <h4>品牌介绍</h4>
           <ul>
-            <li><a href="#">关于裁智云</a></li>
-            <li><a href="#">品牌故事</a></li>
-            <li><a href="#">加入我们</a></li>
-            <li><a href="#">新闻动态</a></li>
+            <li>
+              <router-link to="/about">
+                关于裁智云
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/brand-story">
+                品牌故事
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/join-us">
+                加入我们
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/news">
+                新闻动态
+              </router-link>
+            </li>
           </ul>
         </div>
         <div class="footer-column">
           <h4>帮助中心</h4>
           <ul>
-            <li><a href="#">购物指南</a></li>
-            <li><a href="#">支付方式</a></li>
-            <li><a href="#">配送说明</a></li>
-            <li><a href="#">售后服务</a></li>
+            <li>
+              <router-link to="/shopping-guide">
+                购物指南
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/payment">
+                支付方式
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/delivery">
+                配送说明
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/after-sale">
+                售后服务
+              </router-link>
+            </li>
           </ul>
         </div>
         <div class="footer-column">
           <h4>商家服务</h4>
           <ul>
-            <li><a href="#">商家入驻</a></li>
-            <li><a href="#">商家规则</a></li>
-            <li><a href="#">商家后台</a></li>
-            <li><a href="#">商家培训</a></li>
+            <li>
+              <router-link to="/merchant-apply">
+                商家入驻
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/merchant-rules">
+                商家规则
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/merchant-backend">
+                商家后台
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/merchant-training">
+                商家培训
+              </router-link>
+            </li>
           </ul>
         </div>
         <div class="footer-column">
           <h4>联系我们</h4>
           <ul>
-            <li><a href="#">客服热线: 400-888-8888</a></li>
-            <li><a href="#">工作时间: 9:00-18:00</a></li>
-            <li><a href="#">邮箱: support@tailoris.com</a></li>
+            <li>
+              <router-link to="/contact">
+                客服热线: 400-888-8888
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/contact">
+                工作时间: 9:00-18:00
+              </router-link>
+            </li>
+            <li>
+              <router-link to="/contact">
+                邮箱: support@tailoris.com
+              </router-link>
+            </li>
             <li class="social-icons">
               <el-icon :size="24">
                 <ChatDotRound />

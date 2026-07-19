@@ -48,6 +48,7 @@ export default [
         IntersectionObserver: 'readonly',
         KeyboardEvent: 'readonly',
         MouseEvent: 'readonly',
+        HTMLInputElement: 'readonly',
       },
     },
   },
