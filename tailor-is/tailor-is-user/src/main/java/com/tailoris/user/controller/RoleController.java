@@ -42,7 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @Tag(name = "角色管理", description = "用户角色分配、移除等管理接口")
 @RestController
-@RequestMapping(RoutePortConstant.ROUTE_USER_ROLES)
+@RequestMapping("/user/roles")
 @RequiredArgsConstructor
 public class RoleController {
 

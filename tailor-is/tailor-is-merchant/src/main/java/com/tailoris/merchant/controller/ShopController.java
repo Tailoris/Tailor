@@ -18,7 +18,7 @@ import java.util.Map;
 @SaCheckLogin
 @Tag(name = "店铺管理")
 @RestController
-@RequestMapping("/api/merchant/shop")
+@RequestMapping("/api/v1/merchant/shop")
 @RequiredArgsConstructor
 public class ShopController {
 

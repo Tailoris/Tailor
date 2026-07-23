@@ -5,8 +5,6 @@ import com.tailoris.api.admin.dto.MerchantQueryRequest;
 import com.tailoris.common.dto.PageResponse;
 import com.tailoris.api.merchant.entity.Merchant;
 
-import java.util.List;
-
 public interface AdminMerchantService {
 
     PageResponse<Merchant> listPendingMerchants(MerchantQueryRequest request);

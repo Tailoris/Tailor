@@ -31,7 +31,7 @@ docker pull grafana/k6:latest
 k6 run --vus 100 --duration 60s load-test.js
 
 # 指定环境变量
-k6 run -e API_BASE_URL=http://localhost:8080 -e AUTH_TOKEN=xxx load-test.js
+k6 run -e API_BASE_URL=http://localhost:9000 -e AUTH_TOKEN=xxx load-test.js
 
 # 输出 JSON 报告
 k6 run --out json=results.json load-test.js
@@ -84,7 +84,7 @@ docker run --rm -v $(pwd):/scripts grafana/k6 run /scripts/load-test.js
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `API_BASE_URL` | 后端 API 地址 | `http://localhost:8080` |
+| `API_BASE_URL` | 后端 API 地址 | `http://localhost:9000` |
 | `GRAPHQL_URL` | GraphQL 网关地址 | `http://localhost:4000/graphql` |
 | `AUTH_TOKEN` | 测试账号 Token | 需手动设置 |
 | `TARGET_QPS` | 目标 QPS | 1000 |

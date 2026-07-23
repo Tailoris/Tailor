@@ -2,10 +2,16 @@ package com.tailoris.user.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.tailoris.common.annotation.RateLimit;
+import com.tailoris.common.exception.AccountErrorException;
 import com.tailoris.common.exception.BusinessException;
+import com.tailoris.common.constant.CommonConstants;
 import com.tailoris.common.result.Result;
 import com.tailoris.common.security.CsrfTokenFilter;
 import com.tailoris.user.dto.LoginRequest;
+import com.tailoris.user.dto.LoginByCodeRequest;
+import com.tailoris.user.dto.EmailCodeRequest;
+import com.tailoris.user.dto.EmailRegisterRequest;
+import com.tailoris.user.dto.ResetPasswordRequest;
 import com.tailoris.user.dto.LoginResponse;
 import com.tailoris.user.dto.RegisterRequest;
 import com.tailoris.user.dto.SendSmsCodeRequest;
@@ -31,7 +37,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.SecureRandom;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @ApiVersion("1.0")
@@ -44,7 +49,12 @@ public class AuthController {
 
     private static final int BEARER_PREFIX_LENGTH = 7;
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    /**
+     * ThreadLocal 包装的 SecureRandom，避免多线程争用静态字段导致的性能瓶颈.
+     * 每个线程独立持有 SecureRandom 实例，消除 synchronized 锁竞争.
+     */
+    private static final ThreadLocal<SecureRandom> SECURE_RANDOM =
+            ThreadLocal.withInitial(SecureRandom::new);
 
     private final SysUserService sysUserService;
     private final WechatLoginService wechatLoginService;
@@ -73,11 +83,11 @@ public class AuthController {
     @Operation(summary = "验证码登录", description = "支持手机号或邮箱验证码登录")
     @RateLimit(key = "login-code", permitsPerSecond = 5, capacity = 60, message = "验证码登录请求过于频繁")
     @PostMapping("/login/code")
-    public Result<LoginResponse> loginByCode(@RequestBody Map<String, String> request,
+    public Result<LoginResponse> loginByCode(@Valid @RequestBody LoginByCodeRequest request,
                                              HttpServletRequest httpRequest) {
-        String target = request.get("target");
-        String code = request.get("code");
-        String type = request.get("type");
+        String target = request.getTarget();
+        String code = request.getCode();
+        String type = request.getType();
 
         if (!StringUtils.hasText(target) || !StringUtils.hasText(code)) {
             throw new BusinessException("请输入账号和验证码");
@@ -91,11 +101,11 @@ public class AuthController {
         }
 
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new AccountErrorException("ACCOUNT_NOT_FOUND", "用户不存在");
         }
 
-        if (user.getStatus() != 1) {
-            throw new BusinessException("账号已被禁用");
+        if (user.getStatus() != CommonConstants.STATUS_ENABLED) {
+            throw new AccountErrorException("ACCOUNT_DISABLED", "账号已被禁用");
         }
 
         String cacheKey = "sms:code:" + target;
@@ -138,10 +148,10 @@ public class AuthController {
     @Operation(summary = "邮箱注册", description = "邮箱+密码+邮箱验证码注册")
     @RateLimit(key = "register-email", permitsPerSecond = 5, capacity = 60, message = "注册请求过于频繁")
     @PostMapping("/register/email")
-    public Result<Void> registerByEmail(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String code = request.get("code");
-        String password = request.get("password");
+    public Result<Void> registerByEmail(@Valid @RequestBody EmailRegisterRequest request) {
+        String email = request.getEmail();
+        String code = request.getCode();
+        String password = request.getPassword();
 
         if (!StringUtils.hasText(email) || !StringUtils.hasText(code) || !StringUtils.hasText(password)) {
             throw new BusinessException("请填写完整信息");
@@ -181,8 +191,8 @@ public class AuthController {
     @Operation(summary = "发送邮箱验证码", description = "发送注册/找回密码所需的邮箱验证码")
     @RateLimit(key = "email", permitsPerSecond = 1, capacity = 60, message = "验证码请求过于频繁，请1分钟后再试")
     @PostMapping("/email-code")
-    public Result<Void> sendEmailCode(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
+    public Result<Void> sendEmailCode(@Valid @RequestBody EmailCodeRequest request) {
+        String email = request.getEmail();
         if (!StringUtils.hasText(email)) {
             throw new BusinessException("请输入邮箱");
         }
@@ -191,7 +201,7 @@ public class AuthController {
             throw new BusinessException("邮箱格式不正确");
         }
 
-        String code = String.valueOf(100000 + SECURE_RANDOM.nextInt(900000));
+        String code = String.valueOf(100000 + SECURE_RANDOM.get().nextInt(900000));
         String cacheKey = "email:code:" + email;
         stringRedisTemplate.opsForValue().set(cacheKey, code, 5, TimeUnit.MINUTES);
 
@@ -210,11 +220,11 @@ public class AuthController {
     @Operation(summary = "密码重置", description = "通过验证码重置密码")
     @RateLimit(key = "reset-password", permitsPerSecond = 5, capacity = 60, message = "重置密码请求过于频繁")
     @PostMapping("/reset-password")
-    public Result<Void> resetPassword(@RequestBody Map<String, String> request) {
-        String target = request.get("target");
-        String code = request.get("code");
-        String newPassword = request.get("newPassword");
-        String type = request.get("type");
+    public Result<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        String target = request.getTarget();
+        String code = request.getCode();
+        String newPassword = request.getNewPassword();
+        String type = request.getType();
 
         if (!StringUtils.hasText(target) || !StringUtils.hasText(code) || !StringUtils.hasText(newPassword)) {
             throw new BusinessException("请填写完整信息");
@@ -238,11 +248,11 @@ public class AuthController {
         }
 
         if (user == null) {
-            throw new BusinessException("用户不存在");
+            throw new AccountErrorException("ACCOUNT_NOT_FOUND", "用户不存在");
         }
 
-        if (user.getStatus() != 1) {
-            throw new BusinessException("账号已被禁用");
+        if (user.getStatus() != CommonConstants.STATUS_ENABLED) {
+            throw new AccountErrorException("ACCOUNT_DISABLED", "账号已被禁用");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));

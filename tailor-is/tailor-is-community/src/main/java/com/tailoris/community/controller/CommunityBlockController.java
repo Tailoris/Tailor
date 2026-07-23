@@ -3,6 +3,7 @@ package com.tailoris.community.controller;
 import com.tailoris.common.result.Result;
 import com.tailoris.community.entity.CommunityBlock;
 import com.tailoris.community.service.CommunityBlockService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,13 +17,14 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/community/block")
+@RequestMapping("/api/v1/community/block")
 @RequiredArgsConstructor
 @Tag(name = "社区屏蔽", description = "COM-004 屏蔽用户")
 public class CommunityBlockController {
 
     private final CommunityBlockService blockService;
 
+    @Operation(summary = "屏蔽用户", description = "屏蔽指定用户")
     @PostMapping
     public Result<Void> block(
             @RequestHeader("X-User-Id") Long userId,
@@ -32,6 +34,7 @@ public class CommunityBlockController {
         return Result.success();
     }
 
+    @Operation(summary = "取消屏蔽", description = "取消对指定用户的屏蔽")
     @DeleteMapping("/{blockedUserId}")
     public Result<Void> unblock(
             @RequestHeader("X-User-Id") Long userId,
@@ -40,6 +43,7 @@ public class CommunityBlockController {
         return Result.success();
     }
 
+    @Operation(summary = "屏蔽列表", description = "获取当前用户的屏蔽列表")
     @GetMapping("/list")
     public Result<List<CommunityBlock>> list(@RequestHeader("X-User-Id") Long userId) {
         return Result.success(blockService.listBlocked(userId));

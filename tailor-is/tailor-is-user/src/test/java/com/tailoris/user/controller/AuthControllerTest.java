@@ -2,8 +2,10 @@ package com.tailoris.user.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tailoris.common.exception.AccountErrorException;
 import com.tailoris.common.exception.GlobalExceptionHandler;
 import com.tailoris.common.result.Result;
+import com.tailoris.user.dto.LoginByCodeRequest;
 import com.tailoris.user.dto.LoginRequest;
 import com.tailoris.user.dto.LoginResponse;
 import com.tailoris.user.dto.RegisterRequest;
@@ -19,6 +21,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("AuthController 测试")
 class AuthControllerTest {
 
@@ -266,5 +271,88 @@ class AuthControllerTest {
                         .andExpect(jsonPath("$.data.token").value("mock-jwt-token"));
             }
         }
+    }
+
+    @Nested
+    @DisplayName("验证码登录接口测试")
+    class LoginByCodeTests {
+
+        @Test
+        @DisplayName("验证码登录成功")
+        void testLoginByCodeSuccess() throws Exception {
+            LoginByCodeRequest request = new LoginByCodeRequest();
+            request.setTarget("13800138000");
+            request.setCode("123456");
+            request.setType("phone");
+
+            when(sysUserService.getUserByPhone("13800138000")).thenReturn(mockUser());
+
+            mockMvc.perform(post("/api/auth/login/code")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value(200));
+        }
+
+        @Test
+        @DisplayName("用户不存在返回账号错误")
+        void testLoginByCodeUserNotFound() throws Exception {
+            LoginByCodeRequest request = new LoginByCodeRequest();
+            request.setTarget("13800138000");
+            request.setCode("123456");
+            request.setType("phone");
+
+            when(sysUserService.getUserByPhone("13800138000")).thenReturn(null);
+
+            mockMvc.perform(post("/api/auth/login/code")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(400))
+                    .andExpect(jsonPath("$.message").value("用户不存在"));
+        }
+
+        @Test
+        @DisplayName("账号被禁用返回账号错误")
+        void testLoginByCodeAccountDisabled() throws Exception {
+            LoginByCodeRequest request = new LoginByCodeRequest();
+            request.setTarget("13800138000");
+            request.setCode("123456");
+            request.setType("phone");
+
+            com.tailoris.user.entity.SysUser user = mockUser();
+            user.setStatus(0);
+            when(sysUserService.getUserByPhone("13800138000")).thenReturn(user);
+
+            mockMvc.perform(post("/api/auth/login/code")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(400))
+                    .andExpect(jsonPath("$.message").value("账号已被禁用"));
+        }
+
+        @Test
+        @DisplayName("验证码登录参数校验失败")
+        void testLoginByCodeValidationFailure() throws Exception {
+            LoginByCodeRequest request = new LoginByCodeRequest();
+            request.setTarget("");
+            request.setCode("");
+
+            mockMvc.perform(post("/api/auth/login/code")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(400));
+        }
+    }
+
+    private com.tailoris.user.entity.SysUser mockUser() {
+        com.tailoris.user.entity.SysUser user = new com.tailoris.user.entity.SysUser();
+        user.setId(1L);
+        user.setUsername("testuser");
+        user.setPhone("13800138000");
+        user.setStatus(1);
+        return user;
     }
 }

@@ -5,8 +5,9 @@ Tailor IS 数据分析微服务
 ## 功能概述
 
 - 平台数据统计与分析
-- 用户行为分析
-- 业务指标报表
+- 业务指标采集与记录
+- 指标数据按时间范围查询
+- 多维度数据分析
 - 数据可视化支持
 - Serverless 部署支持
 
@@ -16,7 +17,11 @@ Tailor IS 数据分析微服务
 - Spring Cloud Alibaba
 - MyBatis-Plus
 - Nacos (服务注册/配置中心)
-- MySQL
+- Sentinel (限流熔断)
+- MySQL + Druid 连接池
+- Redis (缓存)
+- RabbitMQ (消息队列)
+- SA-Token (权限认证)
 - Serverless 支持
 
 ## 启动方式
@@ -24,10 +29,15 @@ Tailor IS 数据分析微服务
 ```bash
 # 设置环境变量
 export NACOS_ADDR=localhost:8848
+export REDIS_HOST=localhost
+export REDIS_PORT=6379
+export REDIS_PASSWORD=
 export MYSQL_HOST=localhost
 export MYSQL_PORT=3306
 export MYSQL_USERNAME=root
 export MYSQL_PASSWORD=
+export RABBITMQ_HOST=localhost
+export RABBITMQ_PORT=5672
 
 # 启动服务
 ./mvnw spring-boot:run
@@ -64,5 +74,5 @@ curl http://localhost:8113/actuator/health
 
 ## 依赖关系
 
-- 依赖服务: Nacos, MySQL
+- 依赖服务: Nacos, Redis, MySQL, RabbitMQ
 - 被依赖: Gateway, Lite Gateway, Admin 等服务

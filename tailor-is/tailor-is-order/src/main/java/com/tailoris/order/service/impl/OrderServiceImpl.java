@@ -601,6 +601,35 @@ public class OrderServiceImpl implements OrderService {
         return result;
     }
 
+    @Override
+    public Page<OrderInfo> listAllOrders(OrderQueryRequest request) {
+        LambdaQueryWrapper<OrderInfo> queryWrapper = new LambdaQueryWrapper<>();
+
+        if (request.getStatus() != null) {
+            queryWrapper.eq(OrderInfo::getStatus, request.getStatus());
+        }
+        if (request.getProductType() != null) {
+            queryWrapper.eq(OrderInfo::getProductType, request.getProductType());
+        }
+        if (StringUtils.hasText(request.getKeyword())) {
+            queryWrapper.and(wrapper -> wrapper
+                    .like(OrderInfo::getOrderNo, request.getKeyword())
+                    .or()
+                    .like(OrderInfo::getRemark, request.getKeyword())
+            );
+        }
+        if (request.getShopId() != null) {
+            queryWrapper.eq(OrderInfo::getShopId, request.getShopId());
+        }
+
+        queryWrapper.orderByDesc(OrderInfo::getCreateTime);
+
+        Page<OrderInfo> page = new Page<>(request.getPageNum(), request.getPageSize());
+        Page<OrderInfo> result = orderInfoMapper.selectPage(page, queryWrapper);
+        batchFillOrderItems(result.getRecords());
+        return result;
+    }
+
     /**
      * 批量填充订单项到订单列表，避免 N+1 查询。
      * <p>使用 2 次批量 SQL 替代 N 次逐条查询 order_item 和 order_logistics。</p>

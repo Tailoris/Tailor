@@ -21,7 +21,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/marketing/group-buy")
+@RequestMapping("/api/v1/marketing/group-buy")
 @RequiredArgsConstructor
 @Tag(name = "拼团活动", description = "MKT-002 拼团活动相关接口")
 public class MktGroupBuyController {
@@ -29,12 +29,14 @@ public class MktGroupBuyController {
     private final MktGroupBuyService groupBuyService;
 
     /** 创建拼团活动 */
+    @Operation(summary = "创建拼团活动", description = "创建新的拼团活动")
     @PostMapping("/activity")
     public Result<MktGroupBuy> createActivity(@RequestBody MktGroupBuy activity) {
         return Result.success(groupBuyService.createActivity(activity));
     }
 
     /** 更新活动 */
+    @Operation(summary = "更新活动", description = "更新拼团活动信息")
     @PutMapping("/activity/{id}")
     public Result<MktGroupBuy> updateActivity(@PathVariable Long id, @RequestBody MktGroupBuy activity) {
         activity.setId(id);
@@ -42,6 +44,7 @@ public class MktGroupBuyController {
     }
 
     /** 取消活动 */
+    @Operation(summary = "取消活动", description = "取消拼团活动")
     @PostMapping("/activity/{id}/cancel")
     public Result<Void> cancelActivity(@PathVariable Long id) {
         groupBuyService.cancelActivity(id);
@@ -49,12 +52,14 @@ public class MktGroupBuyController {
     }
 
     /** 活动详情 */
+    @Operation(summary = "活动详情", description = "获取拼团活动详情")
     @GetMapping("/activity/{id}")
     public Result<MktGroupBuy> getActivityDetail(@PathVariable Long id) {
         return Result.success(groupBuyService.getActivityDetail(id));
     }
 
     /** 活动列表 */
+    @Operation(summary = "活动列表", description = "分页查询拼团活动列表")
     @GetMapping("/activity/list")
     public Result<PageResponse<MktGroupBuy>> listActivities(
             @RequestParam(defaultValue = "1") Integer pageNum,
@@ -66,6 +71,7 @@ public class MktGroupBuyController {
     }
 
     /** 开团 */
+    @Operation(summary = "开团", description = "用户发起拼团")
     @PostMapping("/open")
     public Result<MktGroupBuyInstance> openGroup(
             @RequestHeader("X-User-Id") Long userId,
@@ -74,6 +80,7 @@ public class MktGroupBuyController {
     }
 
     /** 加入团 */
+    @Operation(summary = "加入团", description = "用户加入已有拼团")
     @PostMapping("/join")
     public Result<MktGroupBuyInstance> joinGroup(
             @RequestHeader("X-User-Id") Long userId,
@@ -82,12 +89,14 @@ public class MktGroupBuyController {
     }
 
     /** 团详情 */
+    @Operation(summary = "团详情", description = "获取拼团实例详情")
     @GetMapping("/instance/{id}")
     public Result<MktGroupBuyInstance> getInstanceDetail(@PathVariable Long id) {
         return Result.success(groupBuyService.getInstanceDetail(id));
     }
 
     /** 用户参与的团 */
+    @Operation(summary = "用户参与的团", description = "分页查询用户参与的拼团列表")
     @GetMapping("/user/instances")
     public Result<PageResponse<MktGroupBuyInstance>> listUserInstances(
             @RequestHeader("X-User-Id") Long userId,
@@ -99,12 +108,14 @@ public class MktGroupBuyController {
     }
 
     /** 可加入的团 */
+    @Operation(summary = "可加入的团", description = "获取可加入的拼团列表")
     @GetMapping("/joinable")
     public Result<List<MktGroupBuyInstance>> listJoinableGroups(@RequestParam Long activityId) {
         return Result.success(groupBuyService.listJoinableGroups(activityId));
     }
 
     /** 团成员 */
+    @Operation(summary = "团成员", description = "获取拼团成员列表")
     @GetMapping("/instance/{id}/members")
     public Result<List<MktGroupBuyMember>> listGroupMembers(@PathVariable Long id) {
         return Result.success(groupBuyService.listGroupMembers(id));

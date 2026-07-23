@@ -50,7 +50,7 @@ Tailor IS（裁智云）是服装全产业数字化平台，采用微服务架�
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          网关层 (Gateway Layer) :8080                        │
+│                          网关层 (Gateway Layer) :9000                        │
 │   ┌─────────────────────────────────────────────────────────────────────┐   │
 │   │              Spring Cloud Gateway + AuthGlobalFilter                 │   │
 │   │        路由转发 · 认证鉴权 · 限流 · CORS · 请求日志 · Knife4j聚合       │   │
@@ -64,25 +64,25 @@ Tailor IS（裁智云）是服装全产业数字化平台，采用微服务架�
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐          │
 │  │ user     │ │ merchant │ │ product  │ │ order    │ │ payment  │          │
 │  │ 用户服务  │ │ 商户服务  │ │ 商品服务  │ │ 订单服务  │ │ 支付服务  │          │
-│  │ :8081    │ │ :8082    │ │ :8083    │ │ :8084    │ │ :8085    │          │
+│  │ :8101    │ │ :8110    │ │ :8102    │ │ :8103    │ │ :8104    │          │
 │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘          │
 │       │            │            │            │            │                 │
 │  ┌────┴─────┐ ┌────┴─────┐ ┌────┴─────┐ ┌────┴─────┐ ┌────┴─────┐          │
 │  │ marketing│ │ ai       │ │ copyright│ │community │ │ supply  │          │
 │  │ 营销服务  │ │ AI服务   │ │ 版权服务  │ │ 社区服务  │ │ 供应链   │          │
-│  │ :8086    │ │ :8087    │ │ :8088    │ │ :8089    │ │ :8090    │          │
+│  │ :8105    │ │ :8106    │ │ :8107    │ │ :8108    │ │ :8109    │          │
 │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘          │
 │       │            │            │            │            │                 │
 │  ┌────┴─────┐ ┌────┴─────┐ ┌────┴─────┐ ┌────┴─────┐ ┌────┴─────┐          │
 │  │ admin    │ │ message  │ │ pattern  │ │message-im│ │ academy  │          │
 │  │ 管理服务  │ │ 消息服务  │ │ 版型服务  │ │ 即时通讯  │ │ 学院服务  │          │
-│  │ :8091    │ │ :8092    │ │ :8093    │ │ :8094    │ │ :8095    │          │
+│  │ :8100    │ │ :8111    │ │ :8115    │ │ :8114    │ │ :8112    │          │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘          │
 │                                                                              │
 │                            ┌──────────┐                                      │
 │                            │ analytics│                                      │
 │                            │ 数据分析  │                                      │
-│                            │ :8096    │                                      │
+│                            │ :8113    │                                      │
 │                            └──────────┘                                      │
 └─────────────────────────────────────────────────────────────────────────────┘
                                 │
@@ -107,30 +107,33 @@ Tailor IS（裁智云）是服装全产业数字化平台，采用微服务架�
 | 序号 | 模块 | ArtifactId | 端口 | 数据库 | 职责描述 | API前缀 |
 |------|------|------------|------|--------|----------|---------|
 | 1 | 公共模块 | tailor-is-common | — | — | 公共工具类、基础实体、统一返回、全局异常、安全过滤 | — |
-| 2 | 网关服务 | tailor-is-gateway | 8080 | — | 统一入口、路由转发、认证鉴权、限流、Knife4j文档聚合 | — |
-| 3 | 用户服务 | tailor-is-user | 8081 | tailor_user | 用户注册/登录、角色权限管理、收货地址、实名认证 | /api/user |
-| 4 | 商户服务 | tailor-is-merchant | 8082 | tailor_merchant | 商户入驻/审核、店铺管理、员工管理 | /api/merchant |
-| 5 | 商品服务 | tailor-is-product | 8083 | tailor_product | 商品发布/审核、SKU管理、分类管理、评价管理 | /api/product |
-| 6 | 订单服务 | tailor-is-order | 8084 | tailor_order | 购物车、订单创建/支付/退款、物流跟踪、售后工单 | /api/order |
-| 7 | 支付服务 | tailor-is-payment | 8085 | tailor_payment | 支付通道、账户管理、充值/提现、质保金、结算 | /api/payment |
-| 8 | 营销服务 | tailor-is-marketing | 8086 | tailor_marketing | 优惠券、积分体系、会员等级、店铺会员 | /api/marketing |
-| 9 | AI服务 | tailor-is-ai | 8087 | tailor_ai | 版型生成/检查、人体尺寸数据分析、版型迭代 | /api/ai |
-| 10 | 版权服务 | tailor-is-copyright | 8088 | tailor_copyright | 设计版权登记、版权查询、侵权投诉、版权交易 | /api/copyright |
-| 11 | 社区服务 | tailor-is-community | 8089 | tailor_community | 帖子发布/评论/点赞、话题管理、内容举报 | /api/community |
-| 12 | 供应链服务 | tailor-is-supply | 8090 | tailor_supply | 供需发布、供应商管理、供需匹配、联系方式 | /api/supply |
-| 13 | 管理服务 | tailor-is-admin | 8091 | tailor_admin | 平台运营管理、商户审核、商品审核、佣金配置、财务报表 | /api/admin |
-| 14 | 消息服务 | tailor-is-message | 8092 | tailor_message | 系统消息推送、消息模板管理、消息收件箱 | /api/message |
-| 15 | 版型服务 | tailor-is-pattern | 8093 | tailor_pattern | 版型库管理、版型搜索、版型推荐 | /api/pattern |
-| 16 | 即时通讯 | tailor-is-message-im | 8094 | tailor_im | 商家-用户实时聊天、会话管理、消息记录 | /api/im |
-| 17 | 学院服务 | tailor-is-academy | 8095 | tailor_academy | 课程管理、章节管理、学习进度 | /api/academy |
-| 18 | 数据分析 | tailor-is-analytics | 8096 | tailor_analytics | 平台数据统计、经营分析、用户画像、数据大屏 | /api/analytics |
+| 2 | 核心网关 | tailor-is-core-gateway | 8080/9000 | — | 统一入口、路由转发、认证鉴权、限流、Knife4j文档聚合 | — |
+| 3 | 轻量网关 | tailor-is-lite-gateway | 8081 | — | 轻量服务路由、WebSocket支持 | — |
+| 4 | 管理服务 | tailor-is-admin | 8100 | tailor_admin | 平台运营管理、商户审核、商品审核、佣金配置、财务报表 | /api/v1/admin |
+| 5 | 用户服务 | tailor-is-user | 8101 | tailor_user | 用户注册/登录、角色权限管理、收货地址、实名认证 | /api/v1/user |
+| 6 | 商品服务 | tailor-is-product | 8102 | tailor_product | 商品发布/审核、SKU管理、分类管理、评价管理 | /api/v1/product |
+| 7 | 订单服务 | tailor-is-order | 8103 | tailor_order | 购物车、订单创建/支付/退款、物流跟踪、售后工单 | /api/v1/order |
+| 8 | 支付服务 | tailor-is-payment | 8104 | tailor_payment | 支付通道、账户管理、充值/提现、质保金、结算 | /api/v1/payment |
+| 9 | 营销服务 | tailor-is-marketing | 8105 | tailor_marketing | 优惠券、积分体系、会员等级、店铺会员 | /api/v1/marketing |
+| 10 | AI服务 | tailor-is-ai | 8106 | tailor_ai | 版型生成/检查、人体尺寸数据分析、版型迭代 | /api/v1/ai |
+| 11 | 版权服务 | tailor-is-copyright | 8107 | tailor_copyright | 设计版权登记、版权查询、侵权投诉、版权交易 | /api/v1/copyright |
+| 12 | 社区服务 | tailor-is-community | 8108 | tailor_community | 帖子发布/评论/点赞、话题管理、内容举报 | /api/v1/community |
+| 13 | 供应链服务 | tailor-is-supply | 8109 | tailor_supply | 供需发布、供应商管理、供需匹配、联系方式 | /api/v1/supply |
+| 14 | 商户服务 | tailor-is-merchant | 8110 | tailor_merchant | 商户入驻/审核、店铺管理、员工管理 | /api/v1/merchant |
+| 15 | 消息服务 | tailor-is-message | 8111 | tailor_message | 系统消息推送、消息模板管理、消息收件箱 | /api/v1/message |
+| 16 | 学院服务 | tailor-is-academy | 8112 | tailor_academy | 课程管理、章节管理、学习进度 | /api/v1/academy |
+| 17 | 数据分析 | tailor-is-analytics | 8113 | tailor_analytics | 平台数据统计、经营分析、用户画像、数据大屏 | /api/v1/analytics |
+| 18 | 即时通讯 | tailor-is-message-im | 8114 | tailor_im | 商家-用户实时聊天、会话管理、消息记录 | /api/v1/im |
+| 19 | 版型服务 | tailor-is-pattern | 8115 | tailor_pattern | 版型库管理、版型搜索、版型推荐 | /api/v1/pattern |
+| 20 | 设计服务 | tailor-is-design | 8116 | tailor_design | 设计管理、设计上传、设计审核 | /api/v1/design |
+| 21 | 知识服务 | tailor-is-knowledge | 8117 | tailor_knowledge | 知识库管理、知识搜索 | /api/v1/knowledge |
 
 ## 5. 数据流转
 
 ### 5.1 用户注册流程
 
 ```
-客户端 → Gateway(:8080) → tailor-is-user(:8081)
+客户端 → Gateway(:9000) → tailor-is-user(:8101)
   ├── POST /api/user/register → 验证手机号/邮箱 → 加密密码存储
   ├── 自动创建用户账户 (tailor_payment.user_account)
   └── 返回 JWT Token (Sa-Token)
@@ -139,7 +142,7 @@ Tailor IS（裁智云）是服装全产业数字化平台，采用微服务架�
 ### 5.2 商户入驻流程
 
 ```
-商户端 → Gateway → tailor-is-merchant(:8082)
+商户端 → Gateway → tailor-is-merchant(:8110)
   ├── POST /api/merchant/apply → 提交商户资料
   ├── RabbitMQ → tailor-is-admin 审核通知
   ├── 审核通过 → 自动创建店铺 + 质保金账户
@@ -149,7 +152,7 @@ Tailor IS（裁智云）是服装全产业数字化平台，采用微服务架�
 ### 5.3 商品上架流程
 
 ```
-商户端 → Gateway → tailor-is-product(:8083)
+商户端 → Gateway → tailor-is-product(:8102)
   ├── POST /api/product/create → 商品基本信息 + SKU + 属性
   ├── RabbitMQ → tailor-is-admin 商品审核队列
   ├── 审核通过 → 商品状态更新为上架
@@ -160,11 +163,11 @@ Tailor IS（裁智云）是服装全产业数字化平台，采用微服务架�
 ### 5.4 下单支付流程
 
 ```
-用户端 → Gateway → tailor-is-order(:8084)
+用户端 → Gateway → tailor-is-order(:8103)
   ├── POST /api/order/create → 验库存 → 锁库存 → 创建订单
   ├── RabbitMQ 延迟队列 → 30分钟未支付自动取消
   │
-  └→ tailor-is-payment(:8085)
+  └→ tailor-is-payment(:8104)
        ├── POST /api/payment/pay → 调用支付通道
        ├── 支付回调 → 更新订单状态 → 扣库存
        ├── RabbitMQ → tailor-is-marketing 发放积分/更新会员等级
@@ -174,7 +177,7 @@ Tailor IS（裁智云）是服装全产业数字化平台，采用微服务架�
 ### 5.5 结算流程
 
 ```
-tailor-is-admin → tailor-is-payment(:8085)
+tailor-is-admin → tailor-is-payment(:8104)
   ├── 定时任务 → 计算周期内已完成订单
   ├── 扣除平台佣金 → 生成结算单
   ├── 商户提现 → 审核 → 打款
@@ -184,7 +187,7 @@ tailor-is-admin → tailor-is-payment(:8085)
 ### 5.6 售后流程
 
 ```
-用户端 → Gateway → tailor-is-order(:8084)
+用户端 → Gateway → tailor-is-order(:8103)
   ├── POST /api/order/after-sale → 创建售后工单
   ├── 商户处理 → 同意退款/退货退款/拒绝
   ├── RabbitMQ → tailor-is-payment 执行退款
@@ -196,7 +199,7 @@ tailor-is-admin → tailor-is-payment(:8085)
 ### 6.1 认证流程
 
 ```
-客户端请求 → Nginx(SSL终结) → Gateway(:8080)
+客户端请求 → Nginx(SSL终结) → Gateway(:9000)
   ├── AuthGlobalFilter → 白名单路径直接放行
   ├── 非白名单 → 校验 Sa-Token (从 Header/Cookie 读取)
   ├── Token 无效 → 返回 401

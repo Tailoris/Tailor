@@ -4,6 +4,55 @@
  * 消除 ApiResponse / PageResponse / User 等类型的多处重复定义。
  */
 
+// ==========================================================================
+// 枚举定义
+// ==========================================================================
+
+/**
+ * 通用状态枚举.
+ * 替代散落在各处的 number 类型 status 字段，增强类型安全.
+ */
+export enum StatusEnum {
+  /** 禁用 / 下架 / 已删除 */
+  DISABLED = 0,
+  /** 启用 / 上架 / 正常 */
+  ENABLED = 1,
+  /** 审核中 */
+  AUDITING = 2,
+  /** 已拒绝 */
+  REJECTED = 3,
+}
+
+/**
+ * 审核状态枚举.
+ */
+export enum AuditStatusEnum {
+  /** 待审核 */
+  PENDING = 0,
+  /** 审核通过 */
+  APPROVED = 1,
+  /** 审核拒绝 */
+  REJECTED = 2,
+}
+
+/**
+ * 版权标记枚举.
+ */
+export enum CopyrightFlagEnum {
+  /** 未检测 */
+  NONE = 0,
+  /** 已存证 */
+  REGISTERED = 1,
+  /** 疑似侵权 */
+  SUSPECTED = 2,
+  /** 已确认侵权 */
+  CONFIRMED = 3,
+}
+
+// ==========================================================================
+// 接口类型
+// ==========================================================================
+
 /**
  * 统一后端响应包装类型。
  * data 字段统一为可选且可为 null，兼容无数据返回的接口。
@@ -42,6 +91,7 @@ export interface User {
   realName?: string
   gender?: number
   birthday?: string
-  status?: number
+  /** 用户状态: 0=禁用, 1=启用 */
+  status?: StatusEnum
   createdAt?: string
 }

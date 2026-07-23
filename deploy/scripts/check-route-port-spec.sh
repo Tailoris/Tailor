@@ -33,29 +33,29 @@ log_section() { echo ""; echo -e "${GREEN}==== $1 ====${NC}"; }
 CRITICAL_COUNT=0
 WARNING_COUNT=0
 
-# v4.0 规范端口区间定义
+# v4.0 规范端口区间定义 (8100-8117 连续区间)
+#   核心业务服务: 8100-8107 (admin, user, product, order, payment, marketing, ai, copyright)
+#   轻量业务服务: 8108-8117 (community, supply, merchant, message, academy, analytics, im, pattern, design, knowledge)
 declare -A PORT_RANGES=(
-  ["user"]="8080-8089"
-  ["copyright"]="8080-8089"
-  ["admin"]="8080-8089"
-  ["merchant"]="8080-8089"
-  ["pattern"]="8090-8099"
-  ["design"]="8090-8099"
-  ["fabric"]="8100-8109"
-  ["supply"]="8100-8109"
-  ["order"]="8110-8119"
-  ["trade"]="8110-8119"
-  ["payment"]="8110-8119"
-  ["data"]="8120-8129"
-  ["analytics"]="8120-8129"
-  ["community"]="8130-8139"
-  ["edu"]="8130-8139"
-  ["academy"]="8130-8139"
-  ["ai"]="8140-8149"
-  ["marketing"]="8100-8109"
-  ["product"]="8100-8109"
-  ["message"]="8100-8109"
-  ["gateway"]="9000-9009"
+  ["admin"]="8100-8100"
+  ["user"]="8101-8101"
+  ["product"]="8102-8102"
+  ["order"]="8103-8103"
+  ["payment"]="8104-8104"
+  ["marketing"]="8105-8105"
+  ["ai"]="8106-8106"
+  ["copyright"]="8107-8107"
+  ["community"]="8108-8108"
+  ["supply"]="8109-8109"
+  ["merchant"]="8110-8110"
+  ["message"]="8111-8111"
+  ["academy"]="8112-8112"
+  ["analytics"]="8113-8113"
+  ["im"]="8114-8114"
+  ["pattern"]="8115-8115"
+  ["design"]="8116-8116"
+  ["knowledge"]="8117-8117"
+  ["gateway"]="9000-9000"
 )
 
 # 步骤 1: 检测 application.yml 端口配置

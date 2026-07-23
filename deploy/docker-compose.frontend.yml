@@ -11,6 +11,9 @@ networks:
   tailoris-frontend:
     name: tailoris-frontend
     driver: bridge
+  tailoris-services:
+    name: tailoris-services
+    external: true
 
 services:
   nginx-frontend:
@@ -33,6 +36,7 @@ services:
       # - ./nginx/ssl/server.key:/etc/nginx/ssl/server.key:ro
     networks:
       - tailoris-frontend
+      - tailoris-services
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:

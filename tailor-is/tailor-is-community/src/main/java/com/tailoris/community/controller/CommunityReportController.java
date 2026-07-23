@@ -6,6 +6,7 @@ import com.tailoris.common.result.Result;
 import com.tailoris.community.entity.CommunityReport;
 import com.tailoris.community.entity.CommunityReportAction;
 import com.tailoris.community.service.CommunityReportService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,13 +20,14 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/community/report")
+@RequestMapping("/api/v1/community/report")
 @RequiredArgsConstructor
 @Tag(name = "社区举报", description = "COM-004 举报处理")
 public class CommunityReportController {
 
     private final CommunityReportService reportService;
 
+    @Operation(summary = "提交举报", description = "提交举报信息")
     @PostMapping
     public Result<CommunityReport> submit(
             @RequestHeader("X-User-Id") Long userId,
@@ -37,6 +39,7 @@ public class CommunityReportController {
         return Result.success(reportService.submitReport(userId, targetId, targetType, reasonType, reason, evidence));
     }
 
+    @Operation(summary = "举报列表", description = "分页查询举报列表")
     @GetMapping("/list")
     public Result<PageResponse<CommunityReport>> list(
             @RequestParam(defaultValue = "1") Integer pageNum,
@@ -47,6 +50,7 @@ public class CommunityReportController {
                 new PageRequest(pageNum, pageSize), status, targetType));
     }
 
+    @Operation(summary = "处理举报", description = "管理员处理举报")
     @PostMapping("/{id}/handle")
     public Result<Void> handle(
             @PathVariable Long id,
@@ -58,6 +62,7 @@ public class CommunityReportController {
         return Result.success();
     }
 
+    @Operation(summary = "举报处理记录", description = "获取指定举报的处理记录")
     @GetMapping("/{id}/actions")
     public Result<List<CommunityReportAction>> actions(@PathVariable Long id) {
         return Result.success(reportService.listActions(id));

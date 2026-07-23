@@ -110,8 +110,9 @@
 
 | 服务              | 容器端口 | 宿主机端口 | 路由                                 |
 | --------------- | ---- | ----- | ---------------------------------- |
-| file-upload     | 8082 | 8082  | /api/v1/upload/**, /api/v1/file/** |
-| graphql-gateway | 4000 | 4000  | /graphql                           |
+| pattern-service   | 8115 | 8115  | /api/v1/pattern/**, /api/v1/size/**                               |
+| design-service    | 8116 | 8116  | /api/v1/design/**                                                 |
+| knowledge-service | 8117 | 8117  | /api/v1/knowledge/**                                              |
 
 ### 2.2.5 前端服务（优化点：宿主机无端口映射）
 

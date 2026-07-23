@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "商品搜索", description = "商品搜索接口（DB/ES双模）")
 @RestController
-@RequestMapping("/api/product/search")
+@RequestMapping("/api/v1/product/search")
 @RequiredArgsConstructor
 public class ProductSearchController {
 

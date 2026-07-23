@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `pattern` (
   `description` TEXT COMMENT '版型描述',
   `category` VARCHAR(50) COMMENT '版型分类',
   `image_url` VARCHAR(255) COMMENT '版型图片',
+  `price` DECIMAL(10,2) DEFAULT 0 COMMENT '版型价格',
   `dimensions` JSON COMMENT '规格尺寸',
   `status` TINYINT DEFAULT 1 COMMENT '状态0禁用1启用',
   `merchant_id` BIGINT UNSIGNED COMMENT '商户ID',

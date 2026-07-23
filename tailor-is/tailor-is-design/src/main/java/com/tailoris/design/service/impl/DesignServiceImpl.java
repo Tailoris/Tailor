@@ -75,12 +75,12 @@ public class DesignServiceImpl extends ServiceImpl<DesignMapper, Design> impleme
         if (StringUtils.isNotBlank(queryRequest.getSortBy())) {
             String sortColumn = convertSortField(queryRequest.getSortBy());
             if ("asc".equalsIgnoreCase(queryRequest.getSortOrder())) {
-                wrapper.orderByAsc(sortColumn);
+                wrapper.last("ORDER BY " + sortColumn + " ASC");
             } else {
-                wrapper.orderByDesc(sortColumn);
+                wrapper.last("ORDER BY " + sortColumn + " DESC");
             }
         } else {
-            wrapper.orderByDesc("created_at");
+            wrapper.last("ORDER BY created_at DESC");
         }
         
         return page(page, wrapper);
@@ -99,7 +99,7 @@ public class DesignServiceImpl extends ServiceImpl<DesignMapper, Design> impleme
     public List<Design> getNewDesigns(Integer limit) {
         LambdaQueryWrapper<Design> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Design::getStatus, 1);
-        wrapper.orderByDesc(Design::getCreatedAt);
+        wrapper.orderByDesc(Design::getCreateTime);
         wrapper.last("LIMIT " + limit);
         return list(wrapper);
     }
@@ -109,7 +109,7 @@ public class DesignServiceImpl extends ServiceImpl<DesignMapper, Design> impleme
         LambdaQueryWrapper<Design> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Design::getUserId, userId);
         wrapper.eq(Design::getStatus, 1);
-        wrapper.orderByDesc(Design::getCreatedAt);
+        wrapper.orderByDesc(Design::getCreateTime);
         return list(wrapper);
     }
 

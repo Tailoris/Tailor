@@ -8,7 +8,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,13 +22,13 @@ public class AdminRoleServiceImpl implements AdminRoleService {
     public PageResponse<Map<String, Object>> listRoles(String keyword, Integer current, Integer size) {
         int offset = (current - 1) * size;
         StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM tailor_is_user.sys_role WHERE deleted = 0");
-        StringBuilder sql = new StringBuilder("SELECT id, role_name AS name, role_code AS code, description, create_time FROM tailor_is_user.sys_role WHERE deleted = 0");
+        StringBuilder sql = new StringBuilder("SELECT id, role_name AS name, role_code AS code, description, created_at AS create_time FROM tailor_is_user.sys_role WHERE deleted = 0");
 
         if (keyword != null && !keyword.isEmpty()) {
             countSql.append(" AND (role_name LIKE ? OR role_code LIKE ?)");
             sql.append(" AND (role_name LIKE ? OR role_code LIKE ?)");
         }
-        sql.append(" ORDER BY sort ASC, create_time DESC LIMIT ?, ?");
+        sql.append(" ORDER BY sort ASC, created_at DESC LIMIT ?, ?");
 
         Long total;
         if (keyword != null && !keyword.isEmpty()) {
@@ -60,7 +59,7 @@ public class AdminRoleServiceImpl implements AdminRoleService {
 
     @Override
     public Map<String, Object> getRoleDetail(Long id) {
-        String sql = "SELECT id, role_name AS name, role_code AS code, description, create_time FROM tailor_is_user.sys_role WHERE id = ? AND deleted = 0";
+        String sql = "SELECT id, role_name AS name, role_code AS code, description, created_at AS create_time FROM tailor_is_user.sys_role WHERE id = ? AND deleted = 0";
         List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, id);
         if (results.isEmpty()) {
             return null;
@@ -76,8 +75,8 @@ public class AdminRoleServiceImpl implements AdminRoleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> createRole(Map<String, Object> role) {
-        String sql = "INSERT INTO tailor_is_user.sys_role (role_name, role_code, description, data_scope, sort, status, create_time, update_time) " +
-                "VALUES (?, ?, ?, 1, 0, 1, NOW(), NOW())";
+        String sql = "INSERT INTO tailor_is_user.sys_role (role_name, role_code, description, data_scope, sort, status) " +
+                "VALUES (?, ?, ?, 1, 0, 1)";
         jdbcTemplate.update(sql,
                 role.get("name"),
                 role.get("code"),
@@ -144,7 +143,7 @@ public class AdminRoleServiceImpl implements AdminRoleService {
         String countSql = "SELECT COUNT(*) FROM tailor_is_user.sys_user u JOIN tailor_is_user.sys_user_role ur ON u.id = ur.user_id WHERE ur.role_id = ? AND u.deleted = 0";
         String sql = "SELECT u.id, u.username, u.nick_name AS nickname FROM tailor_is_user.sys_user u " +
                 "JOIN tailor_is_user.sys_user_role ur ON u.id = ur.user_id " +
-                "WHERE ur.role_id = ? AND u.deleted = 0 ORDER BY u.create_time DESC LIMIT ?, ?";
+                "WHERE ur.role_id = ? AND u.deleted = 0 ORDER BY u.created_at DESC LIMIT ?, ?";
 
         Long total = jdbcTemplate.queryForObject(countSql, Long.class, roleId);
         List<Map<String, Object>> records = jdbcTemplate.queryForList(sql, roleId, offset, size);

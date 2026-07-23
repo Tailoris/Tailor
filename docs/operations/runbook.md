@@ -682,14 +682,16 @@ kubectl get pods --context=backup-cluster -n tailor-is-prod
 
 | 服务 | 端口 | 协议 |
 |------|------|------|
-| Core Gateway | 8080 | HTTP |
+| Core Gateway | 9000 | HTTP |
 | Lite Gateway | 8081 | HTTP |
-| User Service | 8082 | HTTP |
-| Product Service | 8083 | HTTP |
-| Order Service | 8084 | HTTP |
-| Payment Service | 8085 | HTTP |
-| AI Service | 8086 | HTTP |
-| Copyright Service | 8087 | HTTP |
+| Admin Service | 8100 | HTTP |
+| User Service | 8101 | HTTP |
+| Product Service | 8102 | HTTP |
+| Order Service | 8103 | HTTP |
+| Payment Service | 8104 | HTTP |
+| Marketing Service | 8105 | HTTP |
+| AI Service | 8106 | HTTP |
+| Copyright Service | 8107 | HTTP |
 | MySQL | 3306 | TCP |
 | Redis | 6379 | TCP |
 | Nacos | 8848 | HTTP |

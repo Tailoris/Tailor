@@ -6,6 +6,8 @@ import cn.dev33.satoken.exception.NotRoleException;
 import cn.dev33.satoken.exception.SaTokenException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class GlobalExceptionHandler {
 
     /**
@@ -53,6 +56,29 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), ex.getCode(), ex.getMessage());
         // 🔒 L-04修复: 业务异常返回 HTTP 400，而非 200
         return ResponseEntity.badRequest().body(Result.fail(ex.getCode(), ex.getMessage()));
+    }
+
+    /**
+     * 账号错误异常（账号不存在/密码错误/账号被禁用等）
+     * 返回 HTTP 400，前端提示「账号或密码不正确」
+     */
+    @ExceptionHandler(AccountErrorException.class)
+    public ResponseEntity<Result<Object>> handleAccountError(AccountErrorException ex, HttpServletRequest request) {
+        log.warn("账号错误: path={}, errorType={}, message={}",
+                request.getRequestURI(), ex.getErrorType(), ex.getMessage());
+        return ResponseEntity.badRequest().body(Result.fail(ex.getCode(), ex.getMessage()));
+    }
+
+    /**
+     * 数据源连接异常（数据库/Redis/中间件连接失败）
+     * 返回 HTTP 503 Service Unavailable
+     */
+    @ExceptionHandler(DataSourceConnectException.class)
+    public ResponseEntity<Result<Object>> handleDataSourceConnect(DataSourceConnectException ex, HttpServletRequest request) {
+        log.error("数据源连接异常: path={}, sourceType={}, message={}",
+                request.getRequestURI(), ex.getSourceType(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Result.fail(503, "服务暂时不可用，请稍后重试（" + ex.getSourceType() + " 连接异常）"));
     }
 
     /**

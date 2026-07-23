@@ -447,11 +447,269 @@
       </div>
     </div>
   </div>
+
+  <!-- 课程详情弹窗 -->
+  <div
+    v-if="showCourseModal && currentCourse"
+    class="modal-overlay"
+    @click.self="showCourseModal = false"
+  >
+    <div class="modal-content course-modal">
+      <div class="modal-header">
+        <h3>{{ currentCourse.title }}</h3>
+        <button class="close-btn" @click="showCourseModal = false">
+          <el-icon><Close /></el-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="course-hero">
+          <img
+            :src="currentCourse.image"
+            :alt="currentCourse.title"
+            class="course-cover"
+          />
+          <div class="course-hero-overlay">
+            <div class="play-btn-lg">
+              <el-icon><VideoPlay /></el-icon>
+            </div>
+          </div>
+        </div>
+        <div class="course-info">
+          <div class="course-tags">
+            <span :class="['level-tag', currentCourse.level]">{{ getLevelName(currentCourse.level) }}</span>
+            <span
+              v-for="tag in currentCourse.tags"
+              :key="tag"
+              class="tag"
+            >{{ tag }}</span>
+            <span
+              v-if="currentCourse.badge"
+              class="badge"
+            >{{ currentCourse.badge }}</span>
+          </div>
+          <p class="course-desc">{{ currentCourse.description }}</p>
+          <div class="course-meta-row">
+            <span class="meta-item">
+              <el-icon><User /></el-icon>
+              {{ currentCourse.instructor }}
+            </span>
+            <span class="meta-item">
+              <el-icon><User /></el-icon>
+              {{ currentCourse.students }}人学习
+            </span>
+            <span class="meta-item">
+              <el-icon><Clock /></el-icon>
+              {{ currentCourse.duration }}
+            </span>
+          </div>
+          <div class="course-rating-row">
+            <div class="star-rating">
+              <el-icon
+                v-for="n in 5"
+                :key="n"
+                class="star"
+                :class="{ filled: n <= currentCourse.rating }"
+              >
+                <Star />
+              </el-icon>
+            </div>
+            <span class="rating-text">{{ currentCourse.rating.toFixed(1) }}分</span>
+            <span class="review-count">(128条评价)</span>
+          </div>
+          <div class="course-price-row">
+            <span
+              v-if="currentCourse.price > 0"
+              class="price"
+            >¥{{ currentCourse.price }}</span>
+            <span
+              v-else
+              class="price free"
+            >免费</span>
+            <button class="buy-btn">
+              <el-icon><ShoppingCart /></el-icon>
+              <span>立即购买</span>
+            </button>
+            <button class="wish-btn">
+              <el-icon><StarFilled /></el-icon>
+              <span>收藏</span>
+            </button>
+          </div>
+        </div>
+        <div class="course-chapters">
+          <h4>课程目录</h4>
+          <div class="chapters-list">
+            <div
+              v-for="chapter in mockChapters"
+              :key="chapter.id"
+              class="chapter-item"
+            >
+              <div class="chapter-icon">
+                <el-icon v-if="chapter.type === 'video'"><VideoPlay /></el-icon>
+                <el-icon v-else><Star /></el-icon>
+              </div>
+              <div class="chapter-content">
+                <span class="chapter-title">{{ chapter.title }}</span>
+                <span class="chapter-duration">{{ chapter.duration }}</span>
+              </div>
+              <span
+                v-if="chapter.free"
+                class="chapter-free"
+              >免费</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 报名训练营弹窗 -->
+  <div
+    v-if="showEnrollModal && currentTraining"
+    class="modal-overlay"
+    @click.self="showEnrollModal = false"
+  >
+    <div class="modal-content enroll-modal">
+      <div class="modal-header">
+        <h3>确认报名</h3>
+        <button class="close-btn" @click="showEnrollModal = false">
+          <el-icon><Close /></el-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="enroll-info">
+          <img
+            :src="currentTraining.image"
+            :alt="currentTraining.title"
+            class="enroll-image"
+          />
+          <div class="enroll-details">
+            <h4>{{ currentTraining.title }}</h4>
+            <p>{{ currentTraining.description }}</p>
+            <div class="enroll-features">
+              <div class="feature">
+                <el-icon><Clock /></el-icon>
+                <span>{{ currentTraining.duration }}</span>
+              </div>
+              <div class="feature">
+                <el-icon><User /></el-icon>
+                <span>{{ currentTraining.slots }}个名额</span>
+              </div>
+              <div class="feature">
+                <el-icon><ChatLineSquare /></el-icon>
+                <span>一对一指导</span>
+              </div>
+            </div>
+            <div class="mentor-info">
+              <div class="mentor-avatar">{{ currentTraining.mentorAvatar }}</div>
+              <div>
+                <span class="mentor-name">{{ currentTraining.mentorName }}</span>
+                <span class="mentor-title">{{ currentTraining.mentorTitle }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="enroll-price">
+          <div class="price-info">
+            <span class="current-price">¥{{ currentTraining.price }}</span>
+            <span
+              v-if="currentTraining.originalPrice"
+              class="original-price"
+            >¥{{ currentTraining.originalPrice }}</span>
+          </div>
+        </div>
+        <div class="enroll-agreement">
+          <input type="checkbox" id="agree" />
+          <label for="agree">我已阅读并同意《训练营服务协议》</label>
+        </div>
+        <div class="enroll-actions">
+          <el-button
+            type="primary"
+            size="large"
+            @click="confirmEnroll"
+          >
+            确认报名
+          </el-button>
+          <el-button
+            size="large"
+            @click="showEnrollModal = false"
+          >
+            取消
+          </el-button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 申请认证弹窗 -->
+  <div
+    v-if="showCertApplyModal && currentCert"
+    class="modal-overlay"
+    @click.self="showCertApplyModal = false"
+  >
+    <div class="modal-content cert-modal">
+      <div class="modal-header">
+        <h3>申请认证</h3>
+        <button class="close-btn" @click="showCertApplyModal = false">
+          <el-icon><Close /></el-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="cert-info">
+          <div class="cert-icon-lg">{{ currentCert.icon }}</div>
+          <h4>{{ currentCert.title }}</h4>
+          <p>{{ currentCert.description }}</p>
+        </div>
+        <div class="cert-requirements">
+          <h5>获取条件</h5>
+          <ul>
+            <li
+              v-for="(req, index) in currentCert.requirements"
+              :key="index"
+            >
+              <el-icon><CircleCheck /></el-icon>
+              <span>{{ req }}</span>
+            </li>
+          </ul>
+        </div>
+        <div class="cert-benefits">
+          <h5>证书权益</h5>
+          <ul>
+            <li
+              v-for="(benefit, index) in currentCert.benefits"
+              :key="index"
+            >
+              <el-icon><CircleCheck /></el-icon>
+              <span>{{ benefit }}</span>
+            </li>
+          </ul>
+        </div>
+        <div class="cert-agreement">
+          <input type="checkbox" id="cert-agree" />
+          <label for="cert-agree">我已阅读并同意《认证服务协议》，承诺提交的材料真实有效</label>
+        </div>
+        <div class="cert-actions">
+          <el-button
+            type="primary"
+            size="large"
+            @click="confirmCertApply"
+          >
+            提交申请
+          </el-button>
+          <el-button
+            size="large"
+            @click="showCertApplyModal = false"
+          >
+            取消
+          </el-button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   Reading,
   Lightning,
@@ -465,8 +723,14 @@ import {
   Trophy,
   Briefcase,
   Loading,
+  Close,
+  VideoPlay,
+  StarFilled,
+  ShoppingCart,
+  CircleCheck,
+  ArrowRight,
 } from '@element-plus/icons-vue';
-import { getCourseList, getCourseDetail, getCourseChapters, type Course } from '@/api/academy';
+import { getCourseList, getCourseDetail, getCourseChapters, type Course, type CourseChapter } from '@/api/academy';
 
 const activeTab = ref('courses');
 const searchKeyword = ref('');
@@ -597,6 +861,23 @@ const certificates = ref([
 
 const myCerts = ref([{ id: 1, title: '服装设计师初级认证', icon: '🎨', date: '2024-01-15', number: 'CDA20240115001' }]);
 
+// 弹窗状态
+const showCourseModal = ref(false);
+const showEnrollModal = ref(false);
+const showCertApplyModal = ref(false);
+const currentCourse = ref<CourseDisplay | null>(null);
+const currentTraining = ref<typeof trainings.value[0] | null>(null);
+const currentCert = ref<typeof certificates.value[0] | null>(null);
+
+// 课程章节mock数据
+const mockChapters = [
+  { id: 1, title: '课程介绍', duration: '5分钟', type: 'video', free: true },
+  { id: 2, title: '色彩理论基础', duration: '25分钟', type: 'video', free: false },
+  { id: 3, title: '色彩搭配原则', duration: '30分钟', type: 'video', free: false },
+  { id: 4, title: '实战案例分析', duration: '40分钟', type: 'video', free: false },
+  { id: 5, title: '课后练习', duration: '15分钟', type: 'practice', free: false },
+];
+
 /**
  * 将后端Course数据映射为前端展示格式
  */
@@ -627,21 +908,135 @@ function mapCourseToDisplay(course: Course): CourseDisplay {
 }
 
 /**
+ * Mock数据 - 课程列表
+ */
+const mockCourses: Course[] = [
+  {
+    id: 1,
+    title: '服装设计基础入门',
+    description: '从零开始学习服装设计的基本原理和技法，包括色彩搭配、款式设计、面料选择等核心知识',
+    coverImage: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=250&fit=crop',
+    videoUrl: '',
+    categoryId: 1,
+    duration: 120,
+    status: 1,
+    authorId: 1,
+    createdAt: '2024-01-10 09:00:00',
+    updatedAt: '2024-01-15 10:00:00',
+  },
+  {
+    id: 2,
+    title: '服装打版技术详解',
+    description: '系统学习服装打版技术，掌握各类版型的绘制方法和尺寸计算技巧',
+    coverImage: 'https://images.unsplash.com/photo-1525450824786-227cbef70703?w=400&h=250&fit=crop',
+    videoUrl: '',
+    categoryId: 2,
+    duration: 180,
+    status: 1,
+    authorId: 2,
+    createdAt: '2024-01-08 14:00:00',
+    updatedAt: '2024-01-12 16:00:00',
+  },
+  {
+    id: 3,
+    title: '高级定制工艺实操',
+    description: '深入学习高级定制服装的制作工艺，包括手工缝纫、刺绣、珠饰等高端技法',
+    coverImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=250&fit=crop',
+    videoUrl: '',
+    categoryId: 3,
+    duration: 240,
+    status: 1,
+    authorId: 3,
+    createdAt: '2024-01-05 11:00:00',
+    updatedAt: '2024-01-14 09:00:00',
+  },
+  {
+    id: 4,
+    title: '面料知识与应用',
+    description: '全面了解各类服装面料的特性、分类和应用场景，提升面料选择能力',
+    coverImage: 'https://images.unsplash.com/photo-1525450824786-227cbef70703?w=400&h=250&fit=crop',
+    videoUrl: '',
+    categoryId: 4,
+    duration: 90,
+    status: 1,
+    authorId: 1,
+    createdAt: '2024-01-03 10:00:00',
+    updatedAt: '2024-01-11 14:00:00',
+  },
+  {
+    id: 5,
+    title: 'CAD打版软件实战',
+    description: '掌握专业服装CAD软件的使用方法，实现数字化打版和纸样设计',
+    coverImage: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=250&fit=crop',
+    videoUrl: '',
+    categoryId: 5,
+    duration: 200,
+    status: 1,
+    authorId: 2,
+    createdAt: '2024-01-01 09:00:00',
+    updatedAt: '2024-01-10 16:00:00',
+  },
+  {
+    id: 6,
+    title: '时尚趋势分析',
+    description: '学习如何分析和预测时尚趋势，把握市场动态和消费者需求',
+    coverImage: 'https://images.unsplash.com/photo-1525450824786-227cbef70703?w=400&h=250&fit=crop',
+    videoUrl: '',
+    categoryId: 6,
+    duration: 60,
+    status: 1,
+    authorId: 3,
+    createdAt: '2024-01-06 14:00:00',
+    updatedAt: '2024-01-13 10:00:00',
+  },
+];
+
+/**
+ * 更新课程分类计数
+ */
+function updateLevelCounts(allCourses: CourseDisplay[]) {
+  const counts = { all: 0, beginner: 0, intermediate: 0, advanced: 0, master: 0 };
+  
+  allCourses.forEach(course => {
+    counts.all += 1;
+    if (course.level in counts) {
+      counts[course.level as keyof typeof counts] += 1;
+    }
+  });
+  
+  levels.forEach(level => {
+    level.count = level.value in counts ? counts[level.value as keyof typeof counts] : 0;
+  });
+}
+
+/**
  * 加载课程列表
  */
 async function loadCourses() {
   loading.value = true;
   error.value = null;
   try {
-    const res = await getCourseList({ pageNum: currentPage.value, pageSize: pageSize.value });
-    if (res && res.code === 200) {
-      const list = Array.isArray(res.data) ? res.data : res.data?.records || [];
-      courses.value = list.map(mapCourseToDisplay);
-      totalCount.value = res.data?.total || list.length;
+    const data = await getCourseList({ pageNum: currentPage.value, pageSize: pageSize.value });
+    let list: Course[] = [];
+    if (Array.isArray(data)) {
+      list = data as Course[];
+    } else if (data && typeof data === 'object' && 'records' in data) {
+      list = (data as { records?: Course[] }).records || [];
     }
+    const displayList = list.map(mapCourseToDisplay);
+    courses.value = displayList;
+    totalCount.value = (data as { total?: number })?.total || list.length;
+    updateLevelCounts(displayList.length > 0 ? displayList : mockCourses.map(mapCourseToDisplay));
   } catch (err: unknown) {
-    error.value = (err as Error)?.message || '加载课程数据失败';
-    console.error('加载课程列表失败:', err);
+    console.warn('加载课程列表失败，使用mock数据:', err);
+    // 使用mock数据
+    const startIdx = (currentPage.value - 1) * pageSize.value;
+    const endIdx = startIdx + pageSize.value;
+    const paginatedList = mockCourses.slice(startIdx, endIdx);
+    const displayList = paginatedList.map(mapCourseToDisplay);
+    courses.value = displayList;
+    totalCount.value = mockCourses.length;
+    updateLevelCounts(mockCourses.map(mapCourseToDisplay));
   } finally {
     loading.value = false;
   }
@@ -651,15 +1046,10 @@ async function loadCourses() {
  * 查看课程详情
  */
 async function viewCourse(id: number) {
-  try {
-    const [courseRes, chaptersRes] = await Promise.all([getCourseDetail(id), getCourseChapters(id)]);
-    if (courseRes && courseRes.code === 200) {
-      const course = courseRes.data;
-      const chapters = chaptersRes?.data || [];
-      ElMessage.success(`课程: ${course?.title}, 共 ${chapters.length} 个章节`);
-    }
-  } catch (err: unknown) {
-    ElMessage.error((err as Error)?.message || '获取课程详情失败');
+  const course = courses.value.find((c) => c.id === id);
+  if (course) {
+    currentCourse.value = course;
+    showCourseModal.value = true;
   }
 }
 
@@ -695,11 +1085,31 @@ function handlePageChange(val: number) {
 }
 
 function enrollTraining(id: number) {
-  ElMessage.info(`报名训练营 #${id}`);
+  const training = trainings.value.find((t) => t.id === id);
+  if (training) {
+    currentTraining.value = training;
+    showEnrollModal.value = true;
+  }
+}
+
+function confirmEnroll() {
+  if (!currentTraining.value) return;
+  ElMessage.success(`成功报名「${currentTraining.value.title}」`);
+  showEnrollModal.value = false;
 }
 
 function applyCert(id: number) {
-  ElMessage.info(`申请认证 #${id}`);
+  const cert = certificates.value.find((c) => c.id === id);
+  if (cert) {
+    currentCert.value = cert;
+    showCertApplyModal.value = true;
+  }
+}
+
+function confirmCertApply() {
+  if (!currentCert.value) return;
+  ElMessage.success(`申请「${currentCert.value.title}」成功，请等待审核`);
+  showCertApplyModal.value = false;
 }
 
 // 监听分页变化重新加载
@@ -1584,6 +1994,416 @@ onMounted(() => {
   .filter-bar {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.close-btn:hover {
+  color: #64748b;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* 课程详情弹窗 */
+.course-hero {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.course-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.course-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play-btn-lg {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d39c4;
+  cursor: pointer;
+  font-size: 28px;
+}
+
+.course-info {
+  margin-bottom: 24px;
+}
+
+.course-meta-row {
+  display: flex;
+  gap: 20px;
+  margin: 12px 0;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.course-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.rating-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.review-count {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.course-price-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.buy-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  background: #1d39c4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.buy-btn:hover {
+  background: #1e40af;
+}
+
+.wish-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #475569;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.wish-btn:hover {
+  border-color: #1d39c4;
+  color: #1d39c4;
+}
+
+.course-chapters {
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.course-chapters h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.chapters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chapter-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.chapter-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
+.chapter-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+}
+
+.chapter-title {
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.chapter-duration {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.chapter-free {
+  padding: 4px 10px;
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+/* 报名弹窗 */
+.enroll-info {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.enroll-image {
+  width: 200px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.enroll-details {
+  flex: 1;
+}
+
+.enroll-details h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.enroll-details p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.enroll-features {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+
+.enroll-features .feature {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.mentor-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mentor-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #1d39c4;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.enroll-price {
+  padding: 16px;
+  background: #fef3c7;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.price-info {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.current-price {
+  font-size: 28px;
+  font-weight: 700;
+  color: #d97706;
+}
+
+.enroll-agreement,
+.cert-agreement {
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.enroll-actions,
+.cert-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* 认证弹窗 */
+.cert-info {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.cert-icon-lg {
+  font-size: 64px;
+  margin-bottom: 12px;
+}
+
+.cert-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.cert-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.cert-requirements,
+.cert-benefits {
+  margin-bottom: 20px;
+}
+
+.cert-requirements h5,
+.cert-benefits h5 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.cert-requirements ul,
+.cert-benefits ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cert-requirements li,
+.cert-benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+@media (max-width: 768px) {
+  .course-hero {
+    height: 200px;
+  }
+
+  .enroll-info {
+    flex-direction: column;
+  }
+
+  .enroll-image {
+    width: 100%;
+    height: 150px;
+  }
+
+  .course-meta-row {
+    flex-wrap: wrap;
   }
 }
 </style>

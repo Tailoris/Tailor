@@ -10,6 +10,9 @@ import lombok.EqualsAndHashCode;
 @TableName("design_collection")
 public class DesignCollection extends BaseEntity {
 
+    @TableId(type = IdType.ASSIGN_ID)
+    private Long id;
+
     @TableField("design_id")
     private Long designId;
 

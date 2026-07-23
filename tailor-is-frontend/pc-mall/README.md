@@ -93,7 +93,7 @@ pc-mall/
 | `VITE_APP_TITLE` | 应用标题 | `Tailor IS PC Mall` |
 | `VITE_APP_ENV` | 环境标识 | `development` |
 | `VITE_PORT` | 开发服务器端口 | `5173` |
-| `VITE_CORE_GATEWAY_URL` | 核心网关地址 | `http://localhost:8080` |
+| `VITE_CORE_GATEWAY_URL` | 核心网关地址 | `http://localhost:9000` |
 | `VITE_LITE_GATEWAY_URL` | 轻量网关地址 | `http://localhost:8081` |
 
 ## SSR 说明

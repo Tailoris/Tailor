@@ -250,9 +250,9 @@ async function loadDashboard() {
     if (data) {
       Object.assign(stats, data);
     }
-  } catch {
+  } catch (err) {
     error.value = true;
-    ElMessage.error('加载仪表盘数据失败');
+    console.warn('加载仪表盘数据失败，使用本地数据:', err);
   } finally {
     loading.value = false;
   }

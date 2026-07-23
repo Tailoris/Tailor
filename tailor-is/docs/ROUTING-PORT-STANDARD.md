@@ -42,7 +42,7 @@
 
 | 号段 | 范围 | 用途 | 服务 |
 |------|------|------|------|
-| **0** | 8080 | API 网关 | gateway |
+| **0** | 9000 | API 网关 | core-gateway |
 | **1** | 8100-8100 | 管理 | admin (合并) |
 | **2** | 8101 | 用户域 | user |
 | **3** | 8102 | 商品域 | product |
@@ -66,7 +66,7 @@
 
 | # | 服务名 | 端口 | 当前配置 | 标准配置 | 状态 |
 |---|--------|------|----------|----------|------|
-| 1 | tailor-is-gateway | 8080 | 8080 | 8080 | ✅ |
+| 1 | tailor-is-core-gateway | 9000 | 9000 | 9000 | ✅ |
 | 2 | tailor-is-admin | 8100 | 8111 | 8100 | ⚠️ 需修改 |
 | 3 | tailor-is-user | 8101 | 8101 | 8101 | ✅ |
 | 4 | tailor-is-product | 8102 | 8102 | 8102 | ⚠️ 冲突 |
@@ -138,8 +138,8 @@ infrastructure:
 
 # API网关层
 gateway:
-  - name: tailor-is-gateway
-    port: 8080
+  - name: tailor-is-core-gateway
+    port: 9000
     protocol: HTTP
 
 # 业务服务层 (按官方顺序)
@@ -191,8 +191,7 @@ business-services:
 
 # 预留端口 (未来扩展)
 reserved:
-  - 8115-8119  # 未来新业务
-  - 8120-8129  # 第二业务集群
+  - 8118-8119  # 未来新业务
 ```
 
 ### 5.2 路由规范化（Gateway层）
@@ -370,7 +369,7 @@ url-convention:
 14. 学院 (tailor-is-academy: 8112)
 15. 分析 (tailor-is-analytics: 8113)
 16. 运营管理 (tailor-is-admin: 8100)
-17. API网关 (tailor-is-gateway: 8080)             ← 最后
+17. API网关 (tailor-is-core-gateway: 9000)             ← 最后
 ```
 
 ### 阶段4: 验证 & 报告
@@ -388,7 +387,7 @@ url-convention:
 2. ❌ 禁止在 `application.yml` 中使用 `localhost`（应使用 `${HOST:localhost}`）
 3. ❌ 禁止服务之间直接通过 IP 调用（必须通过 Nacos 服务名）
 4. ❌ 禁止Controller直接使用 `@RequestMapping("/user/list")` （必须 `@RequestMapping("/api/v1/users")`）
-5. ❌ 禁止在生产环境使用 8000-8099 端口（保留给基础设施）
+5. ❌ 禁止在生产环境使用 8000-8079 端口（保留给基础设施）
 6. ❌ 禁止私自占用未分配端口（如 8120+）
 7. ❌ 禁止将数据库密码硬编码（必须通过环境变量）
 8. ❌ 禁止多个服务共享同一个端口

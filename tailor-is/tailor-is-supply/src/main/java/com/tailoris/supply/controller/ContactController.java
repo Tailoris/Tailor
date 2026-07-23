@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @SaCheckLogin
 @Tag(name = "联系管理", description = "供需联系、回复等接口")
 @RestController
-@RequestMapping("/api/supply/contact")
+@RequestMapping("/api/v1/supply/contact")
 @RequiredArgsConstructor
 public class ContactController {
 

@@ -1,6 +1,7 @@
 package com.tailoris.product.service;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.tailoris.common.cache.MultiLevelCache;
 import com.tailoris.common.exception.BusinessException;
 import com.tailoris.common.lock.DistributedLock;
 import com.tailoris.product.dto.ProductCreateRequest;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.Arrays;
@@ -80,6 +82,12 @@ class ProductServiceImplTest {
     @Mock
     private DistributedLock distributedLock;
 
+    @Mock
+    private MultiLevelCache<Long, Product> multiLevelCache;
+
+    @Mock
+    private RabbitTemplate rabbitTemplate;
+
     private ProductServiceImpl productService;
 
     @BeforeEach
@@ -93,7 +101,9 @@ class ProductServiceImplTest {
                 productFavoriteMapper,
                 stringRedisTemplate,
                 new ObjectMapper(),
-                distributedLock
+                distributedLock,
+                multiLevelCache,
+                rabbitTemplate
         );
     }
 

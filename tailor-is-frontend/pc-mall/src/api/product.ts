@@ -32,10 +32,11 @@ export function getProductDetail(id: number) {
   });
 }
 
-export function getCategories() {
+export function getCategories(options?: { showError?: boolean }) {
   return request<Record<string, unknown>, ProductCategory[]>({
     url: '/api/v1/products/categories',
     method: 'get',
+    showError: options?.showError,
   });
 }
 

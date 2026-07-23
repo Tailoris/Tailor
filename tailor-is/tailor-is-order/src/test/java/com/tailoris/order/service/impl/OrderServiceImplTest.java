@@ -273,7 +273,7 @@ class OrderServiceImplTest {
 
         when(orderInfoMapper.selectOrderDetailWithItems(orderNo)).thenReturn(order);
 
-        OrderInfo result = orderService.getOrderDetail(orderNo);
+        OrderInfo result = orderService.getOrderDetail(1L, orderNo);
 
         assertNotNull(result);
         assertEquals(orderNo, result.getOrderNo());
@@ -287,7 +287,7 @@ class OrderServiceImplTest {
         when(orderInfoMapper.selectOrderDetailWithItems(orderNo)).thenReturn(null);
 
         BusinessException exception = assertThrows(BusinessException.class,
-                () -> orderService.getOrderDetail(orderNo));
+                () -> orderService.getOrderDetail(1L, orderNo));
         assertEquals("订单不存在", exception.getMessage());
     }
 

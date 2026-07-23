@@ -1,9 +1,18 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { ElMessage } from 'element-plus';
+import { decryptSync, encryptSync } from '@/utils/crypto';
+
+// 扩展 AxiosRequestConfig 类型，添加 showError 属性
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    showError?: boolean;
+  }
+}
 
 // 延迟引用 router 以避免循环依赖（request.ts → router → LoginView → auth.ts → request.ts）
-let _router: ReturnType<(typeof import('@/router'))['default']> | null = null;
-export function injectRouter(router: typeof _router) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _router: any = null;
+export function injectRouter(router: any) {
   _router = router;
 }
 
@@ -11,6 +20,23 @@ export interface ApiResponse<T = unknown> {
   code: number;
   message: string;
   data?: T | null;
+}
+
+// 错误消息节流配置
+const ERROR_MESSAGE_CACHE = new Map<string, number>();
+const ERROR_THROTTLE_MS = 3000;
+
+function shouldShowError(message: string): boolean {
+  const now = Date.now();
+  const lastShown = ERROR_MESSAGE_CACHE.get(message);
+  if (lastShown && now - lastShown < ERROR_THROTTLE_MS) {
+    return false;
+  }
+  ERROR_MESSAGE_CACHE.set(message, now);
+  setTimeout(() => {
+    ERROR_MESSAGE_CACHE.delete(message);
+  }, ERROR_THROTTLE_MS);
+  return true;
 }
 
 function generateCsrfToken(): string {
@@ -47,7 +73,8 @@ const request: AxiosInstance = axios.create({
 
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token') || '';
+    // 🔒 使用加密存储读取Token
+    const token = decryptSync(localStorage.getItem('token') || '');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -57,57 +84,92 @@ request.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
-// 🔒 M-23修复: 替换 any 为 unknown，保持类型安全
 request.interceptors.response.use(
-  (response: AxiosResponse<unknown>) => {
+  (response: AxiosResponse): any => {
     const apiResponse = response.data as Record<string, unknown> | null;
+    const showError = response.config.showError !== false;
     if (apiResponse && typeof apiResponse === 'object' && 'code' in apiResponse) {
       const { code, message, data } = apiResponse as unknown as ApiResponse;
       if (code === 200 || code === 0) {
         return data;
       }
-      ElMessage.error(message || '请求失败');
+      if (showError && shouldShowError(message || '请求失败')) {
+        ElMessage.error(message || '请求失败');
+      }
       return Promise.reject(new Error(message));
     }
     return response.data;
   },
   (error: AxiosError<ApiResponse>) => {
+    const showError = error.config?.showError !== false;
     if (error.response) {
       const { status } = error.response;
       const responseData = error.response.data;
       const errMessage = responseData?.message || '';
 
-      // CSRF错误
       if (errMessage.toLowerCase().includes('csrf')) {
-        ElMessage.error('安全验证失败，请刷新页面重试');
+        if (showError && shouldShowError('安全验证失败，请刷新页面重试')) {
+          ElMessage.error('安全验证失败，请刷新页面重试');
+        }
         return Promise.reject(error);
       }
 
       switch (status) {
         case 401:
           localStorage.removeItem('token');
-          ElMessage.error('登录已过期，请重新登录');
+          if (showError && shouldShowError('请先登录')) {
+            ElMessage.error('请先登录');
+          }
           _router?.push('/login');
           break;
         case 403:
-          ElMessage.error('没有权限访问，请联系管理员');
+          if (showError && shouldShowError('权限不足，无法访问此资源')) {
+            ElMessage.error('权限不足，无法访问此资源');
+          }
           break;
         case 404:
-          ElMessage.error('请求的资源不存在');
+          if (showError && shouldShowError('请求的资源不存在')) {
+            ElMessage.error('请求的资源不存在');
+          }
+          break;
+        case 429:
+          if (showError && shouldShowError('请求过于频繁，请稍后再试')) {
+            ElMessage.error('请求过于频繁，请稍后再试');
+          }
           break;
         case 500:
-          ElMessage.error('服务器内部错误');
+          if (showError && shouldShowError('服务器内部错误')) {
+            ElMessage.error('服务器内部错误');
+          }
+          break;
+        case 502:
+          if (showError && shouldShowError('网关错误，服务暂时不可用')) {
+            ElMessage.error('网关错误，服务暂时不可用');
+          }
           break;
         case 503:
-          ElMessage.error('服务暂时不可用');
+          if (showError && shouldShowError('服务暂时不可用')) {
+            ElMessage.error('服务暂时不可用');
+          }
+          break;
+        case 504:
+          if (showError && shouldShowError('网关超时，请稍后重试')) {
+            ElMessage.error('网关超时，请稍后重试');
+          }
           break;
         default:
-          ElMessage.error(errMessage || `请求失败 (${status})`);
+          if (showError && shouldShowError(errMessage || `请求失败 (${status})`)) {
+            ElMessage.error(errMessage || `请求失败 (${status})`);
+          }
       }
     } else if (error.code === 'ECONNABORTED') {
-      ElMessage.error('请求超时，请稍后重试');
+      if (showError && shouldShowError('请求超时，请稍后重试')) {
+        ElMessage.error('请求超时，请稍后重试');
+      }
     } else {
-      ElMessage.error('网络连接异常，请检查网络');
+      if (showError && shouldShowError('网络连接异常，请检查网络')) {
+        ElMessage.error('网络连接异常，请检查网络');
+      }
     }
     return Promise.reject(error);
   }

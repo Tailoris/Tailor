@@ -16,7 +16,7 @@ import java.util.List;
 @SaCheckLogin
 @Tag(name = "员工管理")
 @RestController
-@RequestMapping("/api/merchant/employee")
+@RequestMapping("/api/v1/merchant/employee")
 @RequiredArgsConstructor
 public class EmployeeController {
 

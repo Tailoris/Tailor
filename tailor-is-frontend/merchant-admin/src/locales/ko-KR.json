@@ -1,0 +1,62 @@
+{
+  "common": {
+    "confirm": "확인",
+    "cancel": "취소",
+    "save": "저장",
+    "delete": "삭제",
+    "edit": "편집",
+    "search": "검색",
+    "reset": "초기화",
+    "submit": "제출",
+    "back": "뒤로",
+    "loading": "로딩 중...",
+    "noData": "데이터가 없습니다",
+    "operationFailed": "작업이 실패했습니다",
+    "operationSuccess": "작업이 성공했습니다",
+    "networkError": "네트워크 연결에 문제가 있습니다. 연결을 확인해 주세요"
+  },
+  "nav": {
+    "home": "홈",
+    "products": "상품",
+    "cart": "장바구니",
+    "orders": "주문",
+    "settings": "설정",
+    "login": "로그인",
+    "logout": "로그아웃"
+  },
+  "auth": {
+    "username": "사용자 이름",
+    "password": "비밀번호",
+    "loginTitle": "로그인",
+    "forgotPassword": "비밀번호를 잊으셨습니까",
+    "rememberMe": "로그인 상태 유지"
+  },
+  "product": {
+    "title": "상품 목록",
+    "detail": "상품 상세",
+    "price": "가격",
+    "stock": "재고",
+    "addToCart": "장바구니에 추가",
+    "buyNow": "바로 구매"
+  },
+  "order": {
+    "title": "주문",
+    "orderNo": "주문 번호",
+    "status": "상태",
+    "amount": "금액",
+    "all": "전체",
+    "pendingPayment": "결제 대기",
+    "pendingDelivery": "배송 대기",
+    "delivered": "배송 완료",
+    "refunded": "환불 완료",
+    "completed": "완료"
+  },
+  "payment": {
+    "title": "결제",
+    "wechat": "위챗페이",
+    "alipay": "알리페이",
+    "balance": "잔액 결제",
+    "payAmount": "결제 금액",
+    "confirmPay": "결제 확인"
+  }
+}

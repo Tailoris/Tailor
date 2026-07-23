@@ -63,7 +63,7 @@ const categories = ref<ProductCategory[]>([]);
 
 async function loadCategories() {
   try {
-    const res = await getCategories();
+    const res = await getCategories({ showError: false });
     categories.value = res.filter((c: ProductCategory) => c.parentId === 0);
   } catch {
     categories.value = [];

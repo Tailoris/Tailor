@@ -16,6 +16,7 @@ import com.tailoris.product.service.impl.ProductServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -191,7 +192,7 @@ class ProductServiceTest {
 
         productService.updateProductStatus(productId, 1);
 
-        verify(productMapper).updateById((Product) argThat(p -> p.getStatus() != null && p.getStatus() == 1));
+        verify(productMapper).updateById(argThat((Product p) -> p.getStatus() != null && p.getStatus() == 1));
     }
 
     @Test
@@ -208,7 +209,7 @@ class ProductServiceTest {
 
         productService.updateProductStatus(productId, 0);
 
-        verify(productMapper).updateById((Product) argThat(p -> p.getStatus() != null && p.getStatus() == 0));
+        verify(productMapper).updateById(argThat((Product p) -> p.getStatus() != null && p.getStatus() == 0));
     }
 
     @Test

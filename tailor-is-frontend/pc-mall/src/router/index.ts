@@ -116,6 +116,20 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ForgotPasswordView.vue'),
     meta: { title: '找回密码' },
   },
+  { path: '/about', name: 'About', component: () => import('@/views/AboutView.vue'), meta: { title: '关于裁智云' } },
+  { path: '/brand-story', name: 'BrandStory', component: () => import('@/views/BrandStoryView.vue'), meta: { title: '品牌故事' } },
+  { path: '/join-us', name: 'JoinUs', component: () => import('@/views/JoinUsView.vue'), meta: { title: '加入我们' } },
+  { path: '/news', name: 'News', component: () => import('@/views/NewsView.vue'), meta: { title: '新闻动态' } },
+  { path: '/shopping-guide', name: 'ShoppingGuide', component: () => import('@/views/ShoppingGuideView.vue'), meta: { title: '购物指南' } },
+  { path: '/payment', name: 'Payment', component: () => import('@/views/PaymentView.vue'), meta: { title: '支付方式' } },
+  { path: '/delivery', name: 'Delivery', component: () => import('@/views/DeliveryView.vue'), meta: { title: '配送说明' } },
+  { path: '/after-sale', name: 'AfterSale', component: () => import('@/views/AfterSaleView.vue'), meta: { title: '售后服务' } },
+  { path: '/merchant-rules', name: 'MerchantRules', component: () => import('@/views/MerchantRulesView.vue'), meta: { title: '商家规则' } },
+  { path: '/merchant-backend', name: 'MerchantBackend', component: () => import('@/views/MerchantBackendView.vue'), meta: { title: '商家后台' } },
+  { path: '/merchant-training', name: 'MerchantTraining', component: () => import('@/views/MerchantTrainingView.vue'), meta: { title: '商家培训' } },
+  { path: '/privacy', name: 'Privacy', component: () => import('@/views/PrivacyView.vue'), meta: { title: '隐私政策' } },
+  { path: '/terms', name: 'Terms', component: () => import('@/views/TermsView.vue'), meta: { title: '服务条款' } },
+  { path: '/cookies', name: 'Cookies', component: () => import('@/views/CookiesView.vue'), meta: { title: 'Cookie政策' } },
 ];
 
 const router = createRouter({

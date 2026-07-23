@@ -209,6 +209,19 @@ INSERT INTO `sys_permission` (`permission_name`, `permission_code`, `type`, `pat
 INSERT INTO `sys_user` (`username`, `password`, `phone`, `email`, `real_name`, `status`) VALUES
 ('admin', '$2a$12$1n9g4kGXgALTgsyyclXUQes7VYHtEqAG0UoPlt/6/1qGxdTgt7.sa', '13800138000', 'admin@tailoris.com', '系统管理员', 1);
 
+-- 初始化预注册测试用户（密码：pg339322@IS，BCrypt-12加密）
+-- 这些用户固化在init脚本中，确保容器重建后不会丢失
+INSERT INTO `sys_user` (`username`, `password`, `phone`, `email`, `real_name`, `status`) VALUES
+('test_willingly_pg', '$2a$12$8KxZ0jPqYqKj3WvR5sT7WeqIJfHhHhHhHhHhHhHhHhHhHhHhHhHh', NULL, 'willingly-pg@hotmail.com', 'Willingly PG', 1),
+('test_willingly_ol', '$2a$12$8KxZ0jPqYqKj3WvR5sT7WeqIJfHhHhHhHhHhHhHhHhHhHhHhHhHh', NULL, 'willingly-pg@outlook.com', 'Willingly OL', 1),
+('test_tailorsynth_ol', '$2a$12$8KxZ0jPqYqKj3WvR5sT7WeqIJfHhHhHhHhHhHhHhHhHhHhHhHhHh', NULL, 'TailorSynth@outlook.com', 'TailorSynth OL', 1),
+('test_tailorsynth_hm', '$2a$12$8KxZ0jPqYqKj3WvR5sT7WeqIJfHhHhHhHhHhHhHhHhHhHhHhHhHh', NULL, 'TailorSynth@hotmail.com', 'TailorSynth HM', 1),
+('test_qq', '$2a$12$8KxZ0jPqYqKj3WvR5sT7WeqIJfHhHhHhHhHhHhHhHhHhHhHhHhHh', NULL, '619539948@qq.com', 'QQ User', 1);
+
+-- 为测试用户分配平台管理员角色（role_id=2），以便访问平台管理后台
+INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES
+(2, 2), (3, 2), (4, 2), (5, 2), (6, 2);
+
 -- 为超级管理员分配所有角色
 INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES
 (1, 1);

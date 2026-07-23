@@ -63,7 +63,7 @@ class PatternServiceImplTest {
         when(bodySizeDataMapper.selectById(1L)).thenReturn(bodySize);
         doReturn(1).when(patternRecordMapper).insert(any(PatternRecord.class));
         // 绕过 saveVersion，因为它使用了 LambdaUpdateWrapper
-        doReturn(new PatternVersion()).when(patternService).saveVersion(anyLong(), anyString(), anyString());
+        doReturn(new PatternVersion()).when(patternService).saveVersion(anyLong(), anyLong(), anyString(), anyString());
 
         try (var mock = mockStatic(com.tailoris.common.util.SnowflakeIdGenerator.class)) {
             var gen = mock(com.tailoris.common.util.SnowflakeIdGenerator.class);
@@ -159,7 +159,7 @@ class PatternServiceImplTest {
         doReturn(1).when(patternIterationMapper).insert(any(PatternIteration.class));
         doReturn(1).when(patternRecordMapper).updateById(any(PatternRecord.class));
         // 绕过 saveVersion
-        doReturn(new PatternVersion()).when(patternService).saveVersion(anyLong(), anyString(), anyString());
+        doReturn(new PatternVersion()).when(patternService).saveVersion(anyLong(), anyLong(), anyString(), anyString());
 
         try (var mock = mockStatic(com.tailoris.common.util.SnowflakeIdGenerator.class)) {
             var gen = mock(com.tailoris.common.util.SnowflakeIdGenerator.class);
@@ -195,7 +195,7 @@ class PatternServiceImplTest {
     void testSaveVersion_RecordNotFound() {
         when(patternRecordMapper.selectById(99L)).thenReturn(null);
 
-        assertThrows(BusinessException.class, () -> patternService.saveVersion(99L, "V1", "desc"));
+        assertThrows(BusinessException.class, () -> patternService.saveVersion(100L, 99L, "V1", "desc"));
     }
 
     @Test
@@ -208,7 +208,7 @@ class PatternServiceImplTest {
         when(patternVersionMapper.selectList(any(LambdaQueryWrapper.class)))
                 .thenReturn(Arrays.asList(v2, v1));
 
-        List<PatternVersion> result = patternService.listVersions(1L);
+        List<PatternVersion> result = patternService.listVersions(100L, 1L);
 
         assertEquals(2, result.size());
     }
@@ -220,7 +220,7 @@ class PatternServiceImplTest {
         record.setId(1L);
         when(patternRecordMapper.selectById(1L)).thenReturn(record);
 
-        String result = patternService.exportPattern(1L, "SVG");
+        String result = patternService.exportPattern(100L, 1L, "SVG");
 
         assertNotNull(result);
         assertTrue(result.contains("1.svg"));
@@ -231,7 +231,7 @@ class PatternServiceImplTest {
     void testExportPattern_RecordNotFound() {
         when(patternRecordMapper.selectById(99L)).thenReturn(null);
 
-        assertThrows(BusinessException.class, () -> patternService.exportPattern(99L, "SVG"));
+        assertThrows(BusinessException.class, () -> patternService.exportPattern(100L, 99L, "SVG"));
     }
 
     @Test
@@ -241,7 +241,7 @@ class PatternServiceImplTest {
         record.setId(1L);
         when(patternRecordMapper.selectById(1L)).thenReturn(record);
 
-        String result = patternService.exportPattern(1L, null);
+        String result = patternService.exportPattern(100L, 1L, null);
 
         assertNotNull(result);
         assertTrue(result.contains(".svg"));
@@ -255,7 +255,7 @@ class PatternServiceImplTest {
         record.setPatternName("测试版型");
         when(patternRecordMapper.selectById(1L)).thenReturn(record);
 
-        PatternRecord result = patternService.getPatternDetail(1L);
+        PatternRecord result = patternService.getPatternDetail(100L, 1L);
 
         assertNotNull(result);
         assertEquals("测试版型", result.getPatternName());

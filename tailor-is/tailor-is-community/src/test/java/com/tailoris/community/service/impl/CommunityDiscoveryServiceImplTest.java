@@ -28,7 +28,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
-import com.tailoris.community.service.CommunityDiscoveryServiceImpl;
 
 @DisplayName("CommunityDiscoveryServiceImpl 单元测试")
 @ExtendWith(MockitoExtension.class)

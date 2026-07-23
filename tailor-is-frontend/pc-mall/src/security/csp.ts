@@ -12,6 +12,13 @@ export interface CspDirectives {
   upgradeInsecureRequests?: boolean;
 }
 
+/**
+ * 开发环境 CSP 策略.
+ *
+ * 注意: `unsafe-inline` 和 `unsafe-eval` 是 Vite HMR 的必要条件，
+ * 移除会导致开发时热更新失效。生产环境使用 `strict-dynamic` 代替。
+ * 建议: 生产环境 Nginx 也应配置 CSP 头作为双重防护。
+ */
 const developmentCsp: CspDirectives = {
   defaultSrc: ["'self'"],
   scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'http://localhost:*'],
@@ -67,6 +74,19 @@ export function applyCspMetaTag(): void {
   document.head.appendChild(meta);
 }
 
+/**
+ * 应用安全头部（通过 meta 标签 + 建议 Nginx 服务端双重设置）.
+ *
+ * 注意: 以下安全头通过前端 meta 标签设置作为客户端防护层。
+ * 为保证最佳安全性，建议同时在 Nginx 服务端配置这些头:
+ * ```
+ * add_header X-Content-Type-Options "nosniff" always;
+ * add_header X-Frame-Options "DENY" always;
+ * add_header X-XSS-Protection "1; mode=block" always;
+ * add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+ * add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+ * ```
+ */
 export function applySecurityHeaders(): void {
   applyCspMetaTag();
 

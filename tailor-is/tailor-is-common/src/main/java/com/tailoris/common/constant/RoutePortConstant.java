@@ -37,6 +37,7 @@ public final class RoutePortConstant {
     public static final String ROUTE_ADMIN_ANALYTICS = ROUTE_ADMIN + "/analytics";
     public static final String ROUTE_ADMIN_ACADEMY = ROUTE_ADMIN + "/academy";
     public static final String ROUTE_ADMIN_AUDIT_LOGS = ROUTE_ADMIN + "/audit-logs";
+    public static final String ROUTE_ADMIN_SYSTEM_SETTINGS = ROUTE_ADMIN + "/system/settings";
 
     public static final String ROUTE_PRODUCT = API_V1_PREFIX + "/product";
     public static final String ROUTE_PRODUCTS = API_V1_PREFIX + "/products";

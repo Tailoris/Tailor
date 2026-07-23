@@ -81,18 +81,35 @@ log "预计Java容器数: $JAVA_COUNT"
 log "${YELLOW}[1/2] 启动中间件 (infra)...${NC}"
 docker compose -f "$DEV_COMPOSE_FILE" up -d mysql redis rabbitmq nacos 2>&1 | tee -a "$STARTUP_LOG"
 
-# 等待中间件健康
-log "${YELLOW}等待中间件就绪...${NC}"
-sleep 10
+# 等待中间件健康（使用 Docker healthcheck 状态，而非仅检查容器是否运行）
+log "${YELLOW}等待中间件健康就绪（最多等待 120 秒）...${NC}"
 
-# 检查中间件健康状态
-for svc in tailor-is-mysql-dev tailor-is-redis-dev tailor-is-rabbitmq-dev tailor-is-nacos-dev; do
-    if docker ps --format '{{.Names}}' | grep -q "$svc"; then
-        log "  ${GREEN}✓ $svc 运行中${NC}"
-    else
-        log "  ${RED}✗ $svc 未运行${NC}"
-    fi
-done
+wait_for_healthy() {
+    local container=$1
+    local max_wait=${2:-120}
+    local waited=0
+    while [ $waited -lt $max_wait ]; do
+        local status
+        status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "missing")
+        if [ "$status" = "healthy" ]; then
+            log "  ${GREEN}✓ $container 健康就绪${NC}"
+            return 0
+        elif [ "$status" = "missing" ]; then
+            log "  ${YELLOW}⚠ $container 未找到，跳过健康检查${NC}"
+            return 0
+        fi
+        sleep 5
+        waited=$((waited + 5))
+    done
+    log "  ${RED}✗ $container 健康检查超时（${max_wait}秒）${NC}"
+    return 1
+}
+
+# 等待所有中间件健康就绪
+wait_for_healthy "tailor-is-mysql-dev" 120
+wait_for_healthy "tailor-is-redis-dev" 60
+wait_for_healthy "tailor-is-nacos-dev" 120
+wait_for_healthy "tailor-is-rabbitmq-dev" 90
 
 # 启动业务服务
 log "${YELLOW}[2/2] 启动业务服务...${NC}"

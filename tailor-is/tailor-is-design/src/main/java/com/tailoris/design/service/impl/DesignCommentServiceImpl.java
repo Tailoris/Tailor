@@ -37,7 +37,7 @@ public class DesignCommentServiceImpl extends ServiceImpl<DesignCommentMapper, D
         LambdaQueryWrapper<DesignComment> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DesignComment::getDesignId, designId);
         wrapper.eq(DesignComment::getParentId, 0);
-        wrapper.orderByDesc(DesignComment::getCreatedAt);
+        wrapper.orderByDesc(DesignComment::getCreateTime);
         
         Page<DesignComment> page = new Page<>(current, size);
         return page(page, wrapper);
@@ -47,7 +47,7 @@ public class DesignCommentServiceImpl extends ServiceImpl<DesignCommentMapper, D
     public List<DesignComment> getChildComments(Long parentId) {
         LambdaQueryWrapper<DesignComment> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DesignComment::getParentId, parentId);
-        wrapper.orderByAsc(DesignComment::getCreatedAt);
+        wrapper.orderByAsc(DesignComment::getCreateTime);
         return list(wrapper);
     }
 

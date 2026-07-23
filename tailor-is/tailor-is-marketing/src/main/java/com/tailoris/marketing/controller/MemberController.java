@@ -19,7 +19,7 @@ import java.util.List;
 @SaCheckLogin
 @Tag(name = "会员管理", description = "会员等级查询、店铺会员设置等接口")
 @RestController
-@RequestMapping("/api/marketing/member")
+@RequestMapping("/api/v1/marketing/member")
 @RequiredArgsConstructor
 public class MemberController {
 

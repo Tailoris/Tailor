@@ -142,7 +142,7 @@ class OrderServiceTest {
         orderService.shipOrder(merchantId, orderNo, "SF1234567890");
 
         verify(orderInfoMapper).updateById((OrderInfo) argThat(o ->
-                o.getLogisticsNo() != null && o.getLogisticsNo().equals("SF1234567890")));
+                ((OrderInfo) o).getLogisticsNo() != null && ((OrderInfo) o).getLogisticsNo().equals("SF1234567890")));
     }
 
     @Test

@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("OrderController 测试")
 @ExtendWith(MockitoExtension.class)
 @Disabled("SaCheckLogin class-level annotation not compatible with standalone MockMvc")
+@SuppressWarnings("deprecation")
 class OrderControllerTest {
 
     @Mock
@@ -142,7 +143,7 @@ class OrderControllerTest {
         String orderNo = "ORD20260530000001";
 
         OrderInfo order = buildOrderInfo(userId, orderNo);
-        when(orderService.getOrderDetail(orderNo)).thenReturn(order);
+        when(orderService.getOrderDetail(eq(userId), eq(orderNo))).thenReturn(order);
 
         try (MockedStatic<StpUtil> stpUtilMock = mockStatic(StpUtil.class)) {
             stpUtilMock.when(StpUtil::getLoginIdAsLong).thenReturn(userId);
@@ -154,7 +155,7 @@ class OrderControllerTest {
                     .andExpect(jsonPath("$.data.orderNo").value(orderNo))
                     .andExpect(jsonPath("$.data.userId").value(userId));
 
-            verify(orderService).getOrderDetail(orderNo);
+            verify(orderService).getOrderDetail(eq(userId), eq(orderNo));
         }
     }
 

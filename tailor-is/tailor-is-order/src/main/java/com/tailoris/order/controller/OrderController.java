@@ -92,4 +92,11 @@ public class OrderController {
         orderService.updatePaymentStatus(paymentNo, status, payType);
         return Result.success(true);
     }
+
+    @Operation(summary = "管理员查询所有订单", description = "不按userId过滤，返回所有订单")
+    @GetMapping("/admin/list")
+    public Result<Page<OrderInfo>> listAllOrders(OrderQueryRequest request) {
+        Page<OrderInfo> page = orderService.listAllOrders(request);
+        return Result.success(page);
+    }
 }

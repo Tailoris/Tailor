@@ -192,6 +192,9 @@ public class SysUserServiceImpl implements SysUserService {
         if (user == null) {
             user = getUserByPhone(username);
         }
+        if (user == null) {
+            user = getUserByEmail(username);
+        }
         return user;
     }
 
@@ -402,6 +405,13 @@ public class SysUserServiceImpl implements SysUserService {
     public SysUser getUserByPhone(String phone) {
         LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SysUser::getPhone, phone);
+        return sysUserMapper.selectOne(wrapper);
+    }
+
+    @Override
+    public SysUser getUserByEmail(String email) {
+        LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SysUser::getEmail, email);
         return sysUserMapper.selectOne(wrapper);
     }
 

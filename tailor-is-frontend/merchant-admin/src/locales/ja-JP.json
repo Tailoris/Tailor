@@ -1,0 +1,62 @@
+{
+  "common": {
+    "confirm": "確認",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "search": "検索",
+    "reset": "リセット",
+    "submit": "送信",
+    "back": "戻る",
+    "loading": "読み込み中...",
+    "noData": "データがありません",
+    "operationFailed": "操作が失敗しました",
+    "operationSuccess": "操作が成功しました",
+    "networkError": "ネットワーク接続に異常があります。接続を確認してください"
+  },
+  "nav": {
+    "home": "ホーム",
+    "products": "商品",
+    "cart": "カート",
+    "orders": "注文",
+    "settings": "設定",
+    "login": "ログイン",
+    "logout": "ログアウト"
+  },
+  "auth": {
+    "username": "ユーザー名",
+    "password": "パスワード",
+    "loginTitle": "ログイン",
+    "forgotPassword": "パスワードをお忘れですか",
+    "rememberMe": "ログイン状態を保持"
+  },
+  "product": {
+    "title": "商品一覧",
+    "detail": "商品詳細",
+    "price": "価格",
+    "stock": "在庫",
+    "addToCart": "カートに入れる",
+    "buyNow": "今すぐ購入"
+  },
+  "order": {
+    "title": "注文",
+    "orderNo": "注文番号",
+    "status": "ステータス",
+    "amount": "金額",
+    "all": "すべて",
+    "pendingPayment": "支払い待ち",
+    "pendingDelivery": "発送待ち",
+    "delivered": "発送済み",
+    "refunded": "返金済み",
+    "completed": "完了"
+  },
+  "payment": {
+    "title": "支払い",
+    "wechat": "WeChatペイ",
+    "alipay": "アリペイ",
+    "balance": "残高支払い",
+    "payAmount": "支払い金額",
+    "confirmPay": "支払いを確認"
+  }
+}

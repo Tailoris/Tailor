@@ -26,4 +26,6 @@ public interface OrderService {
     Page<OrderInfo> listOrders(Long userId, OrderQueryRequest request);
 
     Page<OrderInfo> listOrdersByShop(Long shopId, OrderQueryRequest request);
+
+    Page<OrderInfo> listAllOrders(OrderQueryRequest request);
 }

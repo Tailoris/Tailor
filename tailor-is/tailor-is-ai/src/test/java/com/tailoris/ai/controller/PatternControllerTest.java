@@ -112,7 +112,7 @@ class PatternControllerTest {
         PatternVersion version = new PatternVersion();
         version.setId(1L);
         version.setVersionNo(1);
-        when(patternService.saveVersion(anyLong(), anyString(), anyString()))
+        when(patternService.saveVersion(anyLong(), anyLong(), anyString(), anyString()))
                 .thenReturn(version);
 
         mockMvc.perform(post("/api/v1/ai/pattern/version/save")
@@ -130,7 +130,7 @@ class PatternControllerTest {
         v1.setVersionNo(1);
         PatternVersion v2 = new PatternVersion();
         v2.setVersionNo(2);
-        when(patternService.listVersions(anyLong())).thenReturn(Arrays.asList(v1, v2));
+        when(patternService.listVersions(anyLong(), anyLong())).thenReturn(Arrays.asList(v1, v2));
 
         mockMvc.perform(get("/api/v1/ai/pattern/versions")
                         .param("patternId", "1"))
@@ -141,7 +141,7 @@ class PatternControllerTest {
     @Test
     @DisplayName("导出版型 - 成功")
     void testExportPattern_Success() throws Exception {
-        when(patternService.exportPattern(anyLong(), anyString())).thenReturn("/path/to/file.svg");
+        when(patternService.exportPattern(anyLong(), anyLong(), anyString())).thenReturn("/path/to/file.svg");
 
         mockMvc.perform(get("/api/v1/ai/pattern/export")
                         .param("patternId", "1")
@@ -153,7 +153,7 @@ class PatternControllerTest {
     @Test
     @DisplayName("导出版型 - 默认格式")
     void testExportPattern_DefaultFormat() throws Exception {
-        when(patternService.exportPattern(anyLong(), anyString())).thenReturn("/path/to/file.svg");
+        when(patternService.exportPattern(anyLong(), anyLong(), anyString())).thenReturn("/path/to/file.svg");
 
         mockMvc.perform(get("/api/v1/ai/pattern/export")
                         .param("patternId", "1"))
@@ -166,7 +166,7 @@ class PatternControllerTest {
         PatternRecord record = new PatternRecord();
         record.setId(1L);
         record.setPatternName("测试版型");
-        when(patternService.getPatternDetail(anyLong())).thenReturn(record);
+        when(patternService.getPatternDetail(anyLong(), anyLong())).thenReturn(record);
 
         mockMvc.perform(get("/api/v1/ai/pattern/detail")
                         .param("patternId", "1"))

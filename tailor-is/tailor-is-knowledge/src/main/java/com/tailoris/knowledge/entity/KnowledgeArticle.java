@@ -10,6 +10,9 @@ import lombok.EqualsAndHashCode;
 @TableName("knowledge_article")
 public class KnowledgeArticle extends BaseEntity {
 
+    @TableId(type = IdType.ASSIGN_ID)
+    private Long id;
+
     @TableField("article_no")
     private String articleNo;
 

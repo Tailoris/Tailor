@@ -104,6 +104,14 @@ public interface SysUserService {
     SysUser getUserByPhone(String phone);
 
     /**
+     * 根据邮箱查询用户.
+     *
+     * @param email 邮箱地址
+     * @return 用户实体，不存在时返回null
+     */
+    SysUser getUserByEmail(String email);
+
+    /**
      * 更新用户登录信息（最后登录时间/IP）.
      *
      * @param userId 用户ID

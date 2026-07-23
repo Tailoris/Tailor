@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @SaCheckLogin
 @Tag(name = "智能匹配", description = "供需智能匹配、供应商推荐等接口")
 @RestController
-@RequestMapping("/api/supply/match")
+@RequestMapping("/api/v1/supply/match")
 @RequiredArgsConstructor
 public class MatchController {
 

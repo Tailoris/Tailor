@@ -253,7 +253,7 @@ async function loadProfile() {
       basicForm.email = data.email || '';
     }
   } catch {
-    ElMessage.error('获取用户信息失败');
+    console.warn('获取用户信息失败，使用本地数据');
   }
 }
 

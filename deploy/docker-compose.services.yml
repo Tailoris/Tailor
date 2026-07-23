@@ -11,11 +11,7 @@
 # 前置条件:
 #   1. 构建镜像前: `mvn -f tailor-is/pom.xml clean package -DskipTests`
 #      或直接使用本 compose 的 build 阶段, 每个服务的 Dockerfile 已集成 Maven 构建
-#   2. 基础设施应已就绪:
-#      - Nacos:        host.docker.internal:8848  (1panel-nacos-TXuU-standalone)
-#      - Redis Master: host.docker.internal:6379  (tailor-is-redis-sentinel*)
-#      - MySQL:        host.docker.internal:3306  (1panel-mysql-CXKd)
-#      - RabbitMQ:     host.docker.internal:5672  (1panel-rabbitmq-afrK)
+#   2. 所有基础设施（MySQL/Redis/Nacos/RabbitMQ）由本 compose 统一管理
 #   3. 将本文件所在目录中的 .env.example 复制为 .env 并填入真实密码
 # ==============================================================================
 # 使用方式:
@@ -56,27 +52,39 @@ networks:
       driver: default
       config:
         - subnet: 172.28.0.0/16
+  tailor-mid-net:
+    name: tailor-mid-net
+    external: true
+  tailor-core-net:
+    name: tailor-core-net
+    external: true
+  tailor-light-net:
+    name: tailor-light-net
+    external: true
 
 x-core-service: &core-service
   restart: unless-stopped
   networks:
-    - tailoris-services
-  extra_hosts:
-    - "host.docker.internal:host-gateway"
+    - tailor-mid-net
+    - tailor-core-net
   env_file:
     - ./tailor-is-prod/env/.env.base
-    - ./tailor-is-prod/env/.env.core
-    - ./tailor-is-prod/env/.env.dev
   environment:
-    - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+    - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-nacos:8848}
     - NACOS_NAMESPACE=dev
-    - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/
+    - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/?allowPublicKeyRetrieval=true
     - SPRING_DATASOURCE_USERNAME=${MYSQL_USERNAME:-root}
     - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-    - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+    - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-redis}
     - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
     - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
-    - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+    - SPRING_DATA_REDIS_DATABASE=0
+    - SPRING_DATA_MONGODB_HOST=${MONGO_HOST:-mongodb}
+    - SPRING_DATA_MONGODB_PORT=${MONGO_PORT:-27017}
+    - SPRING_DATA_MONGODB_USERNAME=${MONGO_USERNAME:-admin}
+    - SPRING_DATA_MONGODB_PASSWORD=${MONGO_PASSWORD}
+    - SPRING_DATA_MONGODB_DATABASE=tailor_is
+    - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
     - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
     - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-rabbitmq}
     - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
@@ -96,31 +104,34 @@ x-core-service: &core-service
     resources:
       limits:
         cpus: '0.8'
-        memory: 384M
+        memory: 512M
       reservations:
         cpus: '0.2'
-        memory: 128M
+        memory: 160M
 
 x-light-service: &light-service
   restart: unless-stopped
   networks:
-    - tailoris-services
-  extra_hosts:
-    - "host.docker.internal:host-gateway"
+    - tailor-mid-net
+    - tailor-light-net
   env_file:
     - ./tailor-is-prod/env/.env.base
-    - ./tailor-is-prod/env/.env.light
-    - ./tailor-is-prod/env/.env.dev
   environment:
-    - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-host.docker.internal:8848}
+    - SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR=${NACOS_ADDR:-nacos:8848}
     - NACOS_NAMESPACE=dev
-    - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/
+    - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/?allowPublicKeyRetrieval=true
     - SPRING_DATASOURCE_USERNAME=${MYSQL_USERNAME:-root}
     - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-    - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+    - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-redis}
     - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
     - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
-    - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-host.docker.internal}
+    - SPRING_DATA_REDIS_DATABASE=0
+    - SPRING_DATA_MONGODB_HOST=${MONGO_HOST:-mongodb}
+    - SPRING_DATA_MONGODB_PORT=${MONGO_PORT:-27017}
+    - SPRING_DATA_MONGODB_USERNAME=${MONGO_USERNAME:-admin}
+    - SPRING_DATA_MONGODB_PASSWORD=${MONGO_PASSWORD}
+    - SPRING_DATA_MONGODB_DATABASE=tailor_is
+    - SPRING_RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
     - SPRING_RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
     - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-rabbitmq}
     - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
@@ -140,10 +151,10 @@ x-light-service: &light-service
     resources:
       limits:
         cpus: '0.5'
-        memory: 256M
+        memory: 384M
       reservations:
         cpus: '0.1'
-        memory: 128M
+        memory: 160M
 
 x-healthcheck-default: &healthcheck-default
   interval: 30s
@@ -152,6 +163,167 @@ x-healthcheck-default: &healthcheck-default
   start_period: 90s
 
 services:
+
+  # ============================================================================
+  # 基础设施服务（MySQL / Redis / Nacos / RabbitMQ）
+  # 所有业务服务依赖这些基础设施，通过服务名 DNS 解析访问
+  # ============================================================================
+
+  mysql:
+    image: mysql:8.0
+    container_name: tailor-is-mysql
+    hostname: mysql
+    restart: unless-stopped
+    networks:
+      - tailor-mid-net
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_CHARACTER_SET_SERVER=utf8mb4
+      - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
+    volumes:
+      - ./volumes/mysql/data:/var/lib/mysql
+      - ../tailor-is/sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  redis:
+    image: redis:7-alpine
+    container_name: tailor-is-redis
+    hostname: redis
+    restart: unless-stopped
+    networks:
+      - tailor-mid-net
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    volumes:
+      - ./volumes/redis/data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+        reservations:
+          cpus: '0.2'
+          memory: 128M
+
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: tailor-is-nacos
+    hostname: nacos
+    restart: unless-stopped
+    networks:
+      - tailor-mid-net
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    environment:
+      - MODE=standalone
+      - NACOS_AUTH_ENABLE=false
+    volumes:
+      - ./volumes/nacos/logs:/home/nacos/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 1G
+        reservations:
+          cpus: '0.4'
+          memory: 512M
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: tailor-is-rabbitmq
+    hostname: rabbitmq
+    restart: unless-stopped
+    networks:
+      - tailor-mid-net
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-rabbitmq}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - ./volumes/rabbitmq/data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+
+  mongodb:
+    image: mongo:7.0
+    container_name: tailor-is-mongodb
+    hostname: mongodb
+    restart: unless-stopped
+    networks:
+      - tailor-mid-net
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-mongodb}
+    volumes:
+      - ./volumes/mongodb/data:/data/db
+      - ./volumes/mongodb/configdb:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
+          memory: 512M
+        reservations:
+          cpus: '0.3'
+          memory: 256M
 
   # ============================================================================
   # Profile: core-trade — 核心交易链路
@@ -168,10 +340,19 @@ services:
     hostname: core-gateway
     ports:
       - "9000:8080"
+    networks:
+      - tailor-mid-net
+      - tailor-core-net
+      - tailor-light-net
+    depends_on:
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - SERVER_PORT=8080
       - NACOS_NAMESPACE=dev
-      - SPRING_DATA_REDIS_DATABASE=1
+      - SPRING_DATA_REDIS_DATABASE=0
       - JVM_XMX=512m
       - JVM_XMS=256m
       - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:-TieredCompilation -XX:ParallelGCThreads=2 -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=60
@@ -193,6 +374,15 @@ services:
     hostname: lite-gateway
     ports:
       - "8081:8081"
+    networks:
+      - tailor-mid-net
+      - tailor-core-net
+      - tailor-light-net
+    depends_on:
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - SERVER_PORT=8081
       - JVM_XMX=320m
@@ -216,10 +406,11 @@ services:
     hostname: user-service
     environment:
       - SERVER_PORT=8101
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_user?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_user?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATA_REDIS_DATABASE=0
       - TAILORIS_OSS_LOCAL_FALLBACK_PATH=/app/upload
-      - JVM_XMX=320m
-      - JVM_XMS=160m
+      - JVM_XMX=512m
+      - JVM_XMS=256m
     volumes:
       - ./volumes/user-service/upload:/app/upload
     healthcheck:
@@ -240,7 +431,7 @@ services:
     hostname: product-service
     environment:
       - SERVER_PORT=8102
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_product?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_product?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       - AES_KEY=${AES_KEY}
       - JVM_XMX=320m
       - JVM_XMS=160m
@@ -262,10 +453,10 @@ services:
     hostname: order-service
     environment:
       - SERVER_PORT=8103
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_order?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       - JVM_XMX=512m
       - JVM_XMS=256m
-      - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:-TieredCompilation -XX:ParallelGCThreads=2 -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=60
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=4 -Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:-TieredCompilation -XX:ParallelGCThreads=4 -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=60
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8103/actuator/health || exit 1"]
       interval: 30s
@@ -284,7 +475,7 @@ services:
     hostname: payment-service
     environment:
       - SERVER_PORT=8104
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_payment?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_payment?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       - JVM_XMX=320m
       - JVM_XMS=160m
     healthcheck:
@@ -305,7 +496,7 @@ services:
     hostname: marketing-service
     environment:
       - SERVER_PORT=8105
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_marketing?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_marketing?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       - JVM_XMX=320m
       - JVM_XMS=160m
     healthcheck:
@@ -326,7 +517,7 @@ services:
     hostname: merchant-service
     environment:
       - SERVER_PORT=8110
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_merchant?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_merchant?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       - JVM_XMX=320m
       - JVM_XMS=160m
     healthcheck:
@@ -347,7 +538,7 @@ services:
     hostname: admin-service
     environment:
       - SERVER_PORT=8100
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_admin?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_admin?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       - JVM_XMX=320m
       - JVM_XMS=160m
       - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -Xms160m -Xmx320m -XX:MaxMetaspaceSize=128m -XX:-TieredCompilation -XX:ParallelGCThreads=2 -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=60
@@ -373,10 +564,10 @@ services:
     hostname: ai-service
     environment:
       - SERVER_PORT=8106
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_ai?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_ai?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       - JVM_XMX=512m
       - JVM_XMS=256m
-      - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=2 -Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:-TieredCompilation -XX:ParallelGCThreads=2 -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=60
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:ActiveProcessorCount=4 -Xms256m -Xmx512m -XX:MaxMetaspaceSize=128m -XX:-TieredCompilation -XX:ParallelGCThreads=4 -XX:MaxDirectMemorySize=64M -Dserver.tomcat.threads.max=60
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8106/actuator/health || exit 1"]
       interval: 30s
@@ -395,7 +586,7 @@ services:
     hostname: copyright-service
     environment:
       - SERVER_PORT=8107
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_copyright?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_copyright?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       - COPYRIGHT_AES_KEY=${COPYRIGHT_AES_KEY}
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8107/actuator/health || exit 1"]
@@ -413,9 +604,12 @@ services:
     image: tailor-is-pattern:latest
     container_name: tailor-is-pattern
     hostname: pattern-service
+    depends_on:
+      mongodb:
+        condition: service_healthy
     environment:
       - SERVER_PORT=8115
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_pattern?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_pattern?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8115/actuator/health || exit 1"]
       interval: 30s
@@ -432,9 +626,12 @@ services:
     image: tailor-is-design:latest
     container_name: tailor-is-design
     hostname: design-service
+    depends_on:
+      mongodb:
+        condition: service_healthy
     environment:
       - SERVER_PORT=8116
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_design?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_design?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8116/actuator/health || exit 1"]
       interval: 30s
@@ -457,7 +654,7 @@ services:
     hostname: community-service
     environment:
       - SERVER_PORT=8108
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_community?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_community?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8108/actuator/health || exit 1"]
       interval: 30s
@@ -476,7 +673,7 @@ services:
     hostname: message-service
     environment:
       - SERVER_PORT=8111
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_message?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_message?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8111/actuator/health || exit 1"]
       interval: 30s
@@ -495,7 +692,7 @@ services:
     hostname: message-im-service
     environment:
       - SERVER_PORT=8114
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_im?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_im?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8114/actuator/health || exit 1"]
       interval: 30s
@@ -518,7 +715,7 @@ services:
     hostname: academy-service
     environment:
       - SERVER_PORT=8112
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_academy?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_academy?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8112/actuator/health || exit 1"]
       interval: 30s
@@ -537,7 +734,7 @@ services:
     hostname: knowledge-service
     environment:
       - SERVER_PORT=8117
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_knowledge?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_knowledge?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8117/actuator/health || exit 1"]
       interval: 30s
@@ -560,7 +757,7 @@ services:
     hostname: supply-service
     environment:
       - SERVER_PORT=8109
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_supply?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_supply?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8109/actuator/health || exit 1"]
       interval: 30s
@@ -579,7 +776,7 @@ services:
     hostname: analytics-service
     environment:
       - SERVER_PORT=8113
-      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/tailor_is_analytics?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tailor_is_analytics?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8113/actuator/health || exit 1"]
       interval: 30s

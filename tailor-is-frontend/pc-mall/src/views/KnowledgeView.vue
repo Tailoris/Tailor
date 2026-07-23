@@ -547,10 +547,244 @@
       </div>
     </div>
   </div>
+
+  <!-- 文章详情弹窗 -->
+  <div
+    v-if="showArticleModal && currentArticle"
+    class="modal-overlay"
+    @click.self="showArticleModal = false"
+  >
+    <div class="modal-content article-modal">
+      <div class="modal-header">
+        <h3>{{ currentArticle.title }}</h3>
+        <button class="close-btn" @click="showArticleModal = false">
+          <el-icon><Close /></el-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div
+          v-if="currentArticle.type === 'video'"
+          class="article-video-large"
+        >
+          <img
+            :src="currentArticle.cover"
+            :alt="currentArticle.title"
+          />
+          <div class="video-overlay">
+            <div class="play-btn">
+              <el-icon><VideoPlay /></el-icon>
+            </div>
+          </div>
+        </div>
+        <img
+          v-else
+          :src="currentArticle.cover"
+          :alt="currentArticle.title"
+          class="article-image-large"
+        />
+        <div class="article-tags">
+          <span
+            v-for="tag in currentArticle.tags"
+            :key="tag"
+            class="tag"
+          >{{ tag }}</span>
+        </div>
+        <div class="article-full-content">
+          <p>{{ currentArticle.description }}</p>
+          <p>这是文章的完整内容，包含详细的知识讲解和实用技巧。在实际应用中，这里会展示完整的文章正文。</p>
+          <p>阅读本文后，您将了解到更多关于服装设计、打版技术、工艺实操等方面的专业知识。</p>
+        </div>
+        <div class="article-meta">
+          <span class="author">
+            <el-icon><User /></el-icon>
+            {{ currentArticle.author }}
+          </span>
+          <span class="views">
+            <el-icon><View /></el-icon>
+            {{ currentArticle.views }}
+          </span>
+          <span class="likes">
+            <el-icon><Star /></el-icon>
+            {{ currentArticle.likes }}
+          </span>
+          <span class="date">{{ currentArticle.date }}</span>
+        </div>
+        <div class="article-actions">
+          <button class="action-btn">
+            <el-icon><Star /></el-icon>
+            <span>点赞</span>
+          </button>
+          <button class="action-btn">
+            <el-icon><Message /></el-icon>
+            <span>评论</span>
+          </button>
+          <button class="action-btn">
+            <el-icon><StarFilled /></el-icon>
+            <span>收藏</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提问弹窗 -->
+  <div
+    v-if="showAskModal"
+    class="modal-overlay"
+    @click.self="showAskModal = false"
+  >
+    <div class="modal-content ask-modal">
+      <div class="modal-header">
+        <h3>发布问题</h3>
+        <button class="close-btn" @click="showAskModal = false">
+          <el-icon><Close /></el-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <el-form
+          :model="askForm"
+          label-width="80px"
+          class="ask-form"
+        >
+          <el-form-item label="问题标题" required>
+            <el-input
+              v-model="askForm.title"
+              placeholder="请输入问题标题"
+            />
+          </el-form-item>
+          <el-form-item label="问题描述" required>
+            <el-textarea
+              v-model="askForm.description"
+              :rows="5"
+              placeholder="请详细描述您的问题..."
+            />
+          </el-form-item>
+          <el-form-item label="标签">
+            <el-select
+              v-model="askForm.tags"
+              multiple
+              placeholder="请选择标签"
+            >
+              <el-option label="设计基础" value="设计基础" />
+              <el-option label="打版技巧" value="打版技巧" />
+              <el-option label="工艺详解" value="工艺详解" />
+              <el-option label="设备操作" value="设备操作" />
+              <el-option label="面料知识" value="面料知识" />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <div class="form-actions">
+              <el-button
+                type="primary"
+                size="large"
+                @click="submitQuestion"
+              >
+                发布问题
+              </el-button>
+              <el-button
+                size="large"
+                @click="showAskModal = false"
+              >
+                取消
+              </el-button>
+            </div>
+          </el-form-item>
+        </el-form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 问题详情弹窗 -->
+  <div
+    v-if="showQuestionModal && currentQuestion"
+    class="modal-overlay"
+    @click.self="showQuestionModal = false"
+  >
+    <div class="modal-content question-modal">
+      <div class="modal-header">
+        <h3>{{ currentQuestion.title }}</h3>
+        <button class="close-btn" @click="showQuestionModal = false">
+          <el-icon><Close /></el-icon>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="question-detail">
+          <p>{{ currentQuestion.description }}</p>
+          <div class="question-tags">
+            <span
+              v-for="tag in currentQuestion.tags"
+              :key="tag"
+              class="tag"
+            >{{ tag }}</span>
+          </div>
+          <div class="question-meta">
+            <span class="author">
+              <el-icon><User /></el-icon>
+              {{ currentQuestion.author }}
+            </span>
+            <span class="time">{{ currentQuestion.time }}</span>
+          </div>
+          <div class="question-stats">
+            <span>{{ currentQuestion.votes }} 赞同</span>
+            <span>{{ currentQuestion.answers }} 回答</span>
+          </div>
+        </div>
+        <div class="answers-section">
+          <h4>回答列表</h4>
+          <div class="answers-list">
+            <div class="answer-item">
+              <div class="answer-votes">
+                <button class="vote-btn">↑</button>
+                <span>12</span>
+              </div>
+              <div class="answer-content">
+                <p>针对您的问题，我建议您尝试以下方法：首先检查纸样的领口弧线是否合理，其次考虑使用弹性较好的面料，或者在领口处添加适量的松紧带。</p>
+                <div class="answer-meta">
+                  <span>专业版师张师傅</span>
+                  <span>2小时前</span>
+                </div>
+              </div>
+            </div>
+            <div class="answer-item">
+              <div class="answer-votes">
+                <button class="vote-btn">↑</button>
+                <span>8</span>
+              </div>
+              <div class="answer-content">
+                <p>领口变形问题通常与面料的拉伸性和缝制工艺有关。建议在裁剪时适当增加领口的宽松量，并使用斜裁的方式处理领口面料。</p>
+                <div class="answer-meta">
+                  <span>设计师小李</span>
+                  <span>5小时前</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="answer-input-section">
+          <h4>写回答</h4>
+          <el-textarea
+            v-model="answerForm.content"
+            :rows="4"
+            placeholder="请输入您的回答..."
+          />
+          <div class="answer-actions">
+            <el-button
+              type="primary"
+              @click="submitAnswer"
+            >
+              <el-icon><ArrowRight /></el-icon>
+              提交回答
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   Reading,
   ChatLineSquare,
@@ -563,6 +797,9 @@ import {
   Star,
   Plus,
   CircleCheckFilled,
+  Close,
+  Message,
+  StarFilled,
 } from '@element-plus/icons-vue';
 
 const activeTab = ref('library');
@@ -581,6 +818,25 @@ const qaPageSize = ref(10);
 const qaTotal = ref(156);
 
 const rewardFilter = ref('all');
+
+// 弹窗状态
+const showArticleModal = ref(false);
+const showAskModal = ref(false);
+const showQuestionModal = ref(false);
+const currentArticle = ref<typeof articles.value[0] | null>(null);
+const currentQuestion = ref<typeof questions.value[0] | null>(null);
+
+// 提问表单
+const askForm = reactive({
+  title: '',
+  description: '',
+  tags: [] as string[],
+});
+
+// 回答表单
+const answerForm = reactive({
+  content: '',
+});
 
 const categories = ref([
   {
@@ -821,7 +1077,11 @@ function handlePageChange(val: number) {
 }
 
 function viewArticle(id: number) {
-  console.log('查看文章:', id);
+  const article = articles.value.find((a) => a.id === id);
+  if (article) {
+    currentArticle.value = article;
+    showArticleModal.value = true;
+  }
 }
 
 function searchQA() {
@@ -829,11 +1089,37 @@ function searchQA() {
 }
 
 function askQuestion() {
-  console.log('提问');
+  askForm.title = '';
+  askForm.description = '';
+  askForm.tags = [];
+  showAskModal.value = true;
+}
+
+function submitQuestion() {
+  if (!askForm.title || !askForm.description) {
+    ElMessage.warning('请填写完整的问题信息');
+    return;
+  }
+  ElMessage.success('问题发布成功');
+  showAskModal.value = false;
 }
 
 function viewQuestion(id: number) {
-  console.log('查看问题:', id);
+  const question = questions.value.find((q) => q.id === id);
+  if (question) {
+    currentQuestion.value = question;
+    answerForm.content = '';
+    showQuestionModal.value = true;
+  }
+}
+
+function submitAnswer() {
+  if (!answerForm.content.trim()) {
+    ElMessage.warning('请输入回答内容');
+    return;
+  }
+  ElMessage.success('回答发布成功');
+  answerForm.content = '';
 }
 
 function handleQaPageSizeChange(val: number) {
@@ -846,11 +1132,30 @@ function handleQaPageChange(val: number) {
 }
 
 function viewReward(id: number) {
-  console.log('查看悬赏:', id);
+  const reward = rewards.value.find((r) => r.id === id);
+  if (reward) {
+    currentQuestion.value = {
+      id: reward.id,
+      title: reward.title,
+      description: reward.description,
+      tags: reward.tags,
+      author: reward.author,
+      votes: 0,
+      answers: reward.answers,
+      time: `剩余 ${reward.daysLeft} 天`,
+      accepted: false,
+    };
+    answerForm.content = '';
+    showQuestionModal.value = true;
+  }
 }
 
 function submitReward() {
-  console.log('发布悬赏:', rewardForm);
+  if (!rewardForm.title || !rewardForm.description) {
+    ElMessage.warning('请填写完整的悬赏信息');
+    return;
+  }
+  ElMessage.success('悬赏发布成功');
 }
 </script>
 
@@ -1652,6 +1957,233 @@ function submitReward() {
     flex-direction: row;
     justify-content: center;
     gap: 12px;
+  }
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.close-btn:hover {
+  color: #64748b;
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.article-video-large,
+.article-image-large {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.article-video-large {
+  position: relative;
+}
+
+.article-full-content {
+  margin: 16px 0;
+  line-height: 1.8;
+  color: #475569;
+}
+
+.article-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #475569;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  border-color: #1d39c4;
+  color: #1d39c4;
+}
+
+.ask-form {
+  padding: 0;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.question-detail {
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 20px;
+}
+
+.question-detail p {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.question-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.answers-section {
+  margin-bottom: 20px;
+}
+
+.answers-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.answers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.answer-item {
+  display: flex;
+  gap: 12px;
+}
+
+.answer-votes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 40px;
+}
+
+.vote-btn {
+  background: #f1f5f9;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.vote-btn:hover {
+  background: #e2e8f0;
+}
+
+.answer-content {
+  flex: 1;
+}
+
+.answer-content p {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.answer-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.answer-input-section {
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.answer-input-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.answer-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    max-height: 90vh;
+  }
+
+  .article-video-large,
+  .article-image-large {
+    height: 200px;
   }
 }
 </style>

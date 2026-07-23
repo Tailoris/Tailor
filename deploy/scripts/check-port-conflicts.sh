@@ -103,7 +103,9 @@ STANDARD_PORTS=(
   "8114|message-im-service|lite"
 
   # 公共服务
-  "8082|file-upload|common"
+  "8115|pattern-service|lite"
+  "8116|design-service|lite"
+  "8117|knowledge-service|lite"
   "4000|graphql-gateway|common"
 
   # 前端服务

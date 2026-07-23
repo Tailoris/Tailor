@@ -36,10 +36,10 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3003,
-    origin: 'http://localhost/admin',
+    origin: 'http://localhost:3003/admin',
     hmr: false,
     proxy: {
-      '/api': {
+      '/api/v1': {
         target: 'http://localhost:9000',
         changeOrigin: true,
       },

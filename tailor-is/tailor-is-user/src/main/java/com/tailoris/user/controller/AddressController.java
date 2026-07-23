@@ -39,7 +39,7 @@ import java.util.List;
 @SaCheckLogin
 @Tag(name = "地址管理", description = "收货地址增删改查接口")
 @RestController
-@RequestMapping(RoutePortConstant.ROUTE_USER_ADDRESS)
+@RequestMapping("/user/address")
 @RequiredArgsConstructor
 public class AddressController {
 

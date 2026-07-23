@@ -54,7 +54,7 @@ class PaymentNotificationConsumerTest {
         paymentNotificationConsumer.handlePaymentNotification(jsonMessage);
 
         verify(paymentRecordMapper).selectById(PAYMENT_NO);
-        verify(paymentRecordMapper, never()).updateById(any());
+        verify(paymentRecordMapper, never()).updateById(any(PaymentRecord.class));
     }
 
     @Test
@@ -71,7 +71,7 @@ class PaymentNotificationConsumerTest {
 
         paymentNotificationConsumer.handlePaymentNotification(jsonMessage);
 
-        verify(paymentRecordMapper).updateById(argThat(p ->
+        verify(paymentRecordMapper).updateById((PaymentRecord) argThat(p ->
                 ((PaymentRecord) p).getPayStatus() == 1
                         && "TXN123456".equals(((PaymentRecord) p).getTransactionId())
         ));

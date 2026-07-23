@@ -32,6 +32,10 @@ public class Pattern extends BaseEntity {
     @TableField("image_url")
     private String imageUrl;
 
+    /** 版型价格 */
+    @TableField("price")
+    private Long price;
+
     /** 规格尺寸（JSON格式） */
     @TableField("dimensions")
     private String dimensions;

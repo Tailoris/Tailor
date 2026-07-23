@@ -111,12 +111,12 @@ public class KnowledgeArticleServiceImpl extends ServiceImpl<KnowledgeArticleMap
         if (StringUtils.isNotBlank(queryRequest.getSortBy())) {
             String sortColumn = convertSortField(queryRequest.getSortBy());
             if ("asc".equalsIgnoreCase(queryRequest.getSortOrder())) {
-                wrapper.orderByAsc(sortColumn);
+                wrapper.last("ORDER BY " + sortColumn + " ASC");
             } else {
-                wrapper.orderByDesc(sortColumn);
+                wrapper.last("ORDER BY " + sortColumn + " DESC");
             }
         } else {
-            wrapper.orderByDesc("is_top").orderByDesc("created_at");
+            wrapper.last("ORDER BY is_top DESC, created_at DESC");
         }
         
         return page(page, wrapper);
@@ -127,7 +127,7 @@ public class KnowledgeArticleServiceImpl extends ServiceImpl<KnowledgeArticleMap
         LambdaQueryWrapper<KnowledgeArticle> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(KnowledgeArticle::getStatus, 1);
         wrapper.eq(KnowledgeArticle::getIsRecommend, 1);
-        wrapper.orderByDesc(KnowledgeArticle::getCreatedAt);
+        wrapper.orderByDesc(KnowledgeArticle::getCreateTime);
         wrapper.last("LIMIT " + limit);
         return list(wrapper);
     }
@@ -146,7 +146,7 @@ public class KnowledgeArticleServiceImpl extends ServiceImpl<KnowledgeArticleMap
         LambdaQueryWrapper<KnowledgeArticle> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(KnowledgeArticle::getStatus, 1);
         wrapper.eq(KnowledgeArticle::getIsTop, 1);
-        wrapper.orderByDesc(KnowledgeArticle::getCreatedAt);
+        wrapper.orderByDesc(KnowledgeArticle::getCreateTime);
         wrapper.last("LIMIT " + limit);
         return list(wrapper);
     }
@@ -156,7 +156,7 @@ public class KnowledgeArticleServiceImpl extends ServiceImpl<KnowledgeArticleMap
         LambdaQueryWrapper<KnowledgeArticle> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(KnowledgeArticle::getStatus, 1);
         wrapper.eq(KnowledgeArticle::getCategoryId, categoryId);
-        wrapper.orderByDesc(KnowledgeArticle::getCreatedAt);
+        wrapper.orderByDesc(KnowledgeArticle::getCreateTime);
         wrapper.last("LIMIT " + limit);
         return list(wrapper);
     }

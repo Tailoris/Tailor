@@ -203,7 +203,7 @@ function startCountdown() {
 
 async function loadCategories() {
   try {
-    categories.value = await getCategories();
+    categories.value = await getCategories({ showError: false });
     categoriesError.value = false;
   } catch {
     categories.value = [];

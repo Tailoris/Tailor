@@ -70,7 +70,7 @@ class PaymentCallbackAsyncHandlerTest {
     @Test
     @DisplayName("发送回调消息-异步模式成功")
     void testSendCallbackMessage_AsyncSuccess() {
-        handler.sendCallbackMessage("PAY123456", "TXN123", "{}", 100L);
+        handler.sendCallbackMessage("PAY123456", "TXN123", "{}", 100L, "sign", "RSA");
 
         verify(rabbitTemplate).convertAndSend(eq("payment.callback.async.queue"), anyString());
     }
@@ -80,9 +80,9 @@ class PaymentCallbackAsyncHandlerTest {
     void testSendCallbackMessage_SyncMode() {
         ReflectionTestUtils.setField(handler, "asyncEnabled", false);
 
-        handler.sendCallbackMessage("PAY123456", "TXN123", "{}", 100L);
+        handler.sendCallbackMessage("PAY123456", "TXN123", "{}", 100L, "sign", "RSA");
 
-        verify(paymentService).payCallback("PAY123456", "TXN123", "{}", 100L);
+        verify(paymentService).payCallback("PAY123456", "TXN123", "{}", "sign", "RSA");
         verify(rabbitTemplate, never()).convertAndSend(eq("payment.callback.async.queue"), anyString());
     }
 
@@ -91,18 +91,18 @@ class PaymentCallbackAsyncHandlerTest {
     void testSendCallbackMessage_FallbackToSync() {
         doThrow(new RuntimeException("MQ连接失败")).when(rabbitTemplate).convertAndSend(anyString(), anyString());
 
-        handler.sendCallbackMessage("PAY123456", "TXN123", "{}", 100L);
+        handler.sendCallbackMessage("PAY123456", "TXN123", "{}", 100L, "sign", "RSA");
 
-        verify(paymentService).payCallback("PAY123456", "TXN123", "{}", 100L);
+        verify(paymentService).payCallback("PAY123456", "TXN123", "{}", "sign", "RSA");
     }
 
     @Test
     @DisplayName("发送回调消息-MQ发送失败且降级同步也失败")
     void testSendCallbackMessage_FallbackAlsoFails() {
         doThrow(new RuntimeException("MQ连接失败")).when(rabbitTemplate).convertAndSend(anyString(), anyString());
-        doThrow(new BusinessException("回调处理失败")).when(paymentService).payCallback(anyString(), anyString(), anyString(), any());
+        doThrow(new BusinessException("回调处理失败")).when(paymentService).payCallback(anyString(), anyString(), anyString(), anyString(), anyString());
 
-        assertDoesNotThrow(() -> handler.sendCallbackMessage("PAY123456", "TXN123", "{}", 100L));
+        assertDoesNotThrow(() -> handler.sendCallbackMessage("PAY123456", "TXN123", "{}", 100L, "sign", "RSA"));
     }
 
     @Test
@@ -114,7 +114,7 @@ class PaymentCallbackAsyncHandlerTest {
 
         handler.handleAsyncCallback(jsonMessage);
 
-        verify(paymentService).payCallback(eq("PAY123456"), eq("TXN123"), eq("{}"), eq(100L));
+        verify(paymentService).payCallback(eq("PAY123456"), eq("TXN123"), eq("{}"), eq("sign"), eq("RSA"));
         verify(valueOperations).set(anyString(), eq("SUCCESS"), any(Duration.class));
     }
 
@@ -127,7 +127,7 @@ class PaymentCallbackAsyncHandlerTest {
 
         handler.handleAsyncCallback(jsonMessage);
 
-        verify(paymentService, never()).payCallback(anyString(), anyString(), anyString(), any());
+        verify(paymentService, never()).payCallback(anyString(), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -136,7 +136,7 @@ class PaymentCallbackAsyncHandlerTest {
         String jsonMessage = "{\"paymentNo\":\"PAY123456\",\"transactionId\":\"TXN123\",\"channelResponse\":\"{}\",\"merchantId\":100,\"retryCount\":0}";
 
         when(valueOperations.setIfAbsent(anyString(), eq("PROCESSING"), any(Duration.class))).thenReturn(true);
-        doThrow(new BusinessException("支付回调正在处理")).when(paymentService).payCallback(anyString(), anyString(), any(), eq(100L));
+        doThrow(new BusinessException("支付回调正在处理")).when(paymentService).payCallback(anyString(), anyString(), anyString(), anyString(), anyString());
 
         handler.handleAsyncCallback(jsonMessage);
 
@@ -149,7 +149,7 @@ class PaymentCallbackAsyncHandlerTest {
         String jsonMessage = "{\"paymentNo\":\"PAY123456\",\"transactionId\":\"TXN123\",\"channelResponse\":\"{}\",\"merchantId\":100,\"retryCount\":0}";
 
         when(valueOperations.setIfAbsent(anyString(), eq("PROCESSING"), any(Duration.class))).thenReturn(true);
-        doThrow(new RuntimeException("处理失败")).when(paymentService).payCallback(anyString(), anyString(), any(), eq(100L));
+        doThrow(new RuntimeException("处理失败")).when(paymentService).payCallback(anyString(), anyString(), anyString(), anyString(), anyString());
 
         handler.handleAsyncCallback(jsonMessage);
 
@@ -166,7 +166,7 @@ class PaymentCallbackAsyncHandlerTest {
         String jsonMessage = "{\"paymentNo\":\"PAY123456\",\"transactionId\":\"TXN123\",\"channelResponse\":\"{}\",\"merchantId\":100,\"retryCount\":3}";
 
         when(valueOperations.setIfAbsent(anyString(), eq("PROCESSING"), any(Duration.class))).thenReturn(true);
-        doThrow(new RuntimeException("处理失败")).when(paymentService).payCallback(anyString(), anyString(), any(), eq(100L));
+        doThrow(new RuntimeException("处理失败")).when(paymentService).payCallback(anyString(), anyString(), anyString(), anyString(), anyString());
 
         handler.handleAsyncCallback(jsonMessage);
 

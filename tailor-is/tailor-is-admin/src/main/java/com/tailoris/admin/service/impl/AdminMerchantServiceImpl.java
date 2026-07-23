@@ -1,32 +1,29 @@
 package com.tailoris.admin.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tailoris.admin.constant.AdminConstants;
 import com.tailoris.api.admin.dto.MerchantAuditRequest;
 import com.tailoris.api.admin.dto.MerchantQueryRequest;
-import com.tailoris.admin.service.AdminDashboardService;
+import com.tailoris.admin.feign.MerchantFeignClient;
 import com.tailoris.admin.service.AdminMerchantService;
 import com.tailoris.common.dto.PageResponse;
 import com.tailoris.common.exception.BusinessException;
+import com.tailoris.common.result.Result;
 import com.tailoris.api.merchant.entity.Merchant;
-import com.tailoris.api.merchant.mapper.MerchantMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminMerchantServiceImpl implements AdminMerchantService {
 
-    private final MerchantMapper merchantMapper;
+    private final MerchantFeignClient merchantFeignClient;
     private final StringRedisTemplate stringRedisTemplate;
 
     @Override
@@ -36,30 +33,26 @@ public class AdminMerchantServiceImpl implements AdminMerchantService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void auditMerchant(MerchantAuditRequest request, Long adminId) {
-        Merchant merchant = merchantMapper.selectById(request.getMerchantId());
-        if (merchant == null) {
+        Result<Merchant> result = merchantFeignClient.getMerchantById(request.getMerchantId());
+        if (!result.isSuccess() || result.getData() == null) {
             throw new BusinessException("商家不存在");
         }
 
+        Merchant merchant = result.getData();
         if (merchant.getAuditStatus().equals(AdminConstants.AUDIT_STATUS_APPROVED)) {
             throw new BusinessException("商家已通过审核，无需重复操作");
         }
 
-        merchant.setAuditStatus(request.getAuditStatus());
-        merchant.setAuditRemark(request.getAuditRemark());
-        merchant.setAuditTime(LocalDateTime.now());
-        merchant.setAuditBy(adminId);
+        Map<String, Object> auditRequest = new HashMap<>();
+        auditRequest.put("merchantId", request.getMerchantId());
+        auditRequest.put("auditStatus", request.getAuditStatus());
+        auditRequest.put("auditRemark", request.getAuditRemark());
 
-        if (request.getAuditStatus().equals(AdminConstants.AUDIT_STATUS_APPROVED)) {
-            merchant.setStatus(AdminConstants.MERCHANT_STATUS_NORMAL);
-            merchant.setJoinTime(LocalDateTime.now());
-        } else if (request.getAuditStatus().equals(AdminConstants.AUDIT_STATUS_REJECTED)) {
-            merchant.setStatus(AdminConstants.MERCHANT_STATUS_PENDING);
+        Result<Void> auditResult = merchantFeignClient.auditMerchant(auditRequest);
+        if (!auditResult.isSuccess()) {
+            throw new BusinessException(auditResult.getMessage());
         }
-
-        merchantMapper.updateById(merchant);
 
         stringRedisTemplate.delete("tailoris:merchant:info:" + merchant.getId());
         stringRedisTemplate.delete("tailoris:merchant:info:user:" + merchant.getUserId());
@@ -69,72 +62,88 @@ public class AdminMerchantServiceImpl implements AdminMerchantService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void freezeMerchant(Long merchantId) {
-        Merchant merchant = merchantMapper.selectById(merchantId);
-        if (merchant == null) {
+        Result<Merchant> result = merchantFeignClient.getMerchantById(merchantId);
+        if (!result.isSuccess() || result.getData() == null) {
             throw new BusinessException("商家不存在");
         }
+
+        Merchant merchant = result.getData();
         if (merchant.getStatus().equals(AdminConstants.MERCHANT_STATUS_FROZEN)) {
             throw new BusinessException("商家已处于冻结状态");
         }
-        merchant.setStatus(AdminConstants.MERCHANT_STATUS_FROZEN);
-        merchantMapper.updateById(merchant);
+
+        Map<String, Object> auditRequest = new HashMap<>();
+        auditRequest.put("merchantId", merchantId);
+        auditRequest.put("auditStatus", AdminConstants.MERCHANT_STATUS_FROZEN);
+
+        Result<Void> auditResult = merchantFeignClient.auditMerchant(auditRequest);
+        if (!auditResult.isSuccess()) {
+            throw new BusinessException(auditResult.getMessage());
+        }
+
         stringRedisTemplate.delete("tailoris:merchant:info:" + merchantId);
         log.info("商家已冻结, merchantId: {}", merchantId);
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void unfreezeMerchant(Long merchantId) {
-        Merchant merchant = merchantMapper.selectById(merchantId);
-        if (merchant == null) {
+        Result<Merchant> result = merchantFeignClient.getMerchantById(merchantId);
+        if (!result.isSuccess() || result.getData() == null) {
             throw new BusinessException("商家不存在");
         }
+
+        Merchant merchant = result.getData();
         if (!merchant.getStatus().equals(AdminConstants.MERCHANT_STATUS_FROZEN)) {
             throw new BusinessException("商家未处于冻结状态");
         }
-        merchant.setStatus(AdminConstants.MERCHANT_STATUS_NORMAL);
-        merchantMapper.updateById(merchant);
+
+        Map<String, Object> auditRequest = new HashMap<>();
+        auditRequest.put("merchantId", merchantId);
+        auditRequest.put("auditStatus", AdminConstants.MERCHANT_STATUS_NORMAL);
+
+        Result<Void> auditResult = merchantFeignClient.auditMerchant(auditRequest);
+        if (!auditResult.isSuccess()) {
+            throw new BusinessException(auditResult.getMessage());
+        }
+
         stringRedisTemplate.delete("tailoris:merchant:info:" + merchantId);
         log.info("商家已解冻, merchantId: {}", merchantId);
     }
 
     @Override
     public PageResponse<Merchant> listMerchants(MerchantQueryRequest request) {
-        LambdaQueryWrapper<Merchant> queryWrapper = new LambdaQueryWrapper<>();
+        Map<String, Object> params = new HashMap<>();
+        params.put("pageNum", request.getPageNum());
+        params.put("pageSize", request.getPageSize());
 
         if (request.getMerchantType() != null) {
-            queryWrapper.eq(Merchant::getMerchantType, request.getMerchantType());
+            params.put("merchantType", request.getMerchantType());
         }
         if (request.getAuditStatus() != null) {
-            queryWrapper.eq(Merchant::getAuditStatus, request.getAuditStatus());
+            params.put("auditStatus", request.getAuditStatus());
         }
         if (request.getStatus() != null) {
-            queryWrapper.eq(Merchant::getStatus, request.getStatus());
+            params.put("status", request.getStatus());
         }
         if (StringUtils.hasText(request.getKeyword())) {
-            queryWrapper.and(wrapper -> wrapper
-                    .like(Merchant::getCompanyName, request.getKeyword())
-                    .or()
-                    .like(Merchant::getContactName, request.getKeyword())
-            );
+            params.put("keyword", request.getKeyword());
         }
 
-        queryWrapper.orderByDesc(Merchant::getCreateTime);
+        Result<PageResponse<Merchant>> result = merchantFeignClient.listMerchants(params);
+        if (!result.isSuccess()) {
+            throw new BusinessException(result.getMessage());
+        }
 
-        Page<Merchant> page = new Page<>(request.getPageNum(), request.getPageSize());
-        Page<Merchant> result = merchantMapper.selectPage(page, queryWrapper);
-
-        return new PageResponse<>(result.getRecords(), result.getTotal(), request.getPageNum(), request.getPageSize());
+        return result.getData();
     }
 
     @Override
     public Merchant getMerchantDetail(Long merchantId) {
-        Merchant merchant = merchantMapper.selectById(merchantId);
-        if (merchant == null) {
+        Result<Merchant> result = merchantFeignClient.getMerchantById(merchantId);
+        if (!result.isSuccess() || result.getData() == null) {
             throw new BusinessException("商家不存在");
         }
-        return merchant;
+        return result.getData();
     }
 }

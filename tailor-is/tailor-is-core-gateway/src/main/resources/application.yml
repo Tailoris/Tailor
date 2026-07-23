@@ -10,7 +10,7 @@ spring:
     nacos:
       discovery:
         enabled: true
-        server-addr: ${NACOS_ADDR:localhost:8848}
+        server-addr: ${NACOS_ADDR:nacos:8848}
         namespace: ${NACOS_NAMESPACE:dev}
         register-enabled: true
         fail-fast: false
@@ -23,8 +23,15 @@ spring:
     gateway:
       discovery:
         locator:
-          enabled: true
+          enabled: false
           lower-case-service-id: true
+      routes:
+        - id: community-route
+          uri: lb://tailor-is-community
+          predicates:
+            - Path=/api/v1/community/**
+          filters:
+            - StripPrefix=0
       globalcors:
         enabled: false
       # ============================================================
@@ -39,7 +46,7 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       database: 0
@@ -91,10 +98,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus,gateway
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: never
       probes:
         enabled: true
   metrics:

@@ -13,6 +13,9 @@ import java.time.LocalDateTime;
 @TableName("design")
 public class Design extends BaseEntity {
 
+    @TableId(type = IdType.ASSIGN_ID)
+    private Long id;
+
     @TableField("design_no")
     private String designNo;
 

@@ -318,35 +318,35 @@ watch(activeTab, () => {
 
 async function handlePasswordLogin() {
   if (!passwordFormRef.value) return
-  await passwordFormRef.value.validate(async (valid) => {
-    if (valid) {
-      loading.value = true
-      try {
-        await userStore.login({
-          username: passwordForm.value.account,
-          password: passwordForm.value.password
-        })
-        if (rememberMe.value) {
-          storage.set(passwordForm.value.account)
-        } else {
-          storage.clear()
-        }
-        ElMessage.success('登录成功')
-        const redirect = (route.query.redirect as string) || '/'
-        router.push(redirect)
-      } catch (error) {
-        const errMsg = error instanceof Error ? error.message : ''
-        if (errMsg.includes('503') || errMsg.includes('服务') || errMsg.includes('不可用')) {
-          return
-        }
-        if (!errMsg.includes('服务器') && !errMsg.includes('网络') && !errMsg.includes('连接')) {
-          ElMessage.error('账号或密码错误，请重新输入')
-        }
-      } finally {
-        loading.value = false
-      }
+  // Element Plus validate() 在校验失败时会 reject Promise，需独立 try-catch
+  try {
+    await passwordFormRef.value.validate()
+  } catch {
+    // 校验失败，Element Plus 已在字段下方显示错误提示，无需额外处理
+    return
+  }
+  loading.value = true
+  try {
+    await userStore.login({
+      username: passwordForm.value.account,
+      password: passwordForm.value.password
+    })
+    if (rememberMe.value) {
+      storage.set(passwordForm.value.account)
+    } else {
+      storage.clear()
     }
-  })
+    ElMessage.success('登录成功')
+    const redirect = (route.query.redirect as string) || '/'
+    await router.replace(redirect)
+  } catch (error) {
+    // 错误提示已由 request.ts 拦截器统一分层处理，此处不再重复弹出，避免双弹窗冲突
+    if (import.meta.env.DEV && error) {
+      console.warn('[Login] 登录流程异常:', error)
+    }
+  } finally {
+    loading.value = false
+  }
 }
 
 async function handleSendCode() {
@@ -399,9 +399,14 @@ async function handleCodeLogin() {
         }
         ElMessage.success('登录成功')
         const redirect = (route.query.redirect as string) || '/'
-        router.push(redirect)
-      } catch {
-        ElMessage.error('验证码错误或已过期')
+        // 使用 replace 避免返回登录页，await 确保导航完成后再重置 loading
+        await router.replace(redirect)
+      } catch (error) {
+        // 错误提示已由 request.ts 拦截器统一分层处理
+        // 此处不再重复弹出错误消息，避免双弹窗冲突
+        if (import.meta.env.DEV && error) {
+          console.warn('[Login] 验证码登录流程异常:', error)
+        }
       } finally {
         loading.value = false
       }

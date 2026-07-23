@@ -354,8 +354,13 @@ async function handlePasswordLogin() {
         }
         ElMessage.success('登录成功');
         router.push('/dashboard');
-      } catch {
-        ElMessage.error('账号或密码错误，请重新输入');
+      } catch (error) {
+        // 错误提示已由 request.ts 拦截器分层处理（401/403/500/502/503/网络错误等）
+        // 此处仅处理业务层特定错误，避免双重弹窗
+        const errMsg = error instanceof Error ? error.message : '';
+        if (errMsg && !errMsg.includes('服务器') && !errMsg.includes('网络') && !errMsg.includes('连接') && !errMsg.includes('超时') && !errMsg.includes('不可用')) {
+          ElMessage.error(errMsg || '账号或密码错误，请重新输入');
+        }
       } finally {
         loading.value = false;
       }
@@ -412,8 +417,12 @@ async function handleCodeLogin() {
         userStore.setUserInfo(res.userInfo);
         ElMessage.success('登录成功');
         router.push('/dashboard');
-      } catch {
-        ElMessage.error('验证码错误或已过期');
+      } catch (error) {
+        // 错误提示已由 request.ts 拦截器分层处理，避免双重弹窗
+        const errMsg = error instanceof Error ? error.message : '';
+        if (errMsg && !errMsg.includes('服务器') && !errMsg.includes('网络') && !errMsg.includes('连接') && !errMsg.includes('超时') && !errMsg.includes('不可用')) {
+          ElMessage.error(errMsg || '验证码错误或已过期');
+        }
       } finally {
         loading.value = false;
       }

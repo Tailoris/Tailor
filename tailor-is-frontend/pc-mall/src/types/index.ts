@@ -1,5 +1,10 @@
 // 公共类型统一从 shared/types 引入，消除多处重复定义
 export type { ApiResponse, PageResponse, User } from '@shared/types';
+import {
+  StatusEnum,
+  AuditStatusEnum,
+  CopyrightFlagEnum,
+} from '@shared/types';
 
 export interface Product {
   id: number;
@@ -13,9 +18,12 @@ export interface Product {
   images: string[];
   description: string;
   price: number;
-  status: number;
-  auditStatus: number;
-  copyrightFlag: number;
+  /** 商品状态: 0=下架, 1=上架, 2=审核中, 3=已拒绝 */
+  status: StatusEnum;
+  /** 审核状态: 0=待审核, 1=审核通过, 2=审核拒绝 */
+  auditStatus: AuditStatusEnum;
+  /** 版权标记: 0=未检测, 1=已存证, 2=疑似侵权, 3=已确认侵权 */
+  copyrightFlag: CopyrightFlagEnum;
   saleCount: number;
   viewCount: number;
   skus?: ProductSku[];
@@ -29,7 +37,8 @@ export interface ProductSku {
   attributes: Record<string, string>;
   price: number;
   stock: number;
-  status: number;
+  /** SKU 状态: 0=禁用, 1=启用 */
+  status: StatusEnum;
 }
 
 export interface ProductCategory {
@@ -39,7 +48,8 @@ export interface ProductCategory {
   level: number;
   sort: number;
   icon: string;
-  status: number;
+  /** 分类状态: 0=禁用, 1=启用 */
+  status: StatusEnum;
   children?: ProductCategory[];
 }
 
@@ -63,7 +73,8 @@ export interface Order {
   shopId: number;
   merchantId: number;
   productType: number;
-  status: number;
+  /** 订单状态: 0=已取消, 1=待支付, 2=待发货, 3=已发货, 4=已完成 */
+  status: StatusEnum;
   totalAmount: number;
   discountAmount: number;
   payAmount: number;
@@ -126,7 +137,8 @@ export interface Post {
   viewCount: number;
   likeCount: number;
   commentCount: number;
-  status: number;
+  /** 帖子状态: 0=已删除, 1=正常, 2=审核中 */
+  status: StatusEnum;
   createdAt: string;
 }
 
@@ -139,7 +151,8 @@ export interface Comment {
   parentId: number;
   content: string;
   likeCount: number;
-  status: number;
+  /** 评论状态: 0=已删除, 1=正常 */
+  status: StatusEnum;
   createdAt: string;
 }
 
@@ -151,8 +164,10 @@ export interface Merchant {
   licenseNo: string;
   contactName: string;
   contactPhone: string;
-  status: number;
-  auditStatus: number;
+  /** 商家状态: 0=禁用, 1=正常 */
+  status: StatusEnum;
+  /** 审核状态: 0=待审核, 1=审核通过, 2=审核拒绝 */
+  auditStatus: AuditStatusEnum;
   depositAmount: number;
   joinTime: string;
 }
@@ -168,7 +183,8 @@ export interface ProductReview {
   content: string;
   images?: string[];
   videoUrl?: string;
-  status: number;
+  /** 评价状态: 0=已删除, 1=正常, 2=审核中 */
+  status: StatusEnum;
   isAnonymous: number;
   isAdditional: number;
   parentId?: number;

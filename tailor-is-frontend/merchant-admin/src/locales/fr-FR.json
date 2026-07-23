@@ -1,0 +1,62 @@
+{
+  "common": {
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher",
+    "reset": "Réinitialiser",
+    "submit": "Soumettre",
+    "back": "Retour",
+    "loading": "Chargement...",
+    "noData": "Aucune donnée",
+    "operationFailed": "Échec de l'opération",
+    "operationSuccess": "Opération réussie",
+    "networkError": "Erreur de connexion réseau, veuillez vérifier votre connexion"
+  },
+  "nav": {
+    "home": "Accueil",
+    "products": "Produits",
+    "cart": "Panier",
+    "orders": "Commandes",
+    "settings": "Paramètres",
+    "login": "Connexion",
+    "logout": "Déconnexion"
+  },
+  "auth": {
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "loginTitle": "Connexion",
+    "forgotPassword": "Mot de passe oublié",
+    "rememberMe": "Se souvenir de moi"
+  },
+  "product": {
+    "title": "Liste des produits",
+    "detail": "Détail du produit",
+    "price": "Prix",
+    "stock": "Stock",
+    "addToCart": "Ajouter au panier",
+    "buyNow": "Acheter maintenant"
+  },
+  "order": {
+    "title": "Commandes",
+    "orderNo": "N° de commande",
+    "status": "Statut",
+    "amount": "Montant",
+    "all": "Toutes",
+    "pendingPayment": "En attente de paiement",
+    "pendingDelivery": "En attente d'expédition",
+    "delivered": "Expédiée",
+    "refunded": "Remboursée",
+    "completed": "Terminée"
+  },
+  "payment": {
+    "title": "Paiement",
+    "wechat": "WeChat Pay",
+    "alipay": "Alipay",
+    "balance": "Paiement par solde",
+    "payAmount": "Montant à payer",
+    "confirmPay": "Confirmer le paiement"
+  }
+}

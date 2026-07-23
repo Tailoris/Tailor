@@ -3,8 +3,9 @@ import { createPinia } from 'pinia';
 import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css';
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs';
+import enUs from 'element-plus/dist/locale/en.mjs';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue';
-import i18n from './i18n';
+import i18n, { setLocaleChangeCallback, getInitialLocale } from './i18n';
 import router from './router';
 import App from './App.vue';
 import { installA11yDirectives } from '@shared/plugins/a11y-directive';
@@ -22,9 +23,25 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component);
 }
 
+const elementPlusLocales: Record<string, any> = {
+  'zh-CN': zhCn,
+  'en-US': enUs,
+};
+
+function getElementPlusLocale(locale: string) {
+  return elementPlusLocales[locale] || zhCn;
+}
+
 app.use(pinia);
 app.use(router);
-app.use(ElementPlus, { locale: zhCn });
+app.use(ElementPlus, { locale: getElementPlusLocale(getInitialLocale()) });
 app.use(i18n);
 installA11yDirectives(app);
 app.mount('#app');
+
+setLocaleChangeCallback((locale) => {
+  const elLocale = getElementPlusLocale(locale);
+  if (elLocale) {
+    app.config.globalProperties.$ELEMENT = { locale: elLocale };
+  }
+});

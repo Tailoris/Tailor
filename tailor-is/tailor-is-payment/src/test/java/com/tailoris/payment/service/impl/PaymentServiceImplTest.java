@@ -144,7 +144,7 @@ class PaymentServiceImplTest {
         when(paymentRecordMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
 
         assertThrows(BusinessException.class, () ->
-                paymentService.payCallback("PAY_NOT_EXIST", "TXN123", "{}", 1L));
+                paymentService.payCallback("PAY_NOT_EXIST", "TXN123", "{}", "sign", "RSA"));
     }
 
     @Test
@@ -161,7 +161,7 @@ class PaymentServiceImplTest {
         when(paymentRecordMapper.updateById(any(PaymentRecord.class))).thenReturn(1);
 
         assertDoesNotThrow(() ->
-                paymentService.payCallback("PAY123456", "TXN123456", "{}", 1L));
+                paymentService.payCallback("PAY123456", "TXN123456", "{}", "sign", "RSA"));
 
         verify(paymentRecordMapper).updateById((PaymentRecord) argThat(r -> {
                 PaymentRecord pr = (PaymentRecord) r;
@@ -181,7 +181,7 @@ class PaymentServiceImplTest {
         when(paymentRecordMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(record);
 
         assertDoesNotThrow(() ->
-                paymentService.payCallback("PAY123456", "TXN123456", "{}", 1L));
+                paymentService.payCallback("PAY123456", "TXN123456", "{}", "sign", "RSA"));
 
         verify(paymentRecordMapper, never()).updateById(any(PaymentRecord.class));
     }
@@ -193,7 +193,7 @@ class PaymentServiceImplTest {
         when(valueOperations.get(anyString())).thenReturn("PROCESSING");
 
         BusinessException exception = assertThrows(BusinessException.class, () ->
-                paymentService.payCallback("PAY123456", "TXN123456", "{}", 1L));
+                paymentService.payCallback("PAY123456", "TXN123456", "{}", "sign", "RSA"));
         assertTrue(exception.getMessage().contains("处理中"));
     }
 

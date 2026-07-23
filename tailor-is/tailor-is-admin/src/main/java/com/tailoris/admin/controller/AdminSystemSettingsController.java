@@ -1,6 +1,7 @@
 package com.tailoris.admin.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import com.tailoris.common.constant.RoutePortConstant;
 import com.tailoris.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,13 +11,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Tag(name = "系统设置")
 @RestController
-@RequestMapping("/api/system/settings")
+@RequestMapping(RoutePortConstant.ROUTE_ADMIN_SYSTEM_SETTINGS)
 @RequiredArgsConstructor
 @SaCheckRole({"SUPER_ADMIN", "PLATFORM_ADMIN"})
 public class AdminSystemSettingsController {

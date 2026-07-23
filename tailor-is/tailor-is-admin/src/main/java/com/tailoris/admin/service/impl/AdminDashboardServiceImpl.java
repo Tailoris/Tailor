@@ -16,8 +16,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -128,7 +126,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private Long queryTodayOrders(String start, String end) {
         try {
             return jdbcTemplate.queryForObject(
-                    String.format("SELECT COUNT(*) FROM %s.order_info WHERE create_time >= ? AND create_time < ? AND status IN (2, 3, 4)", orderDatabase),
+                    String.format("SELECT COUNT(*) FROM %s.order_info WHERE created_at >= ? AND created_at < ? AND status IN (2, 3, 4)", orderDatabase),
                     Long.class, start, end);
         } catch (Exception e) {
             log.warn("Failed to query today orders", e);
@@ -139,7 +137,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private BigDecimal queryTodayRevenue(String start, String end) {
         try {
             BigDecimal result = jdbcTemplate.queryForObject(
-                    String.format("SELECT COALESCE(SUM(pay_amount), 0) FROM %s.order_info WHERE create_time >= ? AND create_time < ? AND status IN (2, 3, 4)", orderDatabase),
+                    String.format("SELECT COALESCE(SUM(pay_amount), 0) FROM %s.order_info WHERE created_at >= ? AND created_at < ? AND status IN (2, 3, 4)", orderDatabase),
                     BigDecimal.class, start, end);
             return result != null ? result : BigDecimal.ZERO;
         } catch (Exception e) {

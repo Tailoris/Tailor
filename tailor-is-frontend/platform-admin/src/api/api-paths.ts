@@ -8,9 +8,7 @@ export const API_PATHS = {
   },
   admin: {
     dashboard: {
-      overview: `${API_BASE}/admin/dashboard/overview`,
-      statistics: `${API_BASE}/admin/dashboard/statistics`,
-      charts: `${API_BASE}/admin/dashboard/charts`,
+      stats: `${API_BASE}/admin/dashboard/stats`,
     },
     user: {
       base: `${API_BASE}/admin/users`,
@@ -43,14 +41,13 @@ export const API_PATHS = {
       byId: (id: number) => `${API_BASE}/admin/community/${id}`,
     },
     settings: {
-      base: `${API_BASE}/admin/settings`,
-      system: `${API_BASE}/admin/settings/system`,
-      security: `${API_BASE}/admin/settings/security`,
-      notification: `${API_BASE}/admin/settings/notification`,
+      base: `${API_BASE}/admin/system/settings`,
+      basic: `${API_BASE}/admin/system/settings/basic`,
+      security: `${API_BASE}/admin/system/settings/security`,
+      thirdParty: `${API_BASE}/admin/system/settings/third-party`,
     },
     auditLog: {
-      base: `${API_BASE}/admin/audit-log`,
-      list: `${API_BASE}/admin/audit-log/list`,
+      base: `${API_BASE}/admin/audit-logs`,
     },
   },
 };

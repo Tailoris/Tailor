@@ -1,8 +1,16 @@
 # Tailor IS GraphQL 网关 (graphql-gateway)
 
+> **状态**: 暂未启用（2026-07-20）
+> 
+> 当前 Nginx 路由和 Docker Compose 中均未启用此服务。
+> 如需启用，请：
+> 1. 取消 `deploy/nginx/frontend.conf` 和 `frontend-docker.conf` 中 GraphQL 路由的注释
+> 2. 在 `docker-compose.services.yml` 中添加 graphql-gateway 服务定义
+> 3. 执行 `npm install && npm run build` 构建
+
 ## 项目简介
 
-Tailor IS 平台的 GraphQL 接口聚合层，基于 GraphQL Yoga 构建。负责将后端 REST API（core-gateway:8080 / lite:8081）聚合为统一的 GraphQL 接口，供前端各端调用。内置 Redis 缓存层与 DataLoader 批量加载能力，有效降低后端压力并提升响应速度。
+Tailor IS 平台的 GraphQL 接口聚合层，基于 GraphQL Yoga 构建。负责将后端 REST API（core-gateway:9000 / lite:8081）聚合为统一的 GraphQL 接口，供前端各端调用。内置 Redis 缓存层与 DataLoader 批量加载能力，有效降低后端压力并提升响应速度。
 
 ## 技术栈
 

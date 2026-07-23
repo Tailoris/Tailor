@@ -98,9 +98,10 @@ async function refreshToken(): Promise<string | null> {
     if (!refreshTokenValue) {
       return null;
     }
-    const response = await axios.post<ApiResponse<RefreshResponse>>(
-      `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/auth/refresh`,
-      { refreshToken: refreshTokenValue }
+    const response = await service.post<ApiResponse<RefreshResponse>>(
+      '/api/v1/auth/refresh',
+      { refreshToken: refreshTokenValue },
+      { showError: false } as CustomAxiosRequestConfig
     );
     if (response.data.code === 200 && response.data.data?.token) {
       const newToken = response.data.data.token;
@@ -268,5 +269,13 @@ service.interceptors.response.use(
 
 export default async function request<T = unknown>(config: CustomAxiosRequestConfig): Promise<T> {
   const response = await service.request<ApiResponse<T>>(config);
-  return response.data.data as T;
+  const apiData = response.data;
+  // API 响应格式: { code, message, data }
+  if (apiData && typeof apiData === 'object' && 'data' in apiData) {
+    const data = apiData.data;
+    if (data !== undefined && data !== null) {
+      return data as T;
+    }
+  }
+  throw new Error('Response data is null or undefined');
 }

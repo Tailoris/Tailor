@@ -1,13 +1,15 @@
 # Pattern 服务
 
-Tailor IS 版型设计 AI 微服务
+Tailor IS 纸样版型管理微服务
 
 ## 功能概述
 
-- 版型设计管理
-- 版型数据存储与查询
-- 与 AI 服务协同工作
-- 版型版本管理
+- 版型库管理（创建、查询、编辑、下架）
+- 版型分类与标签管理
+- 版型详情查看与搜索
+- 版型评分体系（版型精准度、工艺清晰度、适配性）
+- 版型文件上传与存储（PDF/DXF/AI/PSD 格式互转支持）
+- 版型与设计稿关联管理
 
 ## 技术栈
 
@@ -15,17 +17,26 @@ Tailor IS 版型设计 AI 微服务
 - Spring Cloud Alibaba
 - MyBatis-Plus
 - Nacos (服务注册/配置中心)
-- MySQL
+- Sentinel (限流熔断)
+- MySQL + Druid 连接池
+- Redis (缓存)
+- RabbitMQ (消息队列)
+- SA-Token (权限认证)
 
 ## 启动方式
 
 ```bash
 # 设置环境变量
 export NACOS_ADDR=localhost:8848
+export REDIS_HOST=localhost
+export REDIS_PORT=6379
+export REDIS_PASSWORD=
 export MYSQL_HOST=localhost
 export MYSQL_PORT=3306
 export MYSQL_USERNAME=root
 export MYSQL_PASSWORD=
+export RABBITMQ_HOST=localhost
+export RABBITMQ_PORT=5672
 
 # 启动服务
 ./mvnw spring-boot:run
@@ -59,5 +70,5 @@ curl http://localhost:8115/actuator/health
 
 ## 依赖关系
 
-- 依赖服务: Nacos, MySQL
-- 被依赖: Gateway, Core Gateway, AI 等服务
+- 依赖服务: Nacos, Redis, MySQL, RabbitMQ
+- 被依赖: Gateway, Design, Order 等服务

@@ -36,7 +36,7 @@ import java.util.List;
 @Slf4j
 @Tag(name = "文件上传", description = "通用文件上传（OSS/本地）")
 @RestController
-@RequestMapping("/api/upload")
+@RequestMapping("/api/v1/upload")
 @RequiredArgsConstructor
 public class FileUploadController {
 

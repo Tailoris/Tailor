@@ -1,0 +1,62 @@
+{
+  "common": {
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "search": "Buscar",
+    "reset": "Restablecer",
+    "submit": "Enviar",
+    "back": "Volver",
+    "loading": "Cargando...",
+    "noData": "Sin datos",
+    "operationFailed": "Operación fallida",
+    "operationSuccess": "Operación exitosa",
+    "networkError": "Error de conexión de red, verifique su conexión"
+  },
+  "nav": {
+    "home": "Inicio",
+    "products": "Productos",
+    "cart": "Carrito",
+    "orders": "Pedidos",
+    "settings": "Configuración",
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión"
+  },
+  "auth": {
+    "username": "Usuario",
+    "password": "Contraseña",
+    "loginTitle": "Iniciar sesión",
+    "forgotPassword": "Olvidó su contraseña",
+    "rememberMe": "Recordarme"
+  },
+  "product": {
+    "title": "Lista de productos",
+    "detail": "Detalle del producto",
+    "price": "Precio",
+    "stock": "Inventario",
+    "addToCart": "Añadir al carrito",
+    "buyNow": "Comprar ahora"
+  },
+  "order": {
+    "title": "Pedidos",
+    "orderNo": "N.º de pedido",
+    "status": "Estado",
+    "amount": "Importe",
+    "all": "Todos",
+    "pendingPayment": "Pendiente de pago",
+    "pendingDelivery": "Pendiente de envío",
+    "delivered": "Enviado",
+    "refunded": "Reembolsado",
+    "completed": "Completado"
+  },
+  "payment": {
+    "title": "Pago",
+    "wechat": "WeChat Pay",
+    "alipay": "Alipay",
+    "balance": "Pago con saldo",
+    "payAmount": "Importe a pagar",
+    "confirmPay": "Confirmar pago"
+  }
+}

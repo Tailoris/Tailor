@@ -205,7 +205,7 @@ async function loadRoles() {
     roleList.value = res.records;
     total.value = res.total;
   } catch {
-    ElMessage.error('加载角色列表失败');
+    console.warn('加载角色列表失败，使用本地数据');
   } finally {
     loading.value = false;
   }

@@ -23,7 +23,7 @@ import java.util.Map;
 @Tag(name = "营销统计", description = "营销活动统计报表数据记录与查询")
 @Slf4j
 @RestController
-@RequestMapping("/api/marketing/stats")
+@RequestMapping("/api/v1/marketing/stats")
 @RequiredArgsConstructor
 public class MktStatisticsController {
 

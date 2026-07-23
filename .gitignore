@@ -1,133 +1,83 @@
-# ============================================================
-# Tailor IS 项目 .gitignore
-# ============================================================
-
-# ===== 敏感信息（CRITICAL） =====
-.env
-.env.local
-.env.production
-**/*.pem
-**/*.key
-**/credentials.json
-**/secrets.yml
-
-# ===== IDE =====
-.idea/
-.vscode/
-*.iml
-*.ipr
-*.iws
-.project
-.classpath
-.settings/
-
-# ===== Java / Maven =====
-target/
-*.class
-*.jar
-*.war
-*.ear
-*.log
-*.pid
-hs_err_pid*
-
-# ===== Node.js / 前端 =====
-node_modules/
-dist/
-.nuxt/
-.output/
-.turbo/
-*.tsbuildinfo
-.eslintcache
-
-# ===== Docker =====
-docker-compose.override.yml
-
-# ===== OS =====
+# ===================== 系统与编辑器垃圾 =====================
 .DS_Store
 Thumbs.db
 *.swp
 *.swo
+*.tmp
+*.bak
 *~
 
-# ===== 临时文件 =====
-*.tmp
-*.bak
-*.cache
-__pycache__/
-*.pyc
+# ===================== IDE 配置文件 =====================
+.idea/
+.vscode/
+.fleet/
+.trae/
+*.iml
+*.iws
+*.ipr
+.project
+.c9/
+.springBeansStsCache
+.factorypath
+.springBeansStsCache
 
-# ===== 日志 =====
-logs/
-*.log
+# ===================== Docker 数据卷、持久化数据（核心解决本次报错） =====================
+deploy/volumes/
+deploy/volumes/**
+data/
+data/backups/
 
-# ===== 构建产物 =====
+# ===================== 编译打包产物 Java Maven =====================
+target/
+*/target/
+!tailor-is/sql/
 build/
 out/
-.gradle/
+*.jar
+*.war
+HEAP_DUMP*.hprof
 
-# ===== 测试覆盖率 =====
-coverage/
-.nyc_output/
-jacoco/
+# ===================== 前端产物 Node/Vue =====================
+tailor-is-frontend/*/node_modules/
+tailor-is-frontend/*/dist/
+tailor-is-frontend/*/coverage/
+tailor-is-frontend/*/.vite/
+tailor-is-frontend/*/.nuxt/
+tailor-is-frontend/*/npm-debug.log*
+tailor-is-frontend/*/yarn-error.log*
 
-# ===== SonarQube =====
-.sonar/
-.scannerwork/
+# ===================== 日志文件 =====================
+logs/
+*/logs/
+*.log
+logback*.log
 
-# 数据库备份/演练目录
-rto-drill/
-backup_drill_*/
+# ===================== 环境变量、敏感配置（严禁提交） =====================
+.env
+.env.local
+.env.dev
+.env.prod
+.env.example
+application-*.yml
+bootstrap-*.yml
+*.properties
+*.pem
+*.key
+*.crt
+*.pfx
 
-# 备份目录
-rto-drill/
-backup_drill_*/
+# ===================== 测试、压测、临时脚本 =====================
+k6-scripts/
+e2e-tests/
+scripts/ci/
+scripts/backup/
 
-# 数据库、压缩包类大文件
-*.db
-*.gz
-*.tar
-*.tar.gz
-*.sql.gz
+# ===================== Docker监控与部署冗余文件 =====================
+deploy/alertmanager/
+deploy/grafana/
+deploy/prometheus/
+deploy/tailor-is-prod/
 
-# 项目笔记、临时文档（按需保留）
-.obsidian/
-.claudian/
-.trae/
-*.tmp
-*.bak
-
-# ===== 废弃/备份文件 =====
-*-old.*
-*备份*
-*-backup.*
-*.old
-
-# ===== 安装包/资源缓存 =====
-*.deb
-*.zip
-*.tar.gz
-*.rar
-
-# ===== Python =====
-venv/
-.venv/
-
-# ===== 编辑器缓存 =====
-.obsidian/
-.claudian/
-.trae/
-
-# ===== 测试报告临时文件 =====
-test-report-*.txt
-
-# ===== 前端构建产物（deploy 目录中） =====
-deploy/tailor-is-prod/frontend/
-
-# ===== 备份目录 =====
-backup/
-deploy/backups/
-
-# ===== 项目清理脚本（已过期） =====
-clean-project.sh
-start-all.sh
+# ===================== 数据库备份、SQL执行记录 =====================
+*.sql.bak
+*.dump

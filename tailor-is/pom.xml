@@ -294,7 +294,7 @@
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>false</failsOnError>
                     <failOnViolation>true</failOnViolation>
-                    <maxAllowedViolations>20</maxAllowedViolations>
+                    <maxAllowedViolations>0</maxAllowedViolations>
                     <linkXRef>false</linkXRef>
                 </configuration>
                 <executions>

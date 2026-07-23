@@ -36,6 +36,8 @@ COPY tailor-is-message-im/pom.xml /build/tailor-is-message-im/pom.xml
 COPY tailor-is-academy/pom.xml /build/tailor-is-academy/pom.xml
 COPY tailor-is-analytics/pom.xml /build/tailor-is-analytics/pom.xml
 COPY tailor-is-pattern/pom.xml /build/tailor-is-pattern/pom.xml
+COPY tailor-is-design/pom.xml /build/tailor-is-design/pom.xml
+COPY tailor-is-knowledge/pom.xml /build/tailor-is-knowledge/pom.xml
 COPY tailor-is-admin/pom.xml /build/tailor-is-admin/pom.xml
 
 # 复制源码

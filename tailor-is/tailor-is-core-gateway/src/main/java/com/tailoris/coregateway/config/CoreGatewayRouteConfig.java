@@ -4,6 +4,7 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 /**
  * 核心网关路由权威配置（v4.0 规范）。
@@ -25,9 +26,13 @@ public class CoreGatewayRouteConfig {
      * 异常场景：Nacos 服务发现失败时路由不可达，由网关熔断兜底。
      */
     @Bean
+    @Order(0)
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                .route("user-route", r -> r.path("/api/v1/user/**", "/api/v1/auth/**")
+                .route("user-route", r -> r.path("/api/v1/user/**")
+                        .filters(f -> f.stripPrefix(0))
+                        .uri("lb://tailor-is-user"))
+                .route("auth-route", r -> r.path("/api/v1/auth/**")
                         .filters(f -> f.stripPrefix(0))
                         .uri("lb://tailor-is-user"))
                 .route("product-route", r -> r.path("/api/v1/product/**", "/api/v1/products/**", "/api/v1/favorite/**")
@@ -65,9 +70,13 @@ public class CoreGatewayRouteConfig {
                 .route("knowledge-route", r -> r.path("/api/v1/knowledge/**")
                         .filters(f -> f.stripPrefix(0))
                         .uri("lb://tailor-is-knowledge"))
+                .route("community-route", r -> r.path("/api/v1/community/**")
+                        .filters(f -> f.stripPrefix(0))
+                        .uri("lb://tailor-is-community"))
                 // ============================================================
                 // community/supply/message/academy/analytics/im 路由已迁移至
                 // LiteGatewayRouteConfig，由 lite-gateway（端口 8081）承载。
+                // 当前开发阶段，community 路由临时回退至 core-gateway。
                 // WebSocket /ws/** 也由 lite-gateway 统一处理。
                 // ============================================================
 
@@ -110,6 +119,9 @@ public class CoreGatewayRouteConfig {
                 .route("legacy-knowledge-route", r -> r.path("/api/knowledge/**")
                         .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/api/v1/${segment}"))
                         .uri("lb://tailor-is-knowledge"))
+                .route("legacy-community-route", r -> r.path("/api/community/**")
+                        .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/api/v1/${segment}"))
+                        .uri("lb://tailor-is-community"))
                 .build();
     }
 }

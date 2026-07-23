@@ -141,6 +141,7 @@ import { validate } from '@/utils/validate'
 import { storage } from '@/utils/storage'
 import { useCountdown } from '@/composables/useCountdown'
 import request from '@/api/request'
+import { encryptSync } from '@/utils/crypto'
 
 const router = useRouter()
 
@@ -290,7 +291,7 @@ async function handlePasswordLogin() {
           password: passwordForm.value.password
         })
         if (response && response.token) {
-          localStorage.setItem('token', response.token)
+          localStorage.setItem('token', encryptSync(response.token))
         }
         if (rememberMe.value) {
           storage.set(passwordForm.value.account)
@@ -314,13 +315,17 @@ async function handlePasswordLogin() {
           ElMessage.error('登录验证失败，请重新登录')
         }
       } catch (error) {
+        // 错误提示已由 request.ts 拦截器分层处理（401/403/500/502/503/网络错误等）
+        // 此处仅处理业务层特定错误，避免双重弹窗
         const err = error as Error
-        if (err.message && err.message.includes('502')) {
-          ElMessage.error('服务暂时不可用，请稍后重试')
-        } else if (err.message && err.message.includes('ECONNABORTED')) {
-          ElMessage.error('请求超时，请检查网络连接')
-        } else if (err.message && err.message.includes('网络')) {
-          ElMessage.error('网络连接异常，请检查网络')
+        const errMsg = err.message || ''
+        if (errMsg.includes('502') || errMsg.includes('503') || errMsg.includes('服务') || errMsg.includes('不可用')) {
+          // 服务不可用，由拦截器处理
+        } else if (errMsg.includes('ECONNABORTED') || errMsg.includes('超时') || errMsg.includes('网络') || errMsg.includes('连接') || errMsg.includes('服务器')) {
+          // 网络/超时错误，由拦截器处理
+        } else if (errMsg) {
+          // 仅展示业务层特定错误消息
+          ElMessage.error(errMsg)
         } else {
           ElMessage.error('账号或密码错误，请重新输入')
         }
@@ -372,8 +377,19 @@ async function handleCodeLogin() {
         })
         ElMessage.success('登录成功')
         router.push('/dashboard')
-      } catch {
-        ElMessage.error('验证码错误或已过期')
+      } catch (error) {
+        // 错误提示已由 request.ts 拦截器分层处理，避免双重弹窗
+        const err = error as Error
+        const errMsg = err.message || ''
+        if (errMsg.includes('502') || errMsg.includes('503') || errMsg.includes('服务') || errMsg.includes('不可用')) {
+          // 服务不可用，由拦截器处理
+        } else if (errMsg.includes('超时') || errMsg.includes('网络') || errMsg.includes('连接') || errMsg.includes('服务器')) {
+          // 网络/超时错误，由拦截器处理
+        } else if (errMsg) {
+          ElMessage.error(errMsg)
+        } else {
+          ElMessage.error('验证码错误或已过期')
+        }
       } finally {
         loading.value = false
       }

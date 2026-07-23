@@ -4,6 +4,7 @@ import com.tailoris.common.result.Result;
 import com.tailoris.marketing.service.MktOrderMatchService;
 import com.tailoris.marketing.service.MktOrderMatchService.OrderDiscountPlan;
 import com.tailoris.marketing.service.MktOrderMatchService.OrderItemInput;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/marketing/order-match")
+@RequestMapping("/api/v1/marketing/order-match")
 @RequiredArgsConstructor
 @Tag(name = "订单营销联动", description = "MKT-007 下单自动匹配最优优惠")
 public class MktOrderMatchController {
@@ -28,6 +29,7 @@ public class MktOrderMatchController {
     /**
      * 计算订单最优优惠方案
      */
+    @Operation(summary = "计算最优优惠", description = "计算订单最优优惠方案")
     @PostMapping("/calculate")
     public Result<OrderDiscountPlan> calculate(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
@@ -40,6 +42,7 @@ public class MktOrderMatchController {
     /**
      * 仅优惠券最优
      */
+    @Operation(summary = "仅优惠券计算", description = "仅计算优惠券最优方案")
     @GetMapping("/coupon-only")
     public Result<OrderDiscountPlan> couponOnly(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,

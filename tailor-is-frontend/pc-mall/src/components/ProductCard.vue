@@ -21,6 +21,8 @@ const loaded = ref(false);
 const error = ref(false);
 const inViewport = ref(false);
 
+const PLACEHOLDER_IMAGE = '/images/products/placeholder.svg';
+
 let observer: IntersectionObserver | null = null;
 
 function onImageLoad() {
@@ -78,14 +80,14 @@ onUnmounted(() => {
         class="image-placeholder"
         aria-hidden="true"
       />
-      <!-- 错误回退 -->
-      <div
+      <!-- 错误回退 - 显示默认占位图 -->
+      <img
         v-else-if="error"
-        class="image-error"
+        :src="PLACEHOLDER_IMAGE"
+        :alt="product.name"
+        class="product-image fallback-image"
         aria-hidden="true"
-      >
-        <span>图片加载失败</span>
-      </div>
+      />
       <!-- 实际图片（懒加载） -->
       <img
         v-if="inViewport"
@@ -146,15 +148,8 @@ onUnmounted(() => {
   animation: skeleton 1.5s ease-in-out infinite;
 }
 
-.image-error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  background: #f0f0f0;
-  color: #999;
-  font-size: 12px;
+.fallback-image {
+  opacity: 1;
 }
 
 .product-image {
@@ -176,6 +171,7 @@ onUnmounted(() => {
 .product-name {
   font-size: 14px;
   font-weight: 500;
+  color: #1e293b;
   margin: 0 0 8px 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -184,7 +180,7 @@ onUnmounted(() => {
 
 .product-price {
   font-size: 16px;
-  color: #f56c6c;
+  color: #b91c1c;
   font-weight: 600;
   margin: 0;
 }

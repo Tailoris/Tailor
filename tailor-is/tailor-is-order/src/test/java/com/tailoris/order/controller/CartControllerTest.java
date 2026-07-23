@@ -126,12 +126,14 @@ class CartControllerTest {
         List<ShoppingCart> carts = Arrays.asList(cart1, cart2);
         when(shoppingCartService.batchCheckout(userId, cartIds)).thenReturn(carts);
 
-        Result<List<ShoppingCart>> result = cartController.batchCheckout(userId, cartIds);
+        com.tailoris.order.dto.CartCheckoutRequest checkoutRequest = new com.tailoris.order.dto.CartCheckoutRequest();
+        checkoutRequest.setIds(cartIds);
+        Result<List<ShoppingCart>> result = cartController.batchCheckout(userId, checkoutRequest);
 
         assertNotNull(result);
         assertEquals(200, result.getCode());
         assertNotNull(result.getData());
         assertEquals(2, result.getData().size());
-        verify(shoppingCartService).batchCheckout(userId, cartIds);
+        verify(shoppingCartService).batchCheckout(eq(userId), eq(cartIds));
     }
 }

@@ -7,6 +7,8 @@ import com.tailoris.marketing.entity.MktPromotionRule;
 import com.tailoris.marketing.entity.MktPromotionStep;
 import com.tailoris.marketing.service.MktPromotionService;
 import com.tailoris.marketing.service.MktPromotionService.PromotionDiscountResult;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -20,13 +22,14 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/marketing/promotion")
+@RequestMapping("/api/v1/marketing/promotion")
 @RequiredArgsConstructor
 public class MktPromotionController {
 
     private final MktPromotionService promotionService;
 
     /** 创建促销 */
+    @Operation(summary = "创建促销", description = "创建阶梯满减满赠促销活动")
     @PostMapping
     public Result<MktPromotionRule> createPromotion(
             @RequestBody PromotionCreateRequest request) {
@@ -35,6 +38,7 @@ public class MktPromotionController {
     }
 
     /** 更新促销 */
+    @Operation(summary = "更新促销", description = "更新阶梯满减满赠促销活动")
     @PutMapping("/{id}")
     public Result<MktPromotionRule> updatePromotion(
             @PathVariable Long id,
@@ -45,6 +49,7 @@ public class MktPromotionController {
     }
 
     /** 取消促销 */
+    @Operation(summary = "取消促销", description = "取消促销活动")
     @PostMapping("/{id}/cancel")
     public Result<Void> cancelPromotion(@PathVariable Long id) {
         promotionService.cancelPromotion(id);
@@ -52,12 +57,14 @@ public class MktPromotionController {
     }
 
     /** 促销详情 */
+    @Operation(summary = "促销详情", description = "获取促销活动详情")
     @GetMapping("/{id}")
     public Result<MktPromotionRule> getPromotionDetail(@PathVariable Long id) {
         return Result.success(promotionService.getPromotionDetail(id));
     }
 
     /** 促销列表 */
+    @Operation(summary = "促销列表", description = "分页查询促销活动列表")
     @GetMapping("/list")
     public Result<PageResponse<MktPromotionRule>> listPromotions(
             @RequestParam(defaultValue = "1") Integer pageNum,
@@ -69,6 +76,7 @@ public class MktPromotionController {
     }
 
     /** 生效中的促销 */
+    @Operation(summary = "生效中的促销", description = "获取当前生效中的促销活动列表")
     @GetMapping("/active")
     public Result<List<MktPromotionRule>> listActiveRules(
             @RequestParam(required = false) Long shopId) {
@@ -76,6 +84,7 @@ public class MktPromotionController {
     }
 
     /** 计算最优优惠 */
+    @Operation(summary = "计算最优优惠", description = "计算促销活动的最优优惠方案")
     @PostMapping("/calculate")
     public Result<PromotionDiscountResult> calculate(
             @RequestParam(required = false) Long shopId,

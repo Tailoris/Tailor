@@ -135,7 +135,7 @@ const sortOptions = [
 
 async function loadCategories() {
   try {
-    categories.value = await getCategories();
+    categories.value = await getCategories({ showError: false });
   } catch {
     categories.value = [];
   }

@@ -17,7 +17,7 @@ import java.util.List;
 @SaCheckLogin
 @Tag(name = "商品SKU管理")
 @RestController
-@RequestMapping("/api/product/sku")
+@RequestMapping("/api/v1/product/sku")
 @RequiredArgsConstructor
 public class ProductSkuController {
 

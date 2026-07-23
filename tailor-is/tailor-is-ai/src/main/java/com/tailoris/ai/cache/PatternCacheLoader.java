@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tailoris.ai.entity.PatternRecord;
 import com.tailoris.ai.mapper.PatternRecordMapper;
 import com.tailoris.common.config.CacheRouter;
-import com.tailoris.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;

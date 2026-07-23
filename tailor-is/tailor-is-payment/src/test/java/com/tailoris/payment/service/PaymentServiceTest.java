@@ -158,7 +158,7 @@ class PaymentServiceTest {
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("payment:status:" + paymentId)).thenReturn(null);
         when(paymentRecordMapper.selectById(paymentId)).thenReturn(payment);
-        when(valueOperations.set(anyString(), anyString(), eq(30L), eq(TimeUnit.MINUTES))).thenAnswer(inv -> null);
+        doNothing().when(valueOperations).set(anyString(), anyString(), eq(30L), eq(TimeUnit.MINUTES));
 
         PaymentRecord result = paymentService.getPaymentStatus(paymentId);
 

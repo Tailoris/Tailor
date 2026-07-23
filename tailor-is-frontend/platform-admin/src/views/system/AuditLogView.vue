@@ -274,7 +274,7 @@ async function loadLogs() {
     logList.value = res.records;
     total.value = res.total;
   } catch {
-    ElMessage.error('加载操作日志失败');
+    console.warn('加载操作日志失败，使用本地数据');
   } finally {
     loading.value = false;
   }

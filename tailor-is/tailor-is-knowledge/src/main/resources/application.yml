@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8135}
+  port: ${SERVER_PORT:8117}
 spring:
   application:
     name: tailor-is-knowledge
@@ -13,7 +13,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_ADDR:localhost:8848}
+        server-addr: ${NACOS_ADDR:nacos:8848}
         namespace: ${NACOS_NAMESPACE:dev}
         register-enabled: true
         watch:
@@ -23,7 +23,7 @@ spring:
           username: ${NACOS_USERNAME:}
           password: ${NACOS_PASSWORD:}
       config:
-        server-addr: ${NACOS_ADDR:localhost:8848}
+        server-addr: ${NACOS_ADDR:nacos:8848}
         namespace: ${NACOS_NAMESPACE:dev}
         file-extension: yaml
         import-check:
@@ -31,7 +31,7 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/tailor_is_knowledge?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=false
+    url: jdbc:mysql://${MYSQL_HOST:mysql}:${MYSQL_PORT:3306}/tailor_is_knowledge?useUnicode=true&characterEncoding=utf-8&useSSL=${MYSQL_USE_SSL:false}&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=${MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL:true}
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:}
     druid:
@@ -46,7 +46,7 @@ spring:
         - SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       database: 0

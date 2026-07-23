@@ -21,6 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,11 +45,13 @@ class AlipayServiceImplTest {
     @Mock
     private ValueOperations valueOperations;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     private AlipayServiceImpl alipayService;
 
     @BeforeEach
     void setUp() {
-        alipayService = new AlipayServiceImpl(alipayConfig, stringRedisTemplate);
+        alipayService = new AlipayServiceImpl(alipayConfig, stringRedisTemplate, objectMapper);
         
         lenient().when(alipayConfig.getGatewayUrl()).thenReturn("https://openapi.alipay.com/gateway.do");
         lenient().when(alipayConfig.getAppId()).thenReturn("2021001234567890");
