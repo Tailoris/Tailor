@@ -302,16 +302,31 @@ async function handlePasswordLogin() {
         // 登录成功后先验证 Token 有效性，再跳转仪表盘
         // 避免 Token 存储与网关校验不一致导致跳转后立即被踢回登录页
         try {
-          await request({
+          const response = await request({
             url: '/auth/userinfo',
             method: 'get',
             showError: false,
           } as any)
+          const userInfo = response?.data || {}
+          if (userInfo) {
+            localStorage.setItem('userInfo', JSON.stringify(userInfo))
+            const permissions = userInfo.permissions || [
+              'finance:transaction:view',
+              'finance:revenue:view',
+              'finance:settlement:view',
+              'finance:refund:view',
+              'finance:report:view',
+              'finance:config:view'
+            ]
+            localStorage.setItem('permissions', JSON.stringify(permissions))
+          }
           ElMessage.success('登录成功')
           router.push('/dashboard')
         } catch {
           // Token 验证失败，清理并提示用户
           localStorage.removeItem('token')
+          localStorage.removeItem('userInfo')
+          localStorage.removeItem('permissions')
           ElMessage.error('登录验证失败，请重新登录')
         }
       } catch (error) {

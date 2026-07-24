@@ -5,6 +5,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean;
     title?: string;
+    permission?: string;
   }
 }
 
@@ -183,6 +184,42 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/academy/InstructorListView.vue'),
         meta: { title: '讲师管理', requiresAuth: true },
       },
+      {
+        path: 'transactions',
+        name: 'TransactionList',
+        component: () => import('@/views/finance/TransactionListView.vue'),
+        meta: { title: '交易流水', requiresAuth: true, permission: 'finance:transaction:view' },
+      },
+      {
+        path: 'revenue',
+        name: 'RevenueStats',
+        component: () => import('@/views/finance/RevenueView.vue'),
+        meta: { title: '收入统计', requiresAuth: true, permission: 'finance:revenue:view' },
+      },
+      {
+        path: 'settlements',
+        name: 'SettlementList',
+        component: () => import('@/views/finance/SettlementView.vue'),
+        meta: { title: '结算管理', requiresAuth: true, permission: 'finance:settlement:view' },
+      },
+      {
+        path: 'refunds',
+        name: 'RefundList',
+        component: () => import('@/views/finance/RefundView.vue'),
+        meta: { title: '退款管理', requiresAuth: true, permission: 'finance:refund:view' },
+      },
+      {
+        path: 'finance-reports',
+        name: 'FinanceReports',
+        component: () => import('@/views/finance/FinanceReportView.vue'),
+        meta: { title: '财务报表', requiresAuth: true, permission: 'finance:report:view' },
+      },
+      {
+        path: 'fee-config',
+        name: 'FeeConfig',
+        component: () => import('@/views/finance/FeeConfigView.vue'),
+        meta: { title: '费用配置', requiresAuth: true, permission: 'finance:config:view' },
+      },
     ],
   },
 ];
@@ -208,6 +245,15 @@ router.beforeEach((to, _from, next) => {
   if (isAuthenticated && to.path === '/login') {
     next({ path: '/dashboard' });
     return;
+  }
+
+  const requiredPermission = to.meta.permission;
+  if (isAuthenticated && requiredPermission) {
+    const userPermissions = JSON.parse(localStorage.getItem('permissions') || '[]');
+    if (!userPermissions.includes(requiredPermission)) {
+      next('/dashboard');
+      return;
+    }
   }
 
   next();

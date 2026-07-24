@@ -25,7 +25,7 @@
         <el-button type="primary" @click="handleSearch">搜索</el-button>
         <el-button @click="handleReset">重置</el-button>
       </div>
-      <el-table :data="tableData" border stripe>
+      <el-table :data="tableData" border stripe :row-key="row => row.id" :cell-class-name="cellClassName">
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="name" label="纸样名称" min-width="180" />
         <el-table-column prop="designer" label="设计师" width="100" />
@@ -34,26 +34,26 @@
         <el-table-column prop="size" label="尺寸" width="70" />
         <el-table-column label="评分" width="80" align="center">
           <template #default="{ row }">
-            <el-rate v-model="row.score" disabled show-score :max="5" :score-template="`${row.score}`" size="small" />
+            <span class="score-badge" :class="getScoreClass(row.score)">{{ row.score }}</span>
           </template>
         </el-table-column>
         <el-table-column label="标签" min-width="180">
           <template #default="{ row }">
-            <el-tag v-for="tag in row.tags" :key="tag" size="small" style="margin-right: 4px" type="success">{{ tag }}</el-tag>
+            <span v-for="tag in row.tags" :key="tag" class="simple-tag">{{ tag }}</span>
           </template>
         </el-table-column>
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
+            <span class="status-badge" :class="getStatusClass(row.status)">{{ getStatusText(row.status) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="uploadTime" label="上传时间" width="170" />
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" text size="small" @click="handleView(row)">预览</el-button>
-            <el-button v-if="row.status === 'pending'" type="success" text size="small" @click="handleApprove(row)">通过</el-button>
-            <el-button v-if="row.status === 'pending'" type="danger" text size="small" @click="handleReject(row)">拒绝</el-button>
-            <el-button type="danger" text size="small" @click="handleDelete(row)">删除</el-button>
+            <button class="btn-action btn-primary" @click="handleView(row)">预览</button>
+            <button v-show="row.status === 'pending'" class="btn-action btn-success" @click="handleApprove(row)">通过</button>
+            <button v-show="row.status === 'pending'" class="btn-action btn-danger" @click="handleReject(row)">拒绝</button>
+            <button class="btn-action btn-danger" @click="handleDelete(row)">删除</button>
           </template>
         </el-table-column>
       </el-table>
@@ -74,14 +74,14 @@
         <el-descriptions-item label="格式">{{ currentItem.format }}</el-descriptions-item>
         <el-descriptions-item label="尺寸">{{ currentItem.size }}</el-descriptions-item>
         <el-descriptions-item label="评分">
-          <el-rate v-model="currentItem.score" disabled show-score :max="5" size="small" />
+          <span class="score-badge" :class="getScoreClass(currentItem.score)">{{ currentItem.score }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="标签">
-          <el-tag v-for="tag in currentItem.tags" :key="tag" size="small" style="margin-right: 4px" type="success">{{ tag }}</el-tag>
+          <span v-for="tag in currentItem.tags" :key="tag" class="simple-tag">{{ tag }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="描述">{{ currentItem.description || '-' }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="getStatusType(currentItem.status)" size="small">{{ getStatusText(currentItem.status) }}</el-tag>
+          <span class="status-badge" :class="getStatusClass(currentItem.status)">{{ getStatusText(currentItem.status) }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="上传时间">{{ currentItem.uploadTime }}</el-descriptions-item>
         <el-descriptions-item v-if="currentItem.auditTime" label="审核时间">{{ currentItem.auditTime }}</el-descriptions-item>
@@ -110,10 +110,19 @@ const searchForm = reactive<PatternQueryParams>({ keyword: '', status: '', categ
 const detailVisible = ref(false);
 const currentItem = ref<PatternInfo | null>(null);
 
-function getStatusType(status: string) {
-  const map: Record<string, string> = { pending: 'warning', approved: 'success', rejected: 'danger' };
-  return map[status] || 'info';
+function cellClassName({ column, row }) { return ''; }
+
+function getScoreClass(score: number) {
+  if (score >= 90) return 'score-excellent';
+  if (score >= 80) return 'score-good';
+  return 'score-normal';
 }
+
+function getStatusClass(status: string) {
+  const map: Record<string, string> = { pending: 'status-pending', approved: 'status-approved', rejected: 'status-rejected' };
+  return map[status] || 'status-default';
+}
+
 function getStatusText(status: string) {
   const map: Record<string, string> = { pending: '审核中', approved: '已通过', rejected: '已拒绝' };
   return map[status] || status;
@@ -179,4 +188,25 @@ onMounted(() => { loadData(); });
 .search-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .page-card { margin-bottom: 0; }
 .pagination { margin-top: 20px; text-align: right; }
+
+.score-badge { display: inline-block; min-width: 32px; height: 24px; line-height: 24px; text-align: center; border-radius: 4px; font-size: 12px; font-weight: 500; }
+.score-excellent { background: #dcfce7; color: #16a34a; }
+.score-good { background: #dbeafe; color: #2563eb; }
+.score-normal { background: #fef3c7; color: #d97706; }
+
+.simple-tag { display: inline-block; padding: 2px 8px; background: #dcfce7; color: #16a34a; border-radius: 4px; font-size: 11px; margin-right: 4px; margin-bottom: 2px; }
+
+.status-badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+.status-pending { background: #fef3c7; color: #d97706; }
+.status-approved { background: #dcfce7; color: #16a34a; }
+.status-rejected { background: #fee2e2; color: #dc2626; }
+.status-default { background: #f3f4f6; color: #6b7280; }
+
+.btn-action { padding: 4px 10px; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: #3b82f6; color: white; }
+.btn-primary:hover { background: #2563eb; }
+.btn-success { background: #22c55e; color: white; }
+.btn-success:hover { background: #16a34a; }
+.btn-danger { background: #ef4444; color: white; }
+.btn-danger:hover { background: #dc2626; }
 </style>
