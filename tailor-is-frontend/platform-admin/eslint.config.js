@@ -49,6 +49,7 @@ export default [
         KeyboardEvent: 'readonly',
         MouseEvent: 'readonly',
         HTMLInputElement: 'readonly',
+        SVGElement: 'readonly',
       },
     },
   },

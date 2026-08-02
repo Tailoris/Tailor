@@ -44,6 +44,8 @@ public final class AdminConstants {
     public static final int STATUS_DISABLED = 0;
 
     public static final String REDIS_KEY_DASHBOARD_STATS = "tailoris:admin:dashboard:stats";
+    public static final String REDIS_KEY_DASHBOARD_TREND = "tailoris:admin:dashboard:trend";
+    public static final String REDIS_KEY_DASHBOARD_OVERVIEW = "tailoris:admin:dashboard:overview";
     public static final long REDIS_DASHBOARD_CACHE_MINUTES = 5;
 
     public static final String ROLE_ADMIN = "admin";
