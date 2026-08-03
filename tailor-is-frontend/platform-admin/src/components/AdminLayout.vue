@@ -17,6 +17,7 @@
       </div>
       <el-scrollbar class="sidebar-scroll">
         <el-menu
+          ref="menuRef"
           :default-active="activeMenu"
           :collapse="isCollapsed"
           :collapse-transition="false"
@@ -25,9 +26,9 @@
           active-text-color="#6366F1"
           router
           unique-opened
+          class="sidebar-menu"
           @open="handleMenuOpen"
           @close="handleMenuClose"
-          class="sidebar-menu"
         >
           <div
             v-show="!isCollapsed"
@@ -60,8 +61,8 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('user')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('user', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('user', $event)"
               >
                 <el-icon><UserFilled /></el-icon>
                 <span>用户管理</span>
@@ -74,8 +75,12 @@
                 @mouseenter="handleSubMenuContentMouseEnter('user')"
                 @mouseleave="handleSubMenuContentMouseLeave('user')"
               >
-                <el-menu-item index="/users">用户列表</el-menu-item>
-                <el-menu-item index="/roles">角色管理</el-menu-item>
+                <el-menu-item index="/users">
+                  用户列表
+                </el-menu-item>
+                <el-menu-item index="/roles">
+                  角色管理
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -91,17 +96,44 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('merchant')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('merchant', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('merchant', $event)"
               >
                 <el-icon><Shop /></el-icon>
                 <span>商家管理</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('merchant') }" @mouseenter="handleSubMenuContentMouseEnter('merchant')" @mouseleave="handleSubMenuContentMouseLeave('merchant')">
-                <el-menu-item index="/merchant-audit">商家审核</el-menu-item>
-                <el-menu-item index="/merchant-list">商家列表</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('merchant') }"
+                @mouseenter="handleSubMenuContentMouseEnter('merchant')"
+                @mouseleave="handleSubMenuContentMouseLeave('merchant')"
+              >
+                <el-menu-item index="/merchant-audit">
+                  商家审核
+                </el-menu-item>
+                <el-menu-item index="/merchant-list">
+                  商家列表
+                </el-menu-item>
+                <el-menu-item index="/deposit-config">
+                  保障金配置
+                </el-menu-item>
+                <el-menu-item index="/store-deposit">
+                  店铺保障金
+                </el-menu-item>
+                <el-menu-item index="/deposit-flow">
+                  保障金流水
+                </el-menu-item>
+                <el-menu-item index="/merchant-withdraw">
+                  商户提现
+                </el-menu-item>
+                <el-menu-item index="/merchant-bill">
+                  账单记录
+                </el-menu-item>
+                <el-menu-item index="/shop-manage">
+                  店铺管理
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -117,17 +149,26 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('product')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('product', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('product', $event)"
               >
                 <el-icon><Goods /></el-icon>
                 <span>商品管理</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('product') }" @mouseenter="handleSubMenuContentMouseEnter('product')" @mouseleave="handleSubMenuContentMouseLeave('product')">
-                <el-menu-item index="/product-list">商品列表</el-menu-item>
-                <el-menu-item index="/product-audit">商品审核</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('product') }"
+                @mouseenter="handleSubMenuContentMouseEnter('product')"
+                @mouseleave="handleSubMenuContentMouseLeave('product')"
+              >
+                <el-menu-item index="/product-list">
+                  商品列表
+                </el-menu-item>
+                <el-menu-item index="/product-audit">
+                  商品审核
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -143,17 +184,26 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('order')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('order', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('order', $event)"
               >
                 <el-icon><Document /></el-icon>
                 <span>订单管理</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('order') }" @mouseenter="handleSubMenuContentMouseEnter('order')" @mouseleave="handleSubMenuContentMouseLeave('order')">
-                <el-menu-item index="/orders">订单列表</el-menu-item>
-                <el-menu-item index="/order-arbitration">售后仲裁</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('order') }"
+                @mouseenter="handleSubMenuContentMouseEnter('order')"
+                @mouseleave="handleSubMenuContentMouseLeave('order')"
+              >
+                <el-menu-item index="/orders">
+                  订单列表
+                </el-menu-item>
+                <el-menu-item index="/order-arbitration">
+                  售后仲裁
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -169,17 +219,26 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('pattern')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('pattern', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('pattern', $event)"
               >
                 <el-icon><Picture /></el-icon>
                 <span>纸样设计</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('pattern') }" @mouseenter="handleSubMenuContentMouseEnter('pattern')" @mouseleave="handleSubMenuContentMouseLeave('pattern')">
-                <el-menu-item index="/patterns">纸样管理</el-menu-item>
-                <el-menu-item index="/pattern-audit">纸样审核</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('pattern') }"
+                @mouseenter="handleSubMenuContentMouseEnter('pattern')"
+                @mouseleave="handleSubMenuContentMouseLeave('pattern')"
+              >
+                <el-menu-item index="/patterns">
+                  纸样管理
+                </el-menu-item>
+                <el-menu-item index="/pattern-audit">
+                  纸样审核
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -195,17 +254,26 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('copyright')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('copyright', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('copyright', $event)"
               >
                 <el-icon><Lock /></el-icon>
                 <span>版权管理</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('copyright') }" @mouseenter="handleSubMenuContentMouseEnter('copyright')" @mouseleave="handleSubMenuContentMouseLeave('copyright')">
-                <el-menu-item index="/copyrights">版权登记</el-menu-item>
-                <el-menu-item index="/infringement">侵权检测</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('copyright') }"
+                @mouseenter="handleSubMenuContentMouseEnter('copyright')"
+                @mouseleave="handleSubMenuContentMouseLeave('copyright')"
+              >
+                <el-menu-item index="/copyrights">
+                  版权登记
+                </el-menu-item>
+                <el-menu-item index="/infringement">
+                  侵权检测
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -228,17 +296,26 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('community')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('community', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('community', $event)"
               >
                 <el-icon><ChatDotRound /></el-icon>
                 <span>社区管理</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('community') }" @mouseenter="handleSubMenuContentMouseEnter('community')" @mouseleave="handleSubMenuContentMouseLeave('community')">
-                <el-menu-item index="/community-posts">帖子审核</el-menu-item>
-                <el-menu-item index="/community-reports">举报处理</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('community') }"
+                @mouseenter="handleSubMenuContentMouseEnter('community')"
+                @mouseleave="handleSubMenuContentMouseLeave('community')"
+              >
+                <el-menu-item index="/community-posts">
+                  帖子审核
+                </el-menu-item>
+                <el-menu-item index="/community-reports">
+                  举报处理
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -254,17 +331,28 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('supply')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('supply', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('supply', $event)"
               >
                 <el-icon><Van /></el-icon><span>供应链</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('supply') }" @mouseenter="handleSubMenuContentMouseEnter('supply')" @mouseleave="handleSubMenuContentMouseLeave('supply')">
-                <el-menu-item index="/fabrics">面料管理</el-menu-item>
-                <el-menu-item index="/suppliers">供应商管理</el-menu-item>
-                <el-menu-item index="/purchase-orders">采购订单</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('supply') }"
+                @mouseenter="handleSubMenuContentMouseEnter('supply')"
+                @mouseleave="handleSubMenuContentMouseLeave('supply')"
+              >
+                <el-menu-item index="/fabrics">
+                  面料管理
+                </el-menu-item>
+                <el-menu-item index="/suppliers">
+                  供应商管理
+                </el-menu-item>
+                <el-menu-item index="/purchase-orders">
+                  采购订单
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -280,16 +368,25 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('marketing')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('marketing', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('marketing', $event)"
               >
                 <el-icon><Promotion /></el-icon><span>营销管理</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('marketing') }" @mouseenter="handleSubMenuContentMouseEnter('marketing')" @mouseleave="handleSubMenuContentMouseLeave('marketing')">
-                <el-menu-item index="/coupons">优惠券管理</el-menu-item>
-                <el-menu-item index="/campaigns">活动管理</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('marketing') }"
+                @mouseenter="handleSubMenuContentMouseEnter('marketing')"
+                @mouseleave="handleSubMenuContentMouseLeave('marketing')"
+              >
+                <el-menu-item index="/coupons">
+                  优惠券管理
+                </el-menu-item>
+                <el-menu-item index="/campaigns">
+                  活动管理
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -305,16 +402,25 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('analytics')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('analytics', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('analytics', $event)"
               >
                 <el-icon><DataLine /></el-icon><span>数据分析</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('analytics') }" @mouseenter="handleSubMenuContentMouseEnter('analytics')" @mouseleave="handleSubMenuContentMouseLeave('analytics')">
-                <el-menu-item index="/reports">数据报告</el-menu-item>
-                <el-menu-item index="/statistics">数据统计</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('analytics') }"
+                @mouseenter="handleSubMenuContentMouseEnter('analytics')"
+                @mouseleave="handleSubMenuContentMouseLeave('analytics')"
+              >
+                <el-menu-item index="/reports">
+                  数据报告
+                </el-menu-item>
+                <el-menu-item index="/statistics">
+                  数据统计
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -330,16 +436,25 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('academy')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('academy', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('academy', $event)"
               >
                 <el-icon><Reading /></el-icon><span>线上学堂</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('academy') }" @mouseenter="handleSubMenuContentMouseEnter('academy')" @mouseleave="handleSubMenuContentMouseLeave('academy')">
-                <el-menu-item index="/courses">课程管理</el-menu-item>
-                <el-menu-item index="/instructors">讲师管理</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('academy') }"
+                @mouseenter="handleSubMenuContentMouseEnter('academy')"
+                @mouseleave="handleSubMenuContentMouseLeave('academy')"
+              >
+                <el-menu-item index="/courses">
+                  课程管理
+                </el-menu-item>
+                <el-menu-item index="/instructors">
+                  讲师管理
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -355,20 +470,37 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('finance')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('finance', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('finance', $event)"
               >
                 <el-icon><Money /></el-icon><span>财务管理</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('finance') }" @mouseenter="handleSubMenuContentMouseEnter('finance')" @mouseleave="handleSubMenuContentMouseLeave('finance')">
-                <el-menu-item index="/transactions">交易流水</el-menu-item>
-                <el-menu-item index="/revenue">收入统计</el-menu-item>
-                <el-menu-item index="/settlements">结算管理</el-menu-item>
-                <el-menu-item index="/refunds">退款管理</el-menu-item>
-                <el-menu-item index="/finance-reports">财务报表</el-menu-item>
-                <el-menu-item index="/fee-config">费用配置</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('finance') }"
+                @mouseenter="handleSubMenuContentMouseEnter('finance')"
+                @mouseleave="handleSubMenuContentMouseLeave('finance')"
+              >
+                <el-menu-item index="/transactions">
+                  交易流水
+                </el-menu-item>
+                <el-menu-item index="/revenue">
+                  收入统计
+                </el-menu-item>
+                <el-menu-item index="/settlements">
+                  结算管理
+                </el-menu-item>
+                <el-menu-item index="/refunds">
+                  退款管理
+                </el-menu-item>
+                <el-menu-item index="/finance-reports">
+                  财务报表
+                </el-menu-item>
+                <el-menu-item index="/fee-config">
+                  费用配置
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -384,16 +516,25 @@
                 role="menuitem" 
                 :aria-expanded="expandedMenus.has('system')" 
                 aria-haspopup="true"
-                @keydown="handleSubMenuKeydown('system', $event)"
                 class="menu-title-wrapper"
+                @keydown="handleSubMenuKeydown('system', $event)"
               >
                 <el-icon><Setting /></el-icon><span>系统管理</span>
               </div>
             </template>
             <template #default>
-              <div class="sub-menu-content" :class="{ 'sub-menu-content-show': expandedMenus.has('system') }" @mouseenter="handleSubMenuContentMouseEnter('system')" @mouseleave="handleSubMenuContentMouseLeave('system')">
-                <el-menu-item index="/audit-logs">操作日志</el-menu-item>
-                <el-menu-item index="/settings">系统设置</el-menu-item>
+              <div
+                class="sub-menu-content"
+                :class="{ 'sub-menu-content-show': expandedMenus.has('system') }"
+                @mouseenter="handleSubMenuContentMouseEnter('system')"
+                @mouseleave="handleSubMenuContentMouseLeave('system')"
+              >
+                <el-menu-item index="/audit-logs">
+                  操作日志
+                </el-menu-item>
+                <el-menu-item index="/settings">
+                  系统设置
+                </el-menu-item>
               </div>
             </template>
           </el-sub-menu>
@@ -735,7 +876,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage, type MenuInstance } from 'element-plus';
 import {
   Monitor,
   DataAnalysis,
@@ -773,6 +914,7 @@ import {
 const route = useRoute();
 const router = useRouter();
 const isCollapsed = ref(false);
+const menuRef = ref<MenuInstance>();
 const expandedMenus = ref<Set<string>>(new Set());
 
 const activeMenu = computed(() => route.path);
@@ -782,6 +924,9 @@ const currentTitle = computed(() => (route.meta.title as string) || '');
 const routeParentMap: Record<string, string> = {
   '/users': 'user', '/roles': 'user',
   '/merchant-audit': 'merchant', '/merchant-list': 'merchant',
+  '/deposit-config': 'merchant', '/store-deposit': 'merchant',
+  '/deposit-flow': 'merchant', '/merchant-withdraw': 'merchant',
+  '/merchant-bill': 'merchant', '/shop-manage': 'merchant',
   '/product-list': 'product', '/product-audit': 'product',
   '/orders': 'order', '/order-arbitration': 'order',
   '/patterns': 'pattern', '/pattern-audit': 'pattern',
@@ -798,6 +943,7 @@ const routeParentMap: Record<string, string> = {
 function expandMenuByRoute(path: string) {
   const parent = routeParentMap[path];
   if (parent) {
+    menuRef.value?.open(parent);
     expandedMenus.value.add(parent);
   }
 }
@@ -816,9 +962,11 @@ const hideTimers = ref<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 const allMenuKeys = ['user', 'merchant', 'product', 'order', 'pattern', 'copyright', 'community', 'supply', 'marketing', 'analytics', 'academy', 'finance', 'system'];
 
 // 关闭其他菜单（保证同一时间只展开一个）
+// 显式同步 expandedMenus，避免依赖 @close 事件在所有环境下可靠触发
 function closeOtherMenus(currentKey: string) {
   allMenuKeys.forEach(key => {
     if (key !== currentKey && expandedMenus.value.has(key)) {
+      menuRef.value?.close(key);
       expandedMenus.value.delete(key);
     }
   });
@@ -834,13 +982,17 @@ function handleMenuClose(index: string) {
 
 // 一级菜单鼠标进入
 function handleSubMenuMouseEnter(index: string) {
+  // 移动设备（窄屏）禁用悬停展开，避免误触
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    return;
+  }
   // 清除该菜单的隐藏定时器
   const hideTimer = hideTimers.value.get(index);
   if (hideTimer) {
     clearTimeout(hideTimer);
     hideTimers.value.delete(index);
   }
-  
+
   // 清除其他菜单的显示定时器
   allMenuKeys.forEach(key => {
     if (key !== index) {
@@ -851,10 +1003,12 @@ function handleSubMenuMouseEnter(index: string) {
       }
     }
   });
-  
+
   // 设置显示定时器
   const showTimer = setTimeout(() => {
+    // 显式关闭其他菜单（unique-opened 互斥），同步 expandedMenus 状态
     closeOtherMenus(index);
+    menuRef.value?.open(index);
     expandedMenus.value.add(index);
     showTimers.value.delete(index);
   }, showDelay);
@@ -869,9 +1023,10 @@ function handleSubMenuMouseLeave(index: string) {
     clearTimeout(showTimer);
     showTimers.value.delete(index);
   }
-  
+
   // 设置隐藏定时器
   const hideTimer = setTimeout(() => {
+    menuRef.value?.close(index);
     expandedMenus.value.delete(index);
     hideTimers.value.delete(index);
   }, hideDelay);
@@ -890,6 +1045,7 @@ function handleSubMenuContentMouseEnter(index: string) {
 // 二级菜单区域鼠标离开
 function handleSubMenuContentMouseLeave(index: string) {
   const hideTimer = setTimeout(() => {
+    menuRef.value?.close(index);
     expandedMenus.value.delete(index);
     hideTimers.value.delete(index);
   }, hideDelay);
@@ -899,9 +1055,10 @@ function handleSubMenuContentMouseLeave(index: string) {
 // 触摸事件处理（移动端）
 function handleSubMenuTouchStart(index: string) {
   if (expandedMenus.value.has(index)) {
+    menuRef.value?.close(index);
     expandedMenus.value.delete(index);
   } else {
-    closeOtherMenus(index);
+    menuRef.value?.open(index);
     expandedMenus.value.add(index);
   }
 }
@@ -911,9 +1068,10 @@ function handleSubMenuKeydown(index: string, event: KeyboardEvent) {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault();
     if (expandedMenus.value.has(index)) {
+      menuRef.value?.close(index);
       expandedMenus.value.delete(index);
     } else {
-      closeOtherMenus(index);
+      menuRef.value?.open(index);
       expandedMenus.value.add(index);
     }
   }

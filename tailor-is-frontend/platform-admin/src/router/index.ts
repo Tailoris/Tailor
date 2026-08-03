@@ -71,6 +71,42 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '商家列表', requiresAuth: true },
       },
       {
+        path: 'deposit-config',
+        name: 'DepositConfig',
+        component: () => import('@/views/merchant/DepositConfigView.vue'),
+        meta: { title: '保障金配置', requiresAuth: true },
+      },
+      {
+        path: 'store-deposit',
+        name: 'StoreDeposit',
+        component: () => import('@/views/merchant/ShopDepositView.vue'),
+        meta: { title: '店铺保障金', requiresAuth: true },
+      },
+      {
+        path: 'deposit-flow',
+        name: 'DepositFlow',
+        component: () => import('@/views/merchant/DepositFlowView.vue'),
+        meta: { title: '保障金流水', requiresAuth: true },
+      },
+      {
+        path: 'merchant-withdraw',
+        name: 'MerchantWithdraw',
+        component: () => import('@/views/merchant/MerchantWithdrawView.vue'),
+        meta: { title: '商户提现', requiresAuth: true },
+      },
+      {
+        path: 'merchant-bill',
+        name: 'MerchantBill',
+        component: () => import('@/views/merchant/MerchantBillView.vue'),
+        meta: { title: '账单记录', requiresAuth: true },
+      },
+      {
+        path: 'shop-manage',
+        name: 'ShopManage',
+        component: () => import('@/views/merchant/ShopManageView.vue'),
+        meta: { title: '店铺管理', requiresAuth: true },
+      },
+      {
         path: 'product-list',
         name: 'ProductList',
         component: () => import('@/views/product/ProductListView.vue'),
