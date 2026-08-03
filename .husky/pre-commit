@@ -1,1 +1,19 @@
+#!/usr/bin/env sh
+# =============================================================================
+# Husky pre-commit 钩子（由 core.hooksPath=.husky/_ 触发）
+# =============================================================================
+# 执行顺序:
+#   1. scripts/pre-commit.sh — 质量门禁（密钥/路由/端口/异常处理器/测试门禁）
+#      失败则阻断提交，不继续执行 lint-staged
+#   2. npx lint-staged — ESLint/Prettier 自动修复
+# =============================================================================
+# 对应: regression-prevention-master-plan.md 方案2.1（测试门禁闭环）
+# 修复历史: 原 .husky/pre-commit 仅运行 lint-staged，绕过了 scripts/pre-commit.sh
+#           导致测试门禁从未执行（core.hooksPath=.husky/_ 覆盖了 .git/hooks/pre-commit）
+# =============================================================================
+
+# 第1步: 质量门禁（含受影响模块单元测试，失败即阻断）
+sh scripts/pre-commit.sh
+
+# 第2步: lint-staged（仅在质量门禁通过后运行）
 npx lint-staged

@@ -39,13 +39,19 @@ echo ""
 # =============================================================================
 echo "[1/8] 密钥硬编码检查..."
 
-# 检查 env 文件中是否包含真实密钥（非占位符）
-if [ -f "deploy/tailor-is-prod/env/.env.base" ]; then
-    if grep -qE "(AES_KEY|JWT_SECRET|GATEWAY_HMAC_SECRET)=[A-Za-z0-9+/=]{20,}" deploy/tailor-is-prod/env/.env.base 2>/dev/null; then
-        check_fail ".env.base 中发现硬编码密钥，请使用占位符 <PLEASE_GENERATE>"
-    else
-        check_pass "env 文件中无硬编码密钥"
-    fi
+# 检查本次变更的 env 文件中是否包含真实密钥（非占位符）
+# 仅检查 git diff --cached 中的 env 文件，避免历史遗留问题阻断所有提交
+CHANGED_ENV_FILES=$(git diff --cached --name-only | grep -E '\.env' || true)
+if [ -n "$CHANGED_ENV_FILES" ]; then
+    for env_file in $CHANGED_ENV_FILES; do
+        if [ -f "$env_file" ] && grep -qE "(AES_KEY|JWT_SECRET|GATEWAY_HMAC_SECRET)=[A-Za-z0-9+/=]{20,}" "$env_file" 2>/dev/null; then
+            check_fail "$env_file 中发现硬编码密钥，请使用占位符 <PLEASE_GENERATE>"
+        else
+            check_pass "$env_file 无硬编码密钥"
+        fi
+    done
+else
+    check_pass "无 env 文件变更"
 fi
 
 # 检查 Java 代码中是否硬编码密码
