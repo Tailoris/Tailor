@@ -195,31 +195,43 @@ for f in $CHANGED_FILES; do
 done
 
 # 前端测试门禁：仅当前端源码变更时运行
+# 注意：禁止用管道 `| tail`，否则退出码是 tail 的(0)，测试失败也会通过
 if [ "$RUN_FRONTEND_TEST" = "true" ]; then
     echo "  检测到前端源码变更，运行前端单元测试..."
-    if (cd tailor-is-frontend/platform-admin && npx vitest run --reporter=dot 2>&1 | tail -5); then
+    FE_LOG=$(mktemp)
+    if (cd tailor-is-frontend/platform-admin && npx vitest run --reporter=dot) > "$FE_LOG" 2>&1; then
         check_pass "前端单元测试通过"
     else
         check_fail "前端单元测试失败，请修复后再提交"
-        echo "  ${RED}失败详情运行: cd tailor-is-frontend/platform-admin && npx vitest run${NC}"
+        echo "  ${RED}失败详情（最后10行）:${NC}"
+        tail -10 "$FE_LOG"
+        echo "  ${RED}完整日志运行: cd tailor-is-frontend/platform-admin && npx vitest run${NC}"
+        rm -f "$FE_LOG"
         exit 1
     fi
+    rm -f "$FE_LOG"
 else
     check_pass "无前端源码变更，跳过前端测试"
 fi
 
 # 后端测试门禁：仅运行受影响模块的测试
+# 注意：禁止用管道 `| tail`，否则退出码是 tail 的(0)，测试失败也会通过
 if [ -n "$RUN_BACKEND_MODULES" ]; then
     for mod in $(echo "$RUN_BACKEND_MODULES" | tr ' ' '\n' | sort -u); do
         mod_path="tailor-is/tailor-is-$mod"
         if [ -d "$mod_path" ]; then
             echo "  运行 $mod 模块单元测试..."
-            if (cd "$mod_path" && mvn -B -ntp -q test 2>&1 | tail -10); then
+            BE_LOG=$(mktemp)
+            if (cd "$mod_path" && mvn -B -ntp -q test) > "$BE_LOG" 2>&1; then
                 check_pass "$mod 模块单元测试通过"
             else
                 check_fail "$mod 模块单元测试失败"
+                echo "  ${RED}失败详情（最后15行）:${NC}"
+                tail -15 "$BE_LOG"
+                rm -f "$BE_LOG"
                 exit 1
             fi
+            rm -f "$BE_LOG"
         fi
     done
 else
