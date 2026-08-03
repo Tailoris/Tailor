@@ -95,7 +95,8 @@ class CoreAuthGlobalFilterTest {
         assertTrue(defaultPaths.contains("/api/auth/login"));
         assertTrue(defaultPaths.contains("/api/auth/register"));
         assertTrue(defaultPaths.contains("/api/auth/refresh"));
-        assertTrue(defaultPaths.contains("/actuator/**"));
+        // 实现仅放行 /actuator/health（非 /actuator/**），符合 Actuator 端点最小暴露原则
+        assertTrue(defaultPaths.contains("/actuator/health"));
     }
 
     @Test
@@ -344,11 +345,15 @@ class CoreAuthGlobalFilterTest {
         headers.add(HttpHeaders.AUTHORIZATION, "Bearer valid-token-123");
         when(request.getHeaders()).thenReturn(headers);
 
-        // mock request.mutate() 链
+        // mock request.mutate() 链 — 实现使用 headers(Consumer<HttpHeaders>) 添加请求头
         ServerHttpRequest.Builder requestBuilder = mock(ServerHttpRequest.Builder.class);
         ServerHttpRequest mutatedRequest = mock(ServerHttpRequest.class);
         when(request.mutate()).thenReturn(requestBuilder);
-        when(requestBuilder.header(anyString(), any())).thenReturn(requestBuilder);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<java.util.function.Consumer<HttpHeaders>> headersConsumerCaptor =
+                ArgumentCaptor.forClass(java.util.function.Consumer.class);
+        when(requestBuilder.headers(headersConsumerCaptor.capture())).thenReturn(requestBuilder);
         when(requestBuilder.build()).thenReturn(mutatedRequest);
 
         // mock exchange.mutate() 链
@@ -367,9 +372,12 @@ class CoreAuthGlobalFilterTest {
 
             Mono<Void> result = filter.filter(exchange, chain);
 
-            // 验证透传了 X-User-Id 和 X-Token-Validated
-            verify(requestBuilder).header("X-User-Id", "42");
-            verify(requestBuilder).header("X-Token-Validated", "true");
+            // 验证 Consumer 被执行后，HttpHeaders 中包含正确的透传头
+            HttpHeaders mutatedHeaders = new HttpHeaders();
+            headersConsumerCaptor.getValue().accept(mutatedHeaders);
+            assertEquals("42", mutatedHeaders.getFirst("X-User-Id"));
+            assertEquals("true", mutatedHeaders.getFirst("X-Token-Validated"));
+
             verify(chain).filter(mutatedExchange);
             StepVerifier.create(result).verifyComplete();
         }

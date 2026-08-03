@@ -37,7 +37,7 @@ class CoreGatewayRouteConfigTest {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
-    @DisplayName("所有 10 条路由均已定义且 Lambda 可执行")
+    @DisplayName("所有路由均已定义且 Lambda 可执行")
     void testAllRoutesAreDefinedAndInvocable() {
         CoreGatewayRouteConfig config = new CoreGatewayRouteConfig();
         RouteLocatorBuilder builder = mock(RouteLocatorBuilder.class);
@@ -51,9 +51,9 @@ class CoreGatewayRouteConfigTest {
         RouteLocator routeLocator = config.customRouteLocator(builder);
         assertNotNull(routeLocator);
 
-        // 验证 10 条路由全部注册
+        // 验证所有路由全部注册（14 条 v4.0 主路由 + 13 条 legacy 兼容路由 = 27 条）
         List<Function> fns = fnCaptor.getAllValues();
-        assertEquals(10, fns.size(), "应定义 10 条路由");
+        assertEquals(27, fns.size(), "应定义 27 条路由（14 主路由 + 13 legacy 兼容路由）");
 
         // 构建 mock 链: PredicateSpec → BooleanSpec → GatewayFilterSpec → Route.Builder
         PredicateSpec predicateSpec = mock(PredicateSpec.class);
@@ -68,7 +68,9 @@ class CoreGatewayRouteConfigTest {
             Function<GatewayFilterSpec, GatewayFilterSpec> innerFn = inv.getArgument(0);
             return innerFn.apply(filterSpec);
         });
+        // 主路由使用 stripPrefix(0)，legacy 路由使用 rewritePath
         when(filterSpec.stripPrefix(anyInt())).thenReturn(filterSpec);
+        when(filterSpec.rewritePath(anyString(), anyString())).thenReturn(filterSpec);
         when(filterSpec.uri(anyString())).thenReturn(routeBuilder);
 
         // 逐条执行路由 Lambda, 覆盖所有 path/filters/uri 调用
@@ -77,15 +79,17 @@ class CoreGatewayRouteConfigTest {
             assertNotNull(result, "每条路由 Lambda 应返回非空 Route.Builder");
         }
 
-        // 验证 path() 被调用了 10 次 (每条路由一次)
-        verify(predicateSpec, times(10)).path(any(String[].class));
-        // 验证 uri() 被调用了 10 次
-        verify(filterSpec, times(10)).uri(anyString());
-        // 验证 stripPrefix(0) 被调用了 10 次
-        verify(filterSpec, times(10)).stripPrefix(0);
+        // 验证 path() 被调用了 27 次 (每条路由一次)
+        verify(predicateSpec, times(27)).path(any(String[].class));
+        // 验证 uri() 被调用了 27 次
+        verify(filterSpec, times(27)).uri(anyString());
+        // 验证 stripPrefix(0) 被调用了 14 次 (仅主路由)
+        verify(filterSpec, times(14)).stripPrefix(0);
+        // 验证 rewritePath 被调用了 13 次 (legacy 路由)
+        verify(filterSpec, times(13)).rewritePath(anyString(), anyString());
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     @Test
     @DisplayName("路由 builder.routes() 和 build() 均被调用")
     void testBuilderChaining() {

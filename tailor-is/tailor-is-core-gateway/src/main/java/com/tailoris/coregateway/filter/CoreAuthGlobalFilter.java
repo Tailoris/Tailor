@@ -294,6 +294,11 @@ public class CoreAuthGlobalFilter implements GlobalFilter, Ordered {
      */
     private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, int code, String subCode, String message) {
         ServerHttpResponse response = exchange.getResponse();
+        // BE-C-NPE: 防御性空判，避免 mock 场景或异常链路中 response 为 null 时 NPE
+        if (response == null) {
+            log.warn("Core Gateway - unauthorizedResponse: response is null, code={}, subCode={}", code, subCode);
+            return Mono.empty();
+        }
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
