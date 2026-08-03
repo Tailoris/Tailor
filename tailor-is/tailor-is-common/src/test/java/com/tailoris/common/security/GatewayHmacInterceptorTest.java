@@ -49,7 +49,15 @@ class GatewayHmacInterceptorTest {
         // 注入 hmacSecret
         ReflectionTestUtils.setField(interceptor, "hmacSecret", TEST_SECRET);
         responseWriter = new StringWriter();
-        when(response.getWriter()).thenReturn(new PrintWriter(responseWriter));
+        // 使用 lenient() 避免严格桩校验（部分测试不触发写响应路径）
+        lenient().when(response.getWriter()).thenReturn(new PrintWriter(responseWriter));
+        // lenient() stub: getHeader 需对所有被调用的 header 名称返回值
+        lenient().when(request.getHeader("X-User-Id")).thenReturn(null);
+        lenient().when(request.getHeader("X-User-Id-Signature")).thenReturn(null);
+        lenient().when(request.getHeader("X-Forwarded-For")).thenReturn(null);
+        lenient().when(request.getHeader("X-Real-IP")).thenReturn(null);
+        lenient().when(request.getRequestURI()).thenReturn("/api/test");
+        lenient().when(request.getRemoteAddr()).thenReturn("127.0.0.1");
     }
 
     /**

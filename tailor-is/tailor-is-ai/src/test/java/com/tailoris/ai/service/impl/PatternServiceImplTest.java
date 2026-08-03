@@ -13,6 +13,8 @@ import com.tailoris.ai.mapper.PatternIterationMapper;
 import com.tailoris.ai.mapper.PatternRecordMapper;
 import com.tailoris.ai.mapper.PatternVersionMapper;
 import com.tailoris.common.exception.BusinessException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -45,6 +48,25 @@ class PatternServiceImplTest {
     @Spy
     @InjectMocks
     private PatternServiceImpl patternService;
+
+    @BeforeEach
+    void setUp() {
+        // PatternServiceImpl 使用 ObjectMapper 生成/解析版型数据 JSON
+        // 单元测试无 Spring 上下文，@InjectMocks 不会注入 ObjectMapper，需手动注入真实实例
+        ReflectionTestUtils.setField(patternService, "objectMapper", new ObjectMapper());
+    }
+
+    /** 类型安全的 LambdaQueryWrapper<PatternVersion> 匹配器 */
+    @SuppressWarnings("unchecked")
+    private static LambdaQueryWrapper<PatternVersion> anyPatternVersionWrapper() {
+        return org.mockito.ArgumentMatchers.any(LambdaQueryWrapper.class);
+    }
+
+    /** 类型安全的 LambdaQueryWrapper<PatternRecord> 匹配器 */
+    @SuppressWarnings("unchecked")
+    private static LambdaQueryWrapper<PatternRecord> anyPatternRecordWrapper() {
+        return org.mockito.ArgumentMatchers.any(LambdaQueryWrapper.class);
+    }
 
     private BodySizeData createBodySizeData() {
         BodySizeData data = new BodySizeData();
@@ -205,7 +227,7 @@ class PatternServiceImplTest {
         v1.setVersionNo(1);
         PatternVersion v2 = new PatternVersion();
         v2.setVersionNo(2);
-        when(patternVersionMapper.selectList(any(LambdaQueryWrapper.class)))
+        when(patternVersionMapper.selectList(anyPatternVersionWrapper()))
                 .thenReturn(Arrays.asList(v2, v1));
 
         List<PatternVersion> result = patternService.listVersions(100L, 1L);
@@ -268,7 +290,7 @@ class PatternServiceImplTest {
         r1.setId(1L);
         PatternRecord r2 = new PatternRecord();
         r2.setId(2L);
-        when(patternRecordMapper.selectList(any(LambdaQueryWrapper.class)))
+        when(patternRecordMapper.selectList(anyPatternRecordWrapper()))
                 .thenReturn(Arrays.asList(r1, r2));
 
         List<PatternRecord> result = patternService.listUserPatterns(100L);

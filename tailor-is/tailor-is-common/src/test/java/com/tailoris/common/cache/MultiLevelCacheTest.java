@@ -4,12 +4,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.connection.RedisConnection;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -17,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +40,12 @@ class MultiLevelCacheTest {
 
     @Mock
     private ValueOperations<String, String> valueOperations;
+
+    @Mock
+    private RedisConnection redisConnection;
+
+    @Mock
+    private Cursor<byte[]> mockCursor;
 
     private MultiLevelCache<String, String> cache;
 
@@ -156,31 +169,69 @@ class MultiLevelCacheTest {
         cache.invalidate(key, "prefix");
     }
 
+    /**
+     * 配置 redisTemplate.execute() 以模拟 SCAN 命令返回指定 keys
+     */
+    @SuppressWarnings("unchecked")
+    private void mockScanKeysReturning(Set<String> keysToReturn) {
+        doAnswer(invocation -> {
+            RedisCallback<Set<String>> callback = invocation.getArgument(0);
+            byte[][] keyBytes = keysToReturn.stream()
+                    .map(String::getBytes)
+                    .toArray(byte[][]::new);
+            // 模拟 Cursor 行为：遍历 keys 中的每个元素
+            if (keyBytes.length >= 3) {
+                when(mockCursor.hasNext()).thenReturn(true, true, true, false);
+                when(mockCursor.next()).thenReturn(keyBytes[0], keyBytes[1], keyBytes[2]);
+            } else if (keyBytes.length == 2) {
+                when(mockCursor.hasNext()).thenReturn(true, true, false);
+                when(mockCursor.next()).thenReturn(keyBytes[0], keyBytes[1]);
+            } else if (keyBytes.length == 1) {
+                when(mockCursor.hasNext()).thenReturn(true, false);
+                when(mockCursor.next()).thenReturn(keyBytes[0]);
+            }
+            when(redisConnection.scan(any(ScanOptions.class))).thenReturn(mockCursor);
+            return callback.doInRedis(redisConnection);
+        }).when(redisTemplate).execute(any(RedisCallback.class));
+    }
+
     @Test
-    @DisplayName("按前缀失效应删除匹配的Redis键和清空L1")
+    @DisplayName("按前缀失效应通过SCAN删除匹配的Redis键并清空L1")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     void invalidateByPrefix_shouldDeleteMatchingKeysAndClearL1() {
         String prefix = "user";
         Set<String> keys = Set.of("user:1", "user:2", "user:3");
-        
-        when(redisTemplate.keys("user:*")).thenReturn(keys);
+
+        mockScanKeysReturning(keys);
 
         cache.invalidateByPrefix(prefix);
 
-        verify(redisTemplate).delete(keys);
+        ArgumentCaptor<Collection> deletedKeysCaptor = ArgumentCaptor.forClass(Collection.class);
+        verify(redisTemplate).delete(deletedKeysCaptor.capture());
+        assertThat(deletedKeysCaptor.getValue()).containsExactlyInAnyOrderElementsOf(keys);
     }
 
     @Test
     @DisplayName("按前缀失效-无匹配键应正常处理")
+    @SuppressWarnings("unchecked")
     void invalidateByPrefix_noMatchingKeys_shouldHandleGracefully() {
-        when(redisTemplate.keys("user:*")).thenReturn(null);
+        // mock 返回空集合
+        doAnswer(invocation -> {
+            RedisCallback<Set<String>> callback = invocation.getArgument(0);
+            when(mockCursor.hasNext()).thenReturn(false);
+            when(redisConnection.scan(any(ScanOptions.class))).thenReturn(mockCursor);
+            return callback.doInRedis(redisConnection);
+        }).when(redisTemplate).execute(any(RedisCallback.class));
 
         cache.invalidateByPrefix("user");
     }
 
     @Test
     @DisplayName("按前缀失效-Redis异常应正常处理")
+    @SuppressWarnings("unchecked")
     void invalidateByPrefix_redisException_shouldHandleGracefully() {
-        when(redisTemplate.keys(anyString())).thenThrow(new RuntimeException("Redis error"));
+        when(redisTemplate.execute(any(RedisCallback.class)))
+                .thenThrow(new RuntimeException("Redis error"));
 
         cache.invalidateByPrefix("user");
     }

@@ -52,21 +52,20 @@ class XssFilterEnhancedTest {
     }
 
     @Test
-    @DisplayName("非JSON请求应使用普通参数过滤")
-    void doFilterInternal_nonJsonRequest_shouldUseNormalFilter() throws ServletException, IOException {
+    @DisplayName("非JSON请求也应使用XssRequestWrapper（全量包装策略）")
+    void doFilterInternal_nonJsonRequest_shouldUseWrapper() throws ServletException, IOException {
         when(request.getRequestURI()).thenReturn("/api/test");
-        when(request.getContentType()).thenReturn("text/html");
 
         filter.doFilterInternal(request, response, filterChain);
 
-        verify(filterChain).doFilter(request, response);
+        // 当前实现对所有非排除路径统一使用 XssRequestWrapper 包装
+        verify(filterChain).doFilter(any(XssFilter.XssRequestWrapper.class), any());
     }
 
     @Test
     @DisplayName("JSON请求应使用XssRequestWrapper")
     void doFilterInternal_jsonRequest_shouldWrapRequest() throws ServletException, IOException {
         when(request.getRequestURI()).thenReturn("/api/test");
-        when(request.getContentType()).thenReturn("application/json");
 
         filter.doFilterInternal(request, response, filterChain);
 

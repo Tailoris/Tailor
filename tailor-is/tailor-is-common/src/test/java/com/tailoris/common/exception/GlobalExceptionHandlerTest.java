@@ -39,7 +39,8 @@ class GlobalExceptionHandlerTest {
             BusinessException ex = new BusinessException(400, "业务异常");
             ResponseEntity<Result<Object>> response = handler.handleBusinessException(ex, request);
 
-            assertEquals(HttpStatus.OK, response.getStatusCode());
+            // 业务异常返回 400 BAD_REQUEST（符合规范：BusinessException → HTTP 400）
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
             assertNotNull(response.getBody());
             assertEquals(400, response.getBody().getCode());
             assertEquals("业务异常", response.getBody().getMessage());
@@ -51,7 +52,7 @@ class GlobalExceptionHandlerTest {
             BusinessException ex = new BusinessException(ResultCode.BAD_REQUEST);
             ResponseEntity<Result<Object>> response = handler.handleBusinessException(ex, request);
 
-            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
             assertNotNull(response.getBody());
             assertEquals(400, response.getBody().getCode());
         }
@@ -71,7 +72,7 @@ class GlobalExceptionHandlerTest {
             MethodArgumentNotValidException ex = new MethodArgumentNotValidException(null, bindingResult);
             ResponseEntity<Result<Object>> response = handler.handleValidationException(ex, request);
 
-            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
             assertNotNull(response.getBody());
             assertEquals(ResultCode.BAD_REQUEST.getCode(), response.getBody().getCode());
             assertTrue(response.getBody().getMessage().contains("参数校验失败"));
@@ -91,7 +92,7 @@ class GlobalExceptionHandlerTest {
             BindException ex = new BindException(bindingResult);
             ResponseEntity<Result<Object>> response = handler.handleBindException(ex, request);
 
-            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
             assertNotNull(response.getBody());
             assertEquals(ResultCode.BAD_REQUEST.getCode(), response.getBody().getCode());
             assertTrue(response.getBody().getMessage().contains("参数绑定失败"));
@@ -108,7 +109,7 @@ class GlobalExceptionHandlerTest {
             IllegalArgumentException ex = new IllegalArgumentException("参数不合法");
             ResponseEntity<Result<Object>> response = handler.handleIllegalArgument(ex, request);
 
-            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
             assertNotNull(response.getBody());
             assertEquals(ResultCode.BAD_REQUEST.getCode(), response.getBody().getCode());
             assertEquals("参数不合法", response.getBody().getMessage());

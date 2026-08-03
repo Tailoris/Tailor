@@ -62,6 +62,7 @@ class CryptoKeyManagerTest {
     @DisplayName("未配置密钥时使用本地生成")
     void shouldGenerateKeyWhenNotConfigured() {
         ReflectionTestUtils.setField(keyManager, "configuredKey", "");
+        ReflectionTestUtils.setField(keyManager, "activeProfile", "dev");
         keyManager.init();
         String key = keyManager.getAesKey();
         assertNotNull(key);

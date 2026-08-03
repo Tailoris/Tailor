@@ -9,7 +9,6 @@ import com.tailoris.order.mapper.OrderInfoMapper;
 import com.tailoris.order.mapper.OrderItemMapper;
 import com.tailoris.order.mapper.ShoppingCartMapper;
 import com.tailoris.order.service.ShoppingCartService;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -86,6 +84,7 @@ class OrderServiceImplTest {
     private org.springframework.data.redis.core.ValueOperations<String, String> valueOperations;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void setUp() {
         lenient().when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
         lenient().when(valueOperations.setIfAbsent(anyString(), anyString(), any(java.time.Duration.class))).thenReturn(true);
@@ -100,6 +99,14 @@ class OrderServiceImplTest {
         lenient().doNothing().when(inventoryService).confirmDeduct(anyList());
         lenient().doNothing().when(inventoryService).releaseStock(anyList());
         lenient().when(stringRedisTemplate.delete(anyString())).thenReturn(true);
+    }
+
+    /**
+     * 类型安全的 LambdaQueryWrapper 匹配器，消除 {@code any(LambdaQueryWrapper.class)} 的泛型擦除警告。
+     */
+    @SuppressWarnings("unchecked")
+    private static com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<OrderInfo> anyLambdaQueryWrapper() {
+        return org.mockito.ArgumentMatchers.any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class);
     }
 
     @Test
@@ -178,7 +185,7 @@ class OrderServiceImplTest {
 
         OrderInfo order = buildOrder(userId, orderNo, OrderConstants.ORDER_STATUS_PENDING_PAY);
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(order);
         when(orderInfoMapper.updateById(any(OrderInfo.class))).thenReturn(1);
 
         assertDoesNotThrow(() -> orderService.payOrder(userId, orderNo, payType));
@@ -200,7 +207,7 @@ class OrderServiceImplTest {
 
         OrderInfo order = buildOrder(userId, orderNo, OrderConstants.ORDER_STATUS_PENDING_PAY);
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(order);
         when(orderInfoMapper.updateById(any(OrderInfo.class))).thenReturn(1);
 
         try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
@@ -226,7 +233,7 @@ class OrderServiceImplTest {
 
         OrderInfo order = buildOrder(userId, orderNo, OrderConstants.ORDER_STATUS_PAID);
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(order);
         when(orderInfoMapper.updateById(any(OrderInfo.class))).thenReturn(1);
 
         assertDoesNotThrow(() -> orderService.shipOrder(userId, orderNo, logisticsNo));
@@ -246,7 +253,7 @@ class OrderServiceImplTest {
 
         OrderInfo order = buildOrder(userId, orderNo, OrderConstants.ORDER_STATUS_SHIPPED);
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(order);
         when(orderInfoMapper.updateById(any(OrderInfo.class))).thenReturn(1);
         lenient().when(settlementClient.settleOrder(anyLong(), anyLong(), anyLong(), any(BigDecimal.class), any(BigDecimal.class)))
                 .thenReturn(com.tailoris.common.result.Result.success(true));
@@ -299,7 +306,7 @@ class OrderServiceImplTest {
 
         OrderInfo order = buildOrder(userId, orderNo, OrderConstants.ORDER_STATUS_COMPLETED);
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(order);
 
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> orderService.cancelOrder(userId, orderNo, "不想要了"));
@@ -312,7 +319,7 @@ class OrderServiceImplTest {
         Long userId = 1L;
         String orderNo = "ORD_NOT_EXIST";
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(null);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(null);
 
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> orderService.payOrder(userId, orderNo, 1));
@@ -342,7 +349,7 @@ class OrderServiceImplTest {
 
         OrderInfo order = buildOrder(userId, orderNo, OrderConstants.ORDER_STATUS_PAID);
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(order);
 
         assertDoesNotThrow(() -> orderService.payOrder(userId, orderNo, 1));
 
@@ -358,7 +365,7 @@ class OrderServiceImplTest {
 
         OrderInfo order = buildOrder(orderOwner, orderNo, OrderConstants.ORDER_STATUS_PENDING_PAY);
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(order);
 
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> orderService.payOrder(otherUser, orderNo, 1));
@@ -374,7 +381,7 @@ class OrderServiceImplTest {
 
         OrderInfo order = buildOrder(orderOwner, orderNo, OrderConstants.ORDER_STATUS_PENDING_PAY);
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(order);
 
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> orderService.cancelOrder(otherUser, orderNo, "不想要了"));
@@ -389,7 +396,7 @@ class OrderServiceImplTest {
 
         OrderInfo order = buildOrder(userId, orderNo, OrderConstants.ORDER_STATUS_PENDING_PAY);
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(order);
 
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> orderService.confirmReceive(userId, orderNo));
@@ -404,7 +411,7 @@ class OrderServiceImplTest {
 
         OrderInfo order = buildOrder(userId, orderNo, OrderConstants.ORDER_STATUS_PENDING_PAY);
 
-        when(orderInfoMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class))).thenReturn(order);
+        when(orderInfoMapper.selectOne(anyLambdaQueryWrapper())).thenReturn(order);
 
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> orderService.shipOrder(userId, orderNo, "SF12345"));
