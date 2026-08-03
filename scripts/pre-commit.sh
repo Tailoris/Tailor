@@ -3,8 +3,9 @@
 # Tailor-IS Pre-commit Hook — 自动化质量门禁
 # ==============================================================================
 # 触发时机: git commit 之前
-# 功能: 代码规范检查、安全扫描、路由端口校验
+# 功能: 代码规范检查、安全扫描、路由端口校验、受影响模块单元测试门禁
 # 安装方式: cp scripts/pre-commit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# 对应: regression-prevention-master-plan.md 方案2.1（测试门禁闭环）
 # ==============================================================================
 
 set -e
@@ -36,7 +37,7 @@ echo ""
 # =============================================================================
 # 1. 密钥硬编码检查
 # =============================================================================
-echo "[1/7] 密钥硬编码检查..."
+echo "[1/8] 密钥硬编码检查..."
 
 # 检查 env 文件中是否包含真实密钥（非占位符）
 if [ -f "deploy/tailor-is-prod/env/.env.base" ]; then
@@ -60,7 +61,7 @@ echo ""
 # =============================================================================
 # 2. 路由端口合规检查
 # =============================================================================
-echo "[2/7] 路由端口合规检查..."
+echo "[2/8] 路由端口合规检查..."
 
 # 检查 Controller 中是否使用 RoutePortConstant 常量
 HARDCODED_ROUTE=$(git diff --cached --name-only | grep 'Controller\.java$' | xargs grep -l '@RequestMapping("/api' 2>/dev/null || true)
@@ -83,7 +84,7 @@ echo ""
 # =============================================================================
 # 3. 异常处理器完整性检查
 # =============================================================================
-echo "[3/7] 异常处理器完整性检查..."
+echo "[3/8] 异常处理器完整性检查..."
 
 # 检查子模块异常处理器是否包含 Exception.class 兜底
 SUB_MODULE_EXCEPTION_HANDLER=$(git diff --cached --name-only | grep 'ExceptionHandler\.java$' | grep -v 'common/src' || true)
@@ -103,7 +104,7 @@ echo ""
 # =============================================================================
 # 4. 容器命名规范检查
 # =============================================================================
-echo "[4/7] 容器命名规范检查..."
+echo "[4/8] 容器命名规范检查..."
 
 # 检查 docker-compose 中容器名是否包含 -service 后缀
 COMPOSE_CHANGED=$(git diff --cached --name-only | grep 'docker-compose' || true)
@@ -131,7 +132,7 @@ echo ""
 # =============================================================================
 # 5. 前端 TypeScript 类型检查
 # =============================================================================
-echo "[5/7] TypeScript 类型检查..."
+echo "[5/8] TypeScript 类型检查..."
 
 # 检查是否有 any 类型使用
 ANY_TYPE=$(git diff --cached --name-only | grep '\.tsx\?$' | xargs grep -n '\bany\b' 2>/dev/null | grep -v '//.*any\|/\*.*any' || true)
@@ -146,7 +147,7 @@ echo ""
 # =============================================================================
 # 6. 数据库连接安全检查
 # =============================================================================
-echo "[6/7] 数据库连接安全检查..."
+echo "[6/8] 数据库连接安全检查..."
 
 # 检查生产环境配置中是否有 allowPublicKeyRetrieval=true
 PROD_VIOLATION=$(git diff --cached --name-only | grep 'application-prod\|application\.yml' | xargs grep 'allowPublicKeyRetrieval=true' 2>/dev/null || true)
@@ -161,7 +162,7 @@ echo ""
 # =============================================================================
 # 7. API 路由前缀合规检查（/api/v1 标准）
 # =============================================================================
-echo "[7/7] API 路由前缀合规检查..."
+echo "[7/8] API 路由前缀合规检查..."
 
 # 检查 Controller 中是否缺少 /v1 前缀
 MISSING_V1=$(git diff --cached --name-only | grep 'Controller\.java$' | xargs grep -l '@RequestMapping.*"/api/[^v]' 2>/dev/null || true)
@@ -169,6 +170,60 @@ if [ -n "$MISSING_V1" ]; then
     check_fail "Controller 路由缺少 /api/v1 前缀: $MISSING_V1"
 else
     check_pass "所有 API 路由使用 /api/v1 标准前缀"
+fi
+
+echo ""
+
+# =============================================================================
+# 8. 受影响模块单元测试门禁（测试门禁闭环，杜绝回归）
+# =============================================================================
+echo "[8/8] 受影响模块单元测试门禁..."
+
+# 收集本次提交涉及的模块
+CHANGED_FILES=$(git diff --cached --name-only)
+RUN_FRONTEND_TEST=false
+RUN_BACKEND_MODULES=""
+
+for f in $CHANGED_FILES; do
+    case "$f" in
+        tailor-is-frontend/platform-admin/src/*|tailor-is-frontend/pc-mall/src/*|tailor-is-frontend/merchant-admin/src/*)
+            RUN_FRONTEND_TEST=true ;;
+        tailor-is/tailor-is-*/src/main/java/*)
+            module=$(echo "$f" | sed 's|tailor-is/tailor-is-\([^/]*\)/.*|\1|')
+            RUN_BACKEND_MODULES="$RUN_BACKEND_MODULES $module" ;;
+    esac
+done
+
+# 前端测试门禁：仅当前端源码变更时运行
+if [ "$RUN_FRONTEND_TEST" = "true" ]; then
+    echo "  检测到前端源码变更，运行前端单元测试..."
+    if (cd tailor-is-frontend/platform-admin && npx vitest run --reporter=dot 2>&1 | tail -5); then
+        check_pass "前端单元测试通过"
+    else
+        check_fail "前端单元测试失败，请修复后再提交"
+        echo "  ${RED}失败详情运行: cd tailor-is-frontend/platform-admin && npx vitest run${NC}"
+        exit 1
+    fi
+else
+    check_pass "无前端源码变更，跳过前端测试"
+fi
+
+# 后端测试门禁：仅运行受影响模块的测试
+if [ -n "$RUN_BACKEND_MODULES" ]; then
+    for mod in $(echo "$RUN_BACKEND_MODULES" | tr ' ' '\n' | sort -u); do
+        mod_path="tailor-is/tailor-is-$mod"
+        if [ -d "$mod_path" ]; then
+            echo "  运行 $mod 模块单元测试..."
+            if (cd "$mod_path" && mvn -B -ntp -q test 2>&1 | tail -10); then
+                check_pass "$mod 模块单元测试通过"
+            else
+                check_fail "$mod 模块单元测试失败"
+                exit 1
+            fi
+        fi
+    done
+else
+    check_pass "无后端源码变更，跳过后端测试"
 fi
 
 echo ""

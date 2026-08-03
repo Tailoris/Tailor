@@ -59,9 +59,10 @@ jobs:
       - name: Type check (vue-tsc)
         run: npx vue-tsc --noEmit -p tsconfig.json
 
-      - name: Run unit tests
-        run: npm run test:unit 2>/dev/null || npm run test 2>/dev/null || echo "No test script configured"
-        continue-on-error: true
+      - name: Run unit tests (hard gate)
+        # 硬门禁：测试失败直接阻断 CI，禁止 continue-on-error 与 || echo 吞失败
+        # 统一使用 npx vitest run（非 watch 模式），避免 pc-mall 的 "vitest" watch 脚本挂起
+        run: npx vitest run
 
       - name: Lint
         run: npm run lint
