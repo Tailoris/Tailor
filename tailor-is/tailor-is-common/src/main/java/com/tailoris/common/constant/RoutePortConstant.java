@@ -29,6 +29,12 @@ public final class RoutePortConstant {
     public static final String ROUTE_ADMIN_ORDER = ROUTE_ADMIN + "/order";
     public static final String ROUTE_ADMIN_PRODUCT = ROUTE_ADMIN + "/product";
     public static final String ROUTE_ADMIN_MERCHANT = ROUTE_ADMIN + "/merchant";
+    public static final String ROUTE_ADMIN_MERCHANT_BILL = ROUTE_ADMIN_MERCHANT + "/bill";
+    public static final String ROUTE_ADMIN_MERCHANT_MODIFY = ROUTE_ADMIN_MERCHANT + "/modify";
+    public static final String ROUTE_ADMIN_APPLY_TYPE = ROUTE_ADMIN + "/apply-type";
+    public static final String ROUTE_ADMIN_SHOP_CATEGORY = ROUTE_ADMIN + "/shop-category";
+    public static final String ROUTE_ADMIN_DEPOSIT = ROUTE_ADMIN + "/deposit";
+    public static final String ROUTE_ADMIN_WITHDRAW_AUDIT = ROUTE_ADMIN + "/withdraw-audit";
     public static final String ROUTE_ADMIN_COMMUNITY = ROUTE_ADMIN + "/community";
     public static final String ROUTE_ADMIN_COPYRIGHT = ROUTE_ADMIN + "/copyright";
     public static final String ROUTE_ADMIN_PATTERN = ROUTE_ADMIN + "/pattern";
