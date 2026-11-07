@@ -81,3 +81,13 @@ deploy/tailor-is-prod/
 # ===================== 数据库备份、SQL执行记录 =====================
 *.sql.bak
 *.dump
+
+# ===================== 本机构建缓存与环境文件（严禁提交） =====================
+# Maven 本地仓库缓存（体积数百 MB，仅存于本机）
+.m2/
+# 根目录散落的 Maven Parent POM 下载产物
+/spring-boot-starter-parent-*.pom
+# 根目录 Node 依赖（husky/lint-staged 等工具链），前端各子项目已有独立规则
+/node_modules/
+# deploy 目录下含本机绝对路径的 Maven settings（环境相关，不入库）
+deploy/settings.xml
